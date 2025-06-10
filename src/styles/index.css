@@ -1,0 +1,59 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(100% 0 0);
+  --color-base-300: #f3f3f3;
+  --color-base-content: #1d2a2a;
+  --color-primary: #272d4e;
+  --color-primary-content: #4e4ebd;
+  --color-secondary: #4a57c0;
+  --color-secondary-content: oklch(45% 0.187 3.815);
+  --color-accent: oklch(90% 0.076 70.697);
+  --color-accent-content: oklch(47% 0.157 37.304);
+  --color-neutral: #4e4ebd;
+  --color-neutral-content: oklch(100% 0 0);
+  --color-info: oklch(68% 0.169 237.323);
+  --color-info-content: oklch(29% 0.066 243.157);
+  --color-success: oklch(69% 0.17 162.48);
+  --color-success-content: oklch(26% 0.051 172.552);
+  --color-warning: oklch(79% 0.184 86.047);
+  --color-warning-content: oklch(28% 0.066 53.813);
+  --color-error: oklch(64% 0.246 16.439);
+  --color-error-content: oklch(27% 0.105 12.094);
+  --radius-selector: 1rem;
+  --radius-field: 2rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 1;
+  --noise: 0;
+}
+
+* {
+  color: var(--color-primary);
+
+  font-family: Poppins, sans-serif;
+}
+
+h1 {
+  color: var(--color-secondary);
+  font-weight: 700;
+}
+h2 {
+  font-size: 0.9rem;
+}
+.btn {
+  background-color: var(--color-base-300);
+  color: var(--color-secondary);
+  border-radius: var(--radius-4xl) /* 2rem = 32px */;
+  padding-inline: calc(var(--spacing) * 6) /* 1.5rem = 24px */;
+  padding-block: calc(var(--spacing) * 2) /* 0.5rem = 8px */;
+  font-weight: var(--font-weight-medium) /* 500 */;
+  &:hover {
+    background-color: var(--color-secondary);
+    color: white;
+  }
+}
