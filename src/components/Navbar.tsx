@@ -1,10 +1,18 @@
+import { Link } from "react-router-dom";
 import logo from "/sublimo.svg";
 
 function Navbar() {
   return (
     <header className="mb-2 px-4 shadow">
       <div className="relative mx-auto flex max-w-screen-lg flex-col py-4 sm:flex-row sm:items-center sm:justify-between">
-        <img className="flex items-center " src={logo} alt="" width="55px" />
+        <Link to="/" className="contents">
+          <img
+            className="flex items-center "
+            src={logo}
+            alt="sublimo-logo"
+            width="55px"
+          />
+        </Link>
         <input className="peer hidden" type="checkbox" id="navbar-open" />
         <label
           className="self-end top-7 absolute cursor-pointer text-xl sm:hidden"
@@ -32,19 +40,27 @@ function Navbar() {
           className="peer-checked:block hidden pl-2 py-6 sm:block sm:py-0"
         >
           <div className="flex flex-col gap-y-4 sm:flex-row sm:gap-x-8 items-center">
-            <a className="text-gray-600 hover:text-blue-600" href="#">
-              Generador Mockup 3D
-            </a>
-            <a className="text-gray-600 hover:text-blue-600" href="#">
-              Articulos
-            </a>
-            <a className="text-gray-600 hover:text-blue-600" href="#">
-              Burgon
-            </a>
-            <div className="mt-2 sm:mt-0">
-              <a className=" btn" href="#">
-                Acceder
+            <Link to="/generador">
+              <a className="text-gray-600 hover:text-blue-600">
+                Generador Mockup 3D
               </a>
+            </Link>
+            <Link to="/articulos">
+              <a className="text-gray-600 hover:text-blue-600" href="#">
+                Articulos
+              </a>
+            </Link>
+            <Link to="/burgon">
+              <a className="text-gray-600 hover:text-blue-600" href="#">
+                Burgon
+              </a>
+            </Link>
+            <div className="mt-2 sm:mt-0">
+              <Link to="/login">
+                <a className=" btn" href="#">
+                  Acceder
+                </a>
+              </Link>
             </div>
           </div>
         </nav>

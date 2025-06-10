@@ -1,10 +1,11 @@
+import { Link } from "react-router-dom";
 import camiseta from "../assets/images/camiseta.png";
 export default function HeroSection() {
   return (
-    <div className="container grid grid-cols-1 md:grid-cols-2 relative items-center justify-self-center py-20">
+    <div className="container px-4 grid grid-cols-1 md:grid-cols-2 relative items-center justify-self-center py-10 gap-4  md:w-[1100px]">
       {/* info */}
-      <div className="flex flex-col justify-center items-center    ">
-        <div className="text-center px-40 md:text-left space-y-6">
+      <div className="flex flex-col justify-center items-center justify-self-center w-80 ">
+        <div className="text-center  md:text-left space-y-6">
           <h1 className="text-nowrap text-5xl lg:text-6xl">
             Mockups 3D <br />
             animados en <br />
@@ -15,10 +16,12 @@ export default function HeroSection() {
             viento, animaciones de desplazamiento y exportaciones de vídeo
             fluidas.
           </h2>
-          <button className="btn btn-neutral w-[150px]">Crear</button>
+          <Link to="/generador">
+            <button className="btn btn-secondary w-[150px]">Crear</button>
+          </Link>
         </div>
-        {/* img */}
       </div>
+      {/* img */}
       <div className="justify-self-center">
         <img src={camiseta} alt="" className="" />
       </div>
