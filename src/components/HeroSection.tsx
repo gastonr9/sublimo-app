@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import camiseta from "../assets/images/camiseta.png";
 export default function HeroSection() {
   return (
-    <div className="container px-4 grid grid-cols-1 md:grid-cols-2 relative items-center justify-self-center py-10 gap-4  md:w-[1100px]">
+    <div className=" px-4 grid grid-cols-1 md:grid-cols-2 relative items-center justify-self-center py-10 gap-4  ">
       {/* info */}
       <div className="flex flex-col justify-center items-center justify-self-center w-80 ">
         <div className="text-center  md:text-left space-y-6">
