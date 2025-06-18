@@ -5,7 +5,7 @@ function Navbar() {
   return (
     <header className="mb-2 px-4 shadow">
       <div className="relative mx-auto flex max-w-screen-lg flex-col py-4 sm:flex-row sm:items-center sm:justify-between">
-        <Link to="/" className="contents">
+        <Link to="/sublimo-app" className="contents">
           <img
             className="flex items-center "
             src={logo}

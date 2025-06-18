@@ -2,7 +2,7 @@
   "name": "sublimo-app",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://gastonr9.github.io/sublimo-app/",
+  "homepage": "https://gastonr9.github.io/sublimo-app",
   "type": "module",
   "scripts": {
     "dev": "vite",
