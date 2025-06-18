@@ -35,7 +35,7 @@ export default function SelectProductSection() {
       </h2>
 
       {/* Talles */}
-      <div className="flex justify-center  gap-4  flex-wrap">
+      <div className="flex justify-center gap-4 mb-6 flex-wrap">
         {talles.map((talle) => (
           <button
             key={talle}
@@ -50,9 +50,8 @@ export default function SelectProductSection() {
           </button>
         ))}
       </div>
-
       {/* Selector de color */}
-      <div className="flex justify-center gap-4 m-4 flex-wrap">
+      <div className="flex justify-center gap-4 mb-4 flex-wrap">
         {colores.map((color) => (
           <button
             key={color.hex}
@@ -66,16 +65,16 @@ export default function SelectProductSection() {
       </div>
 
       {/* Nombre del color */}
-      <div className="text-center ">
+      <div className="text-center mb-4">
         <p className="text-gray-700">
           {colores.find((c) => c.hex === selectedColor)?.nombre}
         </p>
       </div>
       {/* Imagen con color aplicado */}
-      <div className="relative w-full flex justify-center">
-        <div className="relative ">
+      <div className="relative w-full flex justify-center ">
+        <div className="relative w-100   h-100">
           <div
-            className={`w-150 h-150  [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]`}
+            className={`w-full h-full   [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]`}
             style={{
               backgroundColor: selectedColor,
               maskImage: `url(${remeracolor})`,
@@ -84,23 +83,23 @@ export default function SelectProductSection() {
           <img
             src={remera}
             alt="Remera"
-            className="opacity-[3] mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none  "
+            className="opacity-[0.3] mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none  "
           />
           <img
             src={remerahigh}
             alt="Remera"
-            className="opacity-[3] mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none  "
+            className="opacity-[0.1] mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none  "
           />
           <img
             src={remera}
             alt="Remera"
-            className="mix-blend-multiply opacity-[10]
+            className="mix-blend-multiply opacity-[1]
  absolute inset-0 z-20 w-full h-full object-contain pointer-events-none  "
           />
           <img
             src={remerablack}
             alt="Remera"
-            className="opacity-[10] mix-blend-screen
+            className="opacity-[1] mix-blend-screen
  absolute inset-0 z-20 w-full h-full object-contain pointer-events-none  "
           />
         </div>
