@@ -1,6 +1,6 @@
 import { Route, Routes } from "react-router";
-import "./App.css";
-import Navbar from "./components/Navbar";
+import "./index.css";
+import Header from "./components/Header";
 import Home from "./pages/Home";
 import Generador from "./pages/Generador";
 import Articulos from "./pages/Articulos";
@@ -9,7 +9,7 @@ import Login from "./pages/Login";
 function App() {
   return (
     <>
-      <Navbar />
+      <Header />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/generador" element={<Generador />} />
