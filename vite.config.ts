@@ -4,5 +4,4 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // NO usar base: "/sublimo-app/" si usás HashRouter
 });
