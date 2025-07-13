@@ -1,11 +1,10 @@
-import "./index.css";
+import { Route, Routes } from "react-router-dom";
 import Header from "./components/Header";
 import Home from "./pages/Home";
 import Generador from "./pages/Generador";
 import Articulos from "./pages/Articulos";
 import Burgon from "./pages/Burgon";
 import Login from "./pages/Login";
-import { Route, Routes } from "react-router-dom";
 
 function App() {
   return (
