@@ -1,4 +1,4 @@
-import HeroSection from "../components/HeroSection";
+import HeroSection from "../components/common/HeroSection";
 
 function Home() {
   return (
