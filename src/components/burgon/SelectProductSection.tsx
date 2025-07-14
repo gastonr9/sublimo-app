@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useOrder } from "../../context/OrderContext";
-import remera from "../../assets/images/remera.png";
-import remeracolor from "../../assets/images/remeracolor.png";
-import remerahigh from "../../assets/images/remerahighlight.png";
-import remerablack from "../../assets/images/remerablack.png";
+import remera from "/src/assets/images/remera.png";
+import remeracolor from "/src/assets/images/remeracolor.png";
+import remerahigh from "/src/assets/images/remerahighlight.png";
+import remerablack from "/src/assets/images/remerablack.png";
 
 const talles = ["S", "M", "L", "XL", " 2XL", "3XL"];
 const colores = [

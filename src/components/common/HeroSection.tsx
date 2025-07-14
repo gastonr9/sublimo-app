@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import camiseta from "../../assets/images/camiseta.png";
+import camiseta from "/src/assets/images/camiseta.png";
 export default function HeroSection() {
   return (
     <div className=" px-4 grid grid-cols-1 md:grid-cols-2 relative items-center justify-self-center py-10 gap-4  ">
