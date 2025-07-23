@@ -5,5 +5,5 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: "/sublimo-app/", // solo si tu repo se llama así
-  assetsInclude: ["**/*.glb"], // ✅ si querés importar con `?url`
+  // assetsInclude: ["**/*.glb"], // ✅ si querés importar con `?url`
 });
