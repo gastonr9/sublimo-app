@@ -60,7 +60,7 @@ const Sidebar = ({
 
 // 👕 Modelo 3D
 const Model = ({
-  modelPath = "src/assets/models/tshirt.glb",
+  modelPath = "public/models/tshirt.glb",
   color,
 }: {
   modelPath?: string;
