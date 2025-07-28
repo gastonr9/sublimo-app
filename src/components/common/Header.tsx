@@ -3,7 +3,7 @@ import logo from "/sublimo.svg";
 
 function Navbar() {
   return (
-    <header className="fixed top-0 left-0 w-full z-50 bg-white shadow-md">
+    <header className=" relative w-full z-50 bg-white shadow-md">
       <div className="relative mx-auto flex max-w-screen-lg flex-col py-4 sm:flex-row sm:items-center sm:justify-between">
         <Link to="/" className="contents">
           <img

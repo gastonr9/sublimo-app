@@ -2,7 +2,11 @@
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
 import { Suspense, useState } from "react";
-
+const Boton = () => {
+  return (
+    <button className="bg-blue-500 text-white px-4 py-2 rounded">Botón</button>
+  );
+};
 // 🎨 Componente para seleccionar color del modelo
 const ColorPicker = ({
   selectedColor,
@@ -42,7 +46,7 @@ const Sidebar = ({
   setBackgroundColor: (color: string) => void;
 }) => {
   return (
-    <aside className="fixed top-20 left-0 w-60 p-4 bg-white shadow-lg z-50 space-y-6">
+    <aside className="fixed top-30 left-0 w-60 p-4 bg-white shadow-lg z-50 space-y-6 rounded-4xl">
       <h2 className="text-xl font-bold">Personalización</h2>
       <ColorPicker
         selectedColor={selectedColor}
@@ -54,6 +58,7 @@ const Sidebar = ({
         setSelectedColor={setBackgroundColor}
         label="Color del fondo"
       />
+      <Boton />
     </aside>
   );
 };
@@ -82,7 +87,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
   const [backgroundColor, setBackgroundColor] = useState("#e5e5e5");
 
   return (
-    <>
+    <div>
       <Sidebar
         selectedColor={selectedColor}
         setSelectedColor={setSelectedColor}
@@ -90,17 +95,15 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         setBackgroundColor={setBackgroundColor}
       />
 
-      <div className="w-full h-screen">
-        <Canvas style={{ background: backgroundColor }}>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} />
-          <Suspense fallback={null}>
-            <Model modelPath={modelPath} color={selectedColor} />
-            <OrbitControls />
-            <Environment preset="city" />
-          </Suspense>
-        </Canvas>
-      </div>
-    </>
+      <Canvas style={{ background: backgroundColor }}>
+        <ambientLight intensity={0.5} />
+        <pointLight position={[10, 10, 10]} />
+        <Suspense fallback={null}>
+          <Model modelPath={modelPath} color={selectedColor} />
+          <OrbitControls />
+          <Environment preset="city" />
+        </Suspense>
+      </Canvas>
+    </div>
   );
 }
