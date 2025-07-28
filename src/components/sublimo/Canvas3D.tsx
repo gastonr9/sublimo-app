@@ -84,7 +84,7 @@ const Model = ({
 // 🧠 Componente principal
 export default function Canvas3D({ modelPath }: { modelPath?: string }) {
   const [selectedColor, setSelectedColor] = useState("#ffffff");
-  const [backgroundColor, setBackgroundColor] = useState("#e5e5e5");
+  const [backgroundColor, setBackgroundColor] = useState("#0db4e7");
 
   return (
     <div className="">
