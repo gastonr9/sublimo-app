@@ -78,7 +78,7 @@ const Model = ({
     }
   });
 
-  return <primitive object={gltf.scene} scale={7} />;
+  return <primitive object={gltf.scene} scale={5} position={[0, 0.4, 0]} />;
 };
 
 // 🧠 Componente principal
@@ -87,7 +87,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
   const [backgroundColor, setBackgroundColor] = useState("#e5e5e5");
 
   return (
-    <div>
+    <div className="">
       <Sidebar
         selectedColor={selectedColor}
         setSelectedColor={setSelectedColor}
@@ -95,7 +95,12 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         setBackgroundColor={setBackgroundColor}
       />
 
-      <Canvas style={{ background: backgroundColor }}>
+      <Canvas
+        dpr={[1, 2]}
+        shadows
+        camera={{ fov: 50 }}
+        style={{ position: "fixed" }}
+      >
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
         <Suspense fallback={null}>
