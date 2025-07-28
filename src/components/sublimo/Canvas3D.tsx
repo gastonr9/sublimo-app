@@ -99,7 +99,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         dpr={[1, 2]}
         shadows
         camera={{ fov: 50 }}
-        style={{ position: "fixed" }}
+        style={{ position: "fixed", background: backgroundColor }}
       >
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
