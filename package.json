@@ -18,7 +18,7 @@
     "@tailwindcss/vite": "^4.1.8",
     "@types/fabric": "^5.3.10",
     "@types/three": "^0.178.1",
-    "fabric": "^5.2.4",
+    "fabric": "^5.5.2",
     "framer-motion": "^12.18.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
