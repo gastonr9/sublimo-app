@@ -1,7 +1,13 @@
 // components/Canvas3D.tsx
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
-import { Suspense, useState,  } from "react";
+import { Suspense, useState } from "react";
+import Canvas2D from "./Canvas2D";
+import { extend } from "@react-three/fiber";
+import * as THREE from "three";
+
+// Extender los elementos de Three.js para JSX
+extend(THREE);
 
 
 
@@ -83,7 +89,7 @@ const Model = ({
 export default function Canvas3D({ modelPath }: { modelPath?: string }) {
   const [selectedColor, setSelectedColor] = useState("#ffffff");
   const [backgroundColor, setBackgroundColor] = useState("#0db4e7");
-  
+  const [showCanvas2D, setShowCanvas2D] = useState(false);
 
   return (
     <div className="relative">
@@ -93,6 +99,35 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         backgroundColor={backgroundColor}
         setBackgroundColor={setBackgroundColor}
       />
+
+      {/* Botón para abrir Canvas2D */}
+      <button
+        onClick={() => setShowCanvas2D(true)}
+        className="fixed top-4 right-4 z-50 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
+      >
+        Abrir Canvas 2D
+      </button>
+
+      {/* Panel lateral con Canvas2D */}
+      {showCanvas2D && (
+        <div className="fixed top-0 right-0 w-1/2 h-full bg-white shadow-2xl z-40 flex flex-col">
+          {/* Header del panel */}
+          <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+            <h3 className="text-lg font-semibold">Canvas 2D - Editor de Diseños</h3>
+            <button
+              onClick={() => setShowCanvas2D(false)}
+              className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+            >
+              ×
+            </button>
+          </div>
+          
+          {/* Contenido del Canvas2D */}
+          <div className="flex-1 overflow-hidden">
+            <Canvas2D />
+          </div>
+        </div>
+      )}
 
       <Canvas
         dpr={[1, 2]}

@@ -1,6 +1,6 @@
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react';
 import { fabric } from 'fabric';
-import { ChangeEvent, useRef } from 'react';
+import { type ChangeEvent, useRef } from 'react';
 
 function Canvas2D() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -11,7 +11,7 @@ function Canvas2D() {
     const file = event.target.files[0];
     const url = URL.createObjectURL(file);
     console.log(url);
-    fabric.Image.fromURL(url, (oImg: Klass | Object) => {
+    fabric.Image.fromURL(url, (oImg: any) => {
       oImg.scale(0.1).set('flipX', true);
       editor?.canvas.add(oImg);
     });
@@ -19,15 +19,17 @@ function Canvas2D() {
 
   const generateImage = () => {
     const dataURL = editor?.canvas.toDataURL();
-    const a = document.createElement('a');
-    a.download = 'image.png';
-    a.href = dataURL;
-    a.click();
-    // en lugar de descargar, podemos subirla al server (fetch)
+    if (dataURL) {
+      const a = document.createElement('a');
+      a.download = 'image.png';
+      a.href = dataURL;
+      a.click();
+      // en lugar de descargar, podemos subirla al server (fetch)
+    }
   };
 
   return (
-    <article className="flex-col min-h-full min-w-full border bg-gray-800 h-[100vh] flex justify-center items-center">
+    <article className="flex-col min-h-full min-w-full border bg-gray-800 h-full flex justify-center items-center">
       <button
         onClick={() => inputRef.current?.click()}
         className="py-2 px-6 bg-yellow-500 text-white rounded-xl m-4"
