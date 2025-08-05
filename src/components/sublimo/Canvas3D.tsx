@@ -1,14 +1,9 @@
 // components/Canvas3D.tsx
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
-import { Suspense, useState, memo } from "react";
+import { Suspense, useState,  } from "react";
 
-// 🔘 Botón personalizado
-const Boton = memo(() => (
-  <button className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition">
-    Botón
-  </button>
-));
+
 
 // 🎨 Selector de color reutilizable
 type ColorPickerProps = {
@@ -62,7 +57,6 @@ const Sidebar = ({
       setSelectedColor={setBackgroundColor}
       label="Color del fondo"
     />
-    <Boton />
   </aside>
 );
 
@@ -89,6 +83,7 @@ const Model = ({
 export default function Canvas3D({ modelPath }: { modelPath?: string }) {
   const [selectedColor, setSelectedColor] = useState("#ffffff");
   const [backgroundColor, setBackgroundColor] = useState("#0db4e7");
+  
 
   return (
     <div className="relative">

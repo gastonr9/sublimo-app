@@ -17,7 +17,7 @@ export default tseslint.config(
       "react-hooks": reactHooks,
       "react-refresh": reactRefresh,
     },
-    rules: {
+    rules: {  "@typescript-eslint/no-wrapper-object-types": "error",
       "@typescript-eslint/no-explicit-any": "off",
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": [
