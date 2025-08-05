@@ -43,6 +43,7 @@ type SidebarProps = {
   setSelectedColor: (color: string) => void;
   backgroundColor: string;
   setBackgroundColor: (color: string) => void;
+  onOpenCanvas2D: () => void;
 };
 
 const Sidebar = ({
@@ -50,6 +51,7 @@ const Sidebar = ({
   setSelectedColor,
   backgroundColor,
   setBackgroundColor,
+  onOpenCanvas2D,
 }: SidebarProps) => (
   <aside className="fixed top-[120px] left-0 w-60 p-4 bg-white shadow-lg z-50 space-y-6 rounded-2xl">
     <h2 className="text-xl font-bold">Personalización</h2>
@@ -63,6 +65,14 @@ const Sidebar = ({
       setSelectedColor={setBackgroundColor}
       label="Color del fondo"
     />
+    
+    {/* Botón para abrir Canvas2D */}
+    <button
+      onClick={onOpenCanvas2D}
+      className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
+    >
+      Abrir Canvas 2D
+    </button>
   </aside>
 );
 
@@ -98,32 +108,25 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         setSelectedColor={setSelectedColor}
         backgroundColor={backgroundColor}
         setBackgroundColor={setBackgroundColor}
+        onOpenCanvas2D={() => setShowCanvas2D(true)}
       />
 
-      {/* Botón para abrir Canvas2D */}
-      <button
-        onClick={() => setShowCanvas2D(true)}
-        className="fixed top-4 right-4 z-50 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
-      >
-        Abrir Canvas 2D
-      </button>
-
-      {/* Panel lateral con Canvas2D */}
+      {/* Panel Canvas2D en esquina inferior derecha */}
       {showCanvas2D && (
-        <div className="fixed top-0 right-0 w-1/2 h-full bg-white shadow-2xl z-40 flex flex-col">
+        <div className="fixed bottom-4 right-4 w-96 h-96 bg-white shadow-2xl z-40 flex flex-col rounded-lg border">
           {/* Header del panel */}
-          <div className="flex justify-between items-center p-4 border-b bg-gray-50">
-            <h3 className="text-lg font-semibold">Canvas 2D - Editor de Diseños</h3>
+          <div className="flex justify-between items-center p-3 border-b bg-gray-50 rounded-t-lg">
+            <h3 className="text-sm font-semibold">Canvas 2D</h3>
             <button
               onClick={() => setShowCanvas2D(false)}
-              className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+              className="text-gray-500 hover:text-gray-700 text-lg font-bold"
             >
               ×
             </button>
           </div>
           
           {/* Contenido del Canvas2D */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden rounded-b-lg">
             <Canvas2D />
           </div>
         </div>

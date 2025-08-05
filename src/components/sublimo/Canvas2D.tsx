@@ -29,11 +29,11 @@ function Canvas2D() {
   };
 
   return (
-    <article className="flex-col min-h-full min-w-full border bg-gray-800 h-full flex justify-center items-center">
+    <div className="flex flex-col h-full w-full p-2 bg-gray-800 items-center justify-center">
       <button
         onClick={() => inputRef.current?.click()}
-        className="py-2 px-6 bg-yellow-500 text-white rounded-xl m-4"
-        children="subir archivo"
+        className="py-1 px-3 bg-yellow-500 text-white rounded-lg m-2 text-sm"
+        children="Subir archivo"
       />
       <input
         ref={inputRef}
@@ -46,10 +46,10 @@ function Canvas2D() {
       </div>
       <button
         onClick={generateImage}
-        className="py-2 px-6 bg-indigo-500 text-white rounded-xl m-4"
+        className="py-1 px-3 bg-indigo-500 text-white rounded-lg m-2 text-sm"
         children="Generar archivo"
       />
-    </article>
+    </div>
   );
 }
 
