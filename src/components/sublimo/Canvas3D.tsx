@@ -83,7 +83,7 @@ type ModelProps = {
 };
 
 const Model = ({
-  modelPath = "src/assets/models/tshirt.glb",
+  modelPath = "/sublimo-app/public/tshirt.glb",
   color,
 }: ModelProps) => {
   const gltf = useGLTF(modelPath);
