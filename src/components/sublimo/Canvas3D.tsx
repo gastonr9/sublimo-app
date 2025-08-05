@@ -83,7 +83,8 @@ type ModelProps = {
 };
 
 const Model = ({
-  modelPath = "/sublimo-app/public/tshirt.glb",
+  modelPath = `${import.meta.env.BASE_URL}models/tshirt.glb` // ✅ recomendado con Vite
+,
   color,
 }: ModelProps) => {
   const gltf = useGLTF(modelPath);
