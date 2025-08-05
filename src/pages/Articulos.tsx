@@ -2,8 +2,8 @@ const productos = [
   {
     id: 1,
     nombre: "Camiseta Básica",
-    imagen: "src//assets/images/camiseta.png", // usa ruta relativa desde /public
-    modeloGlb: "/models/camiseta.glb",
+    imagen: `${import.meta.env.BASE_URL}images/camiseta.png`, // usa ruta relativa desde /public
+    modeloGlb: "/models/tshirt.glb",
   },
   // puedes agregar más productos
 ];
