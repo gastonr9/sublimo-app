@@ -1,3 +1,9 @@
+/**
+ * @file SelectProductSection.tsx
+ * @description Este archivo define el componente para seleccionar un producto, incluyendo talle y color.
+ * @module components/burgon/SelectProductSection
+ */
+
 import { useState } from "react";
 import { useOrder } from "../../context/OrderContext";
 import remera from "/public/images/remera.png";
@@ -5,7 +11,22 @@ import remeracolor from "/public/images/remeracolor.png";
 import remerahigh from "/public/images/remerahighlight.png";
 import remerablack from "/public/images/remerablack.png";
 
+/**
+ * @const {string[]} talles
+ * @description Un array de strings que representa los talles de remera disponibles.
+ */
 const talles = ["S", "M", "L", "XL", " 2XL", "3XL"];
+
+/**
+ * @typedef {object} Color
+ * @property {string} nombre - El nombre del color.
+ * @property {string} hex - El código hexadecimal del color.
+ */
+
+/**
+ * @const {Color[]} colores
+ * @description Un array de objetos que representa los colores de remera disponibles.
+ */
 const colores = [
   { nombre: "Blanco", hex: "#ffffff" },
   { nombre: "Negro", hex: "#000000" },
@@ -13,16 +34,46 @@ const colores = [
   { nombre: "Azul", hex: "#0000ff" },
 ];
 
+/**
+ * @function SelectProductSection
+ * @description Un componente de React que permite al usuario seleccionar el talle y color de una remera.
+ * Utiliza el contexto `OrderContext` para gestionar el estado del pedido.
+ * @returns {JSX.Element} El componente de selección de producto.
+ */
 export default function SelectProductSection() {
+  /**
+   * @hook
+   * @description Hook para acceder al estado del pedido y a la función para actualizarlo.
+   */
   const { order, setOrder } = useOrder();
+
+  /**
+   * @state
+   * @description Estado para almacenar el talle seleccionado.
+   */
   const [selectedTalle, setSelectedTalle] = useState(order.talle || "");
+
+  /**
+   * @state
+   * @description Estado para almacenar el color seleccionado.
+   */
   const [selectedColor, setSelectedColor] = useState(order.color || "#ffffff");
 
+  /**
+   * @function handleTalleSelect
+   * @description Maneja la selección de un talle, actualizando el estado local y el contexto del pedido.
+   * @param {string} talle - El talle seleccionado.
+   */
   const handleTalleSelect = (talle: string) => {
     setSelectedTalle(talle);
     setOrder({ talle });
   };
 
+  /**
+   * @function handleColorSelect
+   * @description Maneja la selección de un color, actualizando el estado local y el contexto del pedido.
+   * @param {string} colorHex - El código hexadecimal del color seleccionado.
+   */
   const handleColorSelect = (colorHex: string) => {
     setSelectedColor(colorHex);
     setOrder({ color: colorHex });

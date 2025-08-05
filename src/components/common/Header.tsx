@@ -1,6 +1,19 @@
+/**
+ * @file Header.tsx
+ * @description Este archivo define el componente de la barra de navegación principal de la aplicación.
+ * @module components/common/Header
+ */
+
 import { Link } from "react-router-dom";
 import logo from "/sublimo.svg";
 
+/**
+ * @function Navbar
+ * @description Un componente de React que renderiza la barra de navegación.
+ * Incluye el logo de la aplicación, enlaces a las diferentes secciones y un botón de acceso.
+ * La navegación es responsive y se adapta a dispositivos móviles.
+ * @returns {JSX.Element} El componente de la barra de navegación.
+ */
 function Navbar() {
   return (
     <header className=" relative w-full z-50 bg-white shadow-md">

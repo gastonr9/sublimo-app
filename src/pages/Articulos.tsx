@@ -1,3 +1,21 @@
+/**
+ * @file Articulos.tsx
+ * @description Este archivo define la página de artículos, que muestra una lista de productos disponibles para personalizar.
+ * @module pages/Articulos
+ */
+
+/**
+ * @typedef {object} Producto
+ * @property {number} id - El identificador único del producto.
+ * @property {string} nombre - El nombre del producto.
+ * @property {string} imagen - La ruta a la imagen de vista previa del producto.
+ * @property {string} modeloGlb - La ruta al modelo 3D del producto en formato GLB.
+ */
+
+/**
+ * @const {Producto[]} productos
+ * @description Un array de objetos que representa los productos disponibles. Cada objeto contiene detalles como id, nombre, imagen y la ruta al modelo 3D.
+ */
 const productos = [
   {
     id: 1,
@@ -8,6 +26,12 @@ const productos = [
   // puedes agregar más productos
 ];
 
+/**
+ * @function ListaProductos
+ * @description Un componente de React que renderiza una lista de productos en una cuadrícula.
+ * Cada producto se muestra como una tarjeta con su imagen, nombre y un botón para personalizar.
+ * @returns {JSX.Element} El componente que muestra la lista de productos.
+ */
 const ListaProductos = () => {
   return (
     <div>

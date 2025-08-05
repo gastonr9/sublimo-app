@@ -1,22 +1,53 @@
+/**
+ * @file Canvas2D.tsx
+ * @description Este archivo define el componente de lienzo 2D para la edición de imágenes utilizando Fabric.js.
+ * @module components/sublimo/Canvas2D
+ */
+
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react';
 import { fabric } from 'fabric';
 import { type ChangeEvent, useRef } from 'react';
 
+/**
+ * @function Canvas2D
+ * @description Un componente de React que proporciona un lienzo 2D para cargar y manipular imágenes.
+ * Permite a los usuarios subir una imagen, que se agrega al lienzo, y luego generar y descargar la imagen resultante.
+ * @returns {JSX.Element} El componente del lienzo 2D.
+ */
 function Canvas2D() {
+  /**
+   * @ref
+   * @description Referencia al input de tipo archivo para poder activarlo mediante un botón.
+   */
   const inputRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * @hook
+   * @description Hook de `fabricjs-react` que proporciona el editor y la función `onReady`.
+   */
   const { editor, onReady } = useFabricJSEditor();
 
+  /**
+   * @function handlePic
+   * @description Maneja el evento de selección de un archivo de imagen.
+   * Crea una URL para el archivo seleccionado y lo carga en el lienzo de Fabric.js.
+   * @param {ChangeEvent<HTMLInputElement>} event - El evento del input de archivo.
+   */
   const handlePic = (event: ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files) return;
     const file = event.target.files[0];
     const url = URL.createObjectURL(file);
-    console.log(url);
     fabric.Image.fromURL(url, (oImg: any) => {
       oImg.scale(0.1).set('flipX', true);
       editor?.canvas.add(oImg);
     });
   };
 
+  /**
+   * @function generateImage
+   * @description Genera una imagen a partir del contenido actual del lienzo y la descarga.
+   * Convierte el lienzo a un Data URL y simula un clic en un enlace para descargar la imagen.
+   */
   const generateImage = () => {
     const dataURL = editor?.canvas.toDataURL();
     if (dataURL) {

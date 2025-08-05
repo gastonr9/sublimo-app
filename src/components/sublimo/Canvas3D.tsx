@@ -1,4 +1,9 @@
-// components/Canvas3D.tsx
+/**
+ * @file Canvas3D.tsx
+ * @description Este archivo define el componente principal para la visualización y personalización de modelos 3D.
+ * @module components/sublimo/Canvas3D
+ */
+
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
 import { Suspense, useState } from "react";
@@ -11,13 +16,19 @@ extend(THREE);
 
 
 
-// 🎨 Selector de color reutilizable
-type ColorPickerProps = {
-  selectedColor: string;
-  setSelectedColor: (color: string) => void;
-  label: string;
-};
+/**
+ * @typedef {object} ColorPickerProps
+ * @property {string} selectedColor - El color actualmente seleccionado.
+ * @property {(color: string) => void} setSelectedColor - Función para actualizar el color seleccionado.
+ * @property {string} label - La etiqueta para el selector de color.
+ */
 
+/**
+ * @function ColorPicker
+ * @description Un componente reutilizable que renderiza un input de tipo color.
+ * @param {ColorPickerProps} props - Las propiedades del componente.
+ * @returns {JSX.Element} El componente de selector de color.
+ */
 const ColorPicker = ({
   selectedColor,
   setSelectedColor,
@@ -37,15 +48,22 @@ const ColorPicker = ({
   </div>
 );
 
-// 🧾 Sidebar de controles
-type SidebarProps = {
-  selectedColor: string;
-  setSelectedColor: (color: string) => void;
-  backgroundColor: string;
-  setBackgroundColor: (color: string) => void;
-  onOpenCanvas2D: () => void;
-};
+/**
+ * @typedef {object} SidebarProps
+ * @property {string} selectedColor - El color seleccionado para la prenda.
+ * @property {(color: string) => void} setSelectedColor - Función para actualizar el color de la prenda.
+ * @property {string} backgroundColor - El color de fondo del lienzo.
+ * @property {(color: string) => void} setBackgroundColor - Función para actualizar el color de fondo.
+ * @property {() => void} onOpenCanvas2D - Función para abrir el lienzo 2D.
+ */
 
+/**
+ * @function Sidebar
+ * @description Un componente que renderiza una barra lateral con controles de personalización.
+ * Incluye selectores de color para la prenda y el fondo, y un botón para abrir el lienzo 2D.
+ * @param {SidebarProps} props - Las propiedades del componente.
+ * @returns {JSX.Element} El componente de la barra lateral.
+ */
 const Sidebar = ({
   selectedColor,
   setSelectedColor,
@@ -76,15 +94,20 @@ const Sidebar = ({
   </aside>
 );
 
-// 👕 Modelo 3D de la prenda
-type ModelProps = {
-  modelPath?: string;
-  color: string;
-};
+/**
+ * @typedef {object} ModelProps
+ * @property {string} [modelPath] - La ruta al archivo del modelo 3D.
+ * @property {string} color - El color a aplicar al modelo.
+ */
 
+/**
+ * @function Model
+ * @description Un componente que carga y muestra un modelo 3D, aplicando un color específico a sus materiales.
+ * @param {ModelProps} props - Las propiedades del componente.
+ * @returns {JSX.Element} El componente del modelo 3D.
+ */
 const Model = ({
-  modelPath = `${import.meta.env.BASE_URL}models/tshirt.glb` // ✅ recomendado con Vite
-,
+  modelPath = `${import.meta.env.BASE_URL}models/tshirt.glb`, // ✅ recomendado con Vite
   color,
 }: ModelProps) => {
   const gltf = useGLTF(modelPath);
@@ -96,10 +119,30 @@ const Model = ({
   return <primitive object={gltf.scene} scale={5} position={[0, 0, 0]} />;
 };
 
-// 🧠 Componente principal Canvas3D
+/**
+ * @function Canvas3D
+ * @description El componente principal que renderiza el entorno 3D.
+ * Gestiona el estado de los colores, la visibilidad del lienzo 2D y la configuración de la escena 3D.
+ * @param {{ modelPath?: string }} props - Las propiedades del componente, incluyendo la ruta opcional al modelo.
+ * @returns {JSX.Element} El componente del lienzo 3D.
+ */
 export default function Canvas3D({ modelPath }: { modelPath?: string }) {
+  /**
+   * @state
+   * @description Estado para almacenar el color seleccionado de la prenda.
+   */
   const [selectedColor, setSelectedColor] = useState("#ffffff");
+
+  /**
+   * @state
+   * @description Estado para almacenar el color de fondo del lienzo.
+   */
   const [backgroundColor, setBackgroundColor] = useState("#0db4e7");
+
+  /**
+   * @state
+   * @description Estado para controlar la visibilidad del panel del lienzo 2D.
+   */
   const [showCanvas2D, setShowCanvas2D] = useState(false);
 
   return (
