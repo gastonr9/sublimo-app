@@ -119,10 +119,10 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
         className="hidden"
       />
       <div
-        className="rounded-xl border-4 border-yellow-500"
-        style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
+        className="justify-items-center"
+        style={{ width: CANVAS_SIZE, height: CANVAS_SIZE ,}}
       >
-        <FabricJSCanvas onReady={onReady} />
+        <FabricJSCanvas onReady={onReady} className='rounded-xl border-4 border-yellow-500' />
       </div>
       <button
         onClick={generateImage}
