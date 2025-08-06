@@ -143,12 +143,14 @@ const Model = ({
     side: THREE.DoubleSide,
   });
   const overlayMaterial = overlayTexture
-    ? new THREE.MeshBasicMaterial({
+    ? new THREE.MeshStandardMaterial({
         map: overlayTexture,
         transparent: true,
         opacity: 1,
-        side: THREE.FrontSide,
         depthWrite: false,
+        color: 0xffffff,
+        metalness: 0,
+        roughness: 100,
       })
     : null;
 

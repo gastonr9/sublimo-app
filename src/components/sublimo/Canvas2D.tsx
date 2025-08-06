@@ -66,7 +66,7 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
     const file = event.target.files[0];
     const url = URL.createObjectURL(file);
     fabric.Image.fromURL(url, (oImg: any) => {
-      oImg.scale(0.1).set('flipY', true);
+      oImg.scale(0.1).set('flipY', false);
       editor?.canvas.add(oImg);
       // Notifica al padre inmediatamente después de agregar la imagen
       setTimeout(() => {
