@@ -113,43 +113,63 @@ const Model = ({
   textureUrl,
 }: ModelProps & { textureUrl?: string }) => {
   const gltf = useGLTF(modelPath);
-  const texture = textureUrl
-    ? useLoader(THREE.TextureLoader, textureUrl)
-    : null;
+  // Textura base de tela
+  const fabricTexture = useLoader(THREE.TextureLoader, `${import.meta.env.BASE_URL}models/blanco.jpg`);
+  // Textura overlay PNG del usuario
+  const overlayTexture = textureUrl ? useLoader(THREE.TextureLoader, textureUrl) : null;
 
-  if (texture) {
-    texture.repeat.y = -1; // Invierte verticalmente
-    texture.offset.y = 1;  // Ajusta el origen tras invertir
-    texture.needsUpdate = true;
-    texture.format = THREE.RGBAFormat;
+  if (fabricTexture) {
+    fabricTexture.needsUpdate = true;
+    fabricTexture.format = THREE.RGBAFormat;
+  }
+  if (overlayTexture) {
+    overlayTexture.needsUpdate = true;
+    overlayTexture.format = THREE.RGBAFormat;
+    overlayTexture.repeat.y = -1;
+    overlayTexture.offset.y = 1;
   }
 
-  // Aplica color base y textura como capa superior (respetando transparencia)
+  // Buscar el mesh principal
+  let mainMesh: THREE.Mesh | null = null;
   gltf.scene.traverse((child: any) => {
-    if (child.isMesh) {
-      // Forzar MeshStandardMaterial para soporte alpha y color base
-      if (!(child.material instanceof THREE.MeshStandardMaterial)) {
-        child.material = new THREE.MeshStandardMaterial();
-      }
-      if (texture) {
-        child.material.color.set('#ffffff'); // No tiñe la textura
-        child.material.map = texture;
-        child.material.transparent = true;
-        child.material.alphaTest = 0.01;
-        child.material.depthWrite = false;
-        child.material.needsUpdate = true;
-      } else {
-        child.material.color.set(color);
-        child.material.map = null;
-        child.material.transparent = false;
-        child.material.alphaTest = 0;
-        child.material.depthWrite = true;
-        child.material.needsUpdate = true;
-      }
-    }
+    if (mainMesh) return;
+    if (child.isMesh) mainMesh = child as THREE.Mesh;
   });
 
-  return <primitive object={gltf.scene} scale={5} position={[0, 0, 0]} />;
+  // Crear materiales
+  const baseMaterial = new THREE.MeshStandardMaterial({
+    color,
+    map: fabricTexture,
+    side: THREE.DoubleSide,
+  });
+  const overlayMaterial = overlayTexture
+    ? new THREE.MeshBasicMaterial({
+        map: overlayTexture,
+        transparent: true,
+        opacity: 1,
+        side: THREE.FrontSide,
+        depthWrite: false,
+      })
+    : null;
+
+  return (
+    <group scale={5} position={[0, 0, 0]}>
+      {mainMesh && (
+        <>
+          <mesh geometry={mainMesh.geometry} material={baseMaterial} />
+          {overlayMaterial && (
+            <mesh geometry={mainMesh.geometry} material={overlayMaterial} />
+          )}
+        </>
+      )}
+      {/* Renderiza el resto de la escena (sin el mesh principal) */}
+      {gltf.scene.children
+        .filter((child: any) => child !== mainMesh)
+        .map((child: any, i: number) => (
+          <primitive key={i} object={child} />
+        ))}
+    </group>
+  );
 };
 
 /**
