@@ -8,7 +8,7 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
 import { Suspense, useState } from "react";
 import Canvas2D from "./Canvas2D";
-import { extend } from "@react-three/fiber";
+import { extend, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 
 // Extender los elementos de Three.js para JSX
@@ -98,24 +98,46 @@ const Sidebar = ({
  * @typedef {object} ModelProps
  * @property {string} [modelPath] - La ruta al archivo del modelo 3D.
  * @property {string} color - El color a aplicar al modelo.
+ * @property {string} [textureUrl] - DataURL de la textura a aplicar.
  */
 
 /**
  * @function Model
- * @description Un componente que carga y muestra un modelo 3D, aplicando un color específico a sus materiales.
+ * @description Un componente que carga y muestra un modelo 3D, aplicando un color específico a sus materiales y una textura opcional.
  * @param {ModelProps} props - Las propiedades del componente.
  * @returns {JSX.Element} El componente del modelo 3D.
  */
 const Model = ({
-  modelPath = `${import.meta.env.BASE_URL}models/tshirt.glb`, // ✅ recomendado con Vite
+  modelPath = `${import.meta.env.BASE_URL}models/tshirt.glb`,
   color,
-}: ModelProps) => {
+  textureUrl,
+}: ModelProps & { textureUrl?: string }) => {
   const gltf = useGLTF(modelPath);
+  const texture = textureUrl
+    ? useLoader(THREE.TextureLoader, textureUrl)
+    : null;
+
+
+ if (texture) {
+      texture.repeat.y = -1; // Invierte verticalmente
+texture.offset.y = 1;  // Ajusta el origen tras invertir
+texture.needsUpdate = true;
+  }
+
+  // Aplica color y textura a los materiales del modelo
   gltf.scene.traverse((child: any) => {
     if (child.isMesh) {
       child.material.color.set(color);
+      if (texture) {
+        child.material.map = texture;
+        child.material.needsUpdate = true;
+      } else {
+        child.material.map = null;
+        child.material.needsUpdate = true;
+      }
     }
   });
+
   return <primitive object={gltf.scene} scale={5} position={[0, 0, 0]} />;
 };
 
@@ -145,6 +167,9 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
    */
   const [showCanvas2D, setShowCanvas2D] = useState(false);
 
+  // Estado para la textura generada desde Canvas2D
+  const [canvas2DTexture, setCanvas2DTexture] = useState<string | undefined>(undefined);
+
   return (
     <div className="relative">
       <Sidebar
@@ -171,7 +196,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
           
           {/* Contenido del Canvas2D */}
           <div className="flex-1 overflow-hidden rounded-b-lg">
-            <Canvas2D />
+            <Canvas2D onImageChange={setCanvas2DTexture} />
           </div>
         </div>
       )}
@@ -185,7 +210,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
         <Suspense fallback={null}>
-          <Model modelPath={modelPath} color={selectedColor} />
+          <Model modelPath={modelPath} color={selectedColor} textureUrl={canvas2DTexture} />
           <OrbitControls />
           <Environment preset="city" />
         </Suspense>

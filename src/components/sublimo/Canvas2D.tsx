@@ -4,17 +4,20 @@
  * @module components/sublimo/Canvas2D
  */
 
+import React, { type ChangeEvent, useEffect, useRef, useState } from 'react';
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react';
 import { fabric } from 'fabric';
-import { type ChangeEvent, useRef } from 'react';
 
 /**
  * @function Canvas2D
  * @description Un componente de React que proporciona un lienzo 2D para cargar y manipular imágenes.
  * Permite a los usuarios subir una imagen, que se agrega al lienzo, y luego generar y descargar la imagen resultante.
+ * @param {{ onImageChange?: (dataUrl: string) => void }} props - Prop para notificar cambios en la imagen.
  * @returns {JSX.Element} El componente del lienzo 2D.
  */
-function Canvas2D() {
+function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void }) {
+  // Tamaño cuadrado fijo (puedes ajustar el valor si quieres otro tamaño)
+  const CANVAS_SIZE = 200;
   /**
    * @ref
    * @description Referencia al input de tipo archivo para poder activarlo mediante un botón.
@@ -26,6 +29,42 @@ function Canvas2D() {
    * @description Hook de `fabricjs-react` que proporciona el editor y la función `onReady`.
    */
   const { editor, onReady } = useFabricJSEditor();
+  const tshirtImgUrl = `${import.meta.env.BASE_URL}models/tshirt.png`;
+
+  // Setear tamaño cuadrado y fondo del canvas cuando esté listo
+  useEffect(() => {
+    if (!editor?.canvas) return;
+    editor.canvas.setWidth(CANVAS_SIZE);
+    editor.canvas.setHeight(CANVAS_SIZE);
+    fabric.Image.fromURL(tshirtImgUrl, (bgImg: any) => {
+      // Ajustar la imagen al tamaño del canvas cuadrado
+      bgImg.scaleToWidth(CANVAS_SIZE);
+      bgImg.scaleToHeight(CANVAS_SIZE);
+      editor.canvas.setBackgroundImage(bgImg, editor.canvas.renderAll.bind(editor.canvas), {
+        originX: 'left',
+        originY: 'top',
+        left: 0,
+        top: 0,
+      });
+    });
+  }, [editor, tshirtImgUrl]);
+
+  // Notifica al padre cuando el canvas cambia
+  useEffect(() => {
+    if (!editor?.canvas || !onImageChange) return;
+    const handler = () => {
+      const dataUrl = editor.canvas.toDataURL({ format: 'png' });
+      onImageChange(dataUrl);
+    };
+    editor.canvas.on('object:added', handler);
+    editor.canvas.on('object:modified', handler);
+    editor.canvas.on('object:removed', handler);
+    return () => {
+      editor.canvas.off('object:added', handler);
+      editor.canvas.off('object:modified', handler);
+      editor.canvas.off('object:removed', handler);
+    };
+  }, [editor, onImageChange]);
 
   /**
    * @function handlePic
@@ -38,8 +77,15 @@ function Canvas2D() {
     const file = event.target.files[0];
     const url = URL.createObjectURL(file);
     fabric.Image.fromURL(url, (oImg: any) => {
-      oImg.scale(0.1).set('flipX', true);
+      oImg.scale(0.1).set('flipY', true);
       editor?.canvas.add(oImg);
+      // Notifica al padre inmediatamente después de agregar la imagen
+      setTimeout(() => {
+        if (editor?.canvas && onImageChange) {
+          const dataUrl = editor.canvas.toDataURL({ format: 'png' });
+          onImageChange(dataUrl);
+        }
+      }, 100);
     });
   };
 
@@ -72,7 +118,10 @@ function Canvas2D() {
         type="file"
         className="hidden"
       />
-      <div className="rounded-xl border border-4 border-yellow-500 ">
+      <div
+        className="rounded-xl border-4 border-yellow-500"
+        style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
+      >
         <FabricJSCanvas onReady={onReady} />
       </div>
       <button
