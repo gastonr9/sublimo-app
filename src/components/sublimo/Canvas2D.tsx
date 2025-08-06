@@ -16,8 +16,10 @@ import { fabric } from 'fabric';
  * @returns {JSX.Element} El componente del lienzo 2D.
  */
 function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void }) {
-  // Tamaño cuadrado fijo (puedes ajustar el valor si quieres otro tamaño)
+  // Tamaño visual del canvas
   const CANVAS_SIZE = 350;
+  // Tamaño de exportación de la textura
+  const EXPORT_SIZE = 10240;
   /**
    * @ref
    * @description Referencia al input de tipo archivo para poder activarlo mediante un botón.
@@ -42,8 +44,17 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
   useEffect(() => {
     if (!editor?.canvas || !onImageChange) return;
     const handler = () => {
-      const dataUrl = editor.canvas.toDataURL({ format: 'png' });
-      onImageChange(dataUrl);
+      // Exportar a alta resolución usando un canvas temporal
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = EXPORT_SIZE;
+      tempCanvas.height = EXPORT_SIZE;
+      const tempCtx = tempCanvas.getContext('2d');
+      if (tempCtx) {
+        // Renderizar el contenido de fabric en el canvas temporal
+        const dataURL = editor.canvas.toDataURL({ format: 'png', multiplier: EXPORT_SIZE / CANVAS_SIZE });
+        // Notificar al padre con la textura de alta resolución
+        onImageChange(dataURL);
+      }
     };
     editor.canvas.on('object:added', handler);
     editor.canvas.on('object:modified', handler);
@@ -84,7 +95,9 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
    * Convierte el lienzo a un Data URL y simula un clic en un enlace para descargar la imagen.
    */
   const generateImage = () => {
-    const dataURL = editor?.canvas.toDataURL();
+    if (!editor?.canvas) return;
+    // Exportar a alta resolución usando un canvas temporal
+    const dataURL = editor.canvas.toDataURL({ format: 'png', multiplier: EXPORT_SIZE / CANVAS_SIZE });
     if (dataURL) {
       const a = document.createElement('a');
       a.download = 'image.png';
