@@ -31,23 +31,12 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
   const { editor, onReady } = useFabricJSEditor();
   const tshirtImgUrl = `${import.meta.env.BASE_URL}models/tshirt.png`;
 
-  // Setear tamaño cuadrado y fondo del canvas cuando esté listo
+  // Setear tamaño cuadrado del canvas cuando esté listo (sin fondo de guía en Fabric)
   useEffect(() => {
     if (!editor?.canvas) return;
     editor.canvas.setWidth(CANVAS_SIZE);
     editor.canvas.setHeight(CANVAS_SIZE);
-    fabric.Image.fromURL(tshirtImgUrl, (bgImg: any) => {
-      // Ajustar la imagen al tamaño del canvas cuadrado
-      bgImg.scaleToWidth(CANVAS_SIZE);
-      bgImg.scaleToHeight(CANVAS_SIZE);
-      editor.canvas.setBackgroundImage(bgImg, editor.canvas.renderAll.bind(editor.canvas), {
-        originX: 'left',
-        originY: 'top',
-        left: 0,
-        top: 0,
-      });
-    });
-  }, [editor, tshirtImgUrl]);
+  }, [editor]);
 
   // Notifica al padre cuando el canvas cambia
   useEffect(() => {
@@ -119,10 +108,20 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
         className="hidden"
       />
       <div
-        className="justify-items-center"
-        style={{ width: CANVAS_SIZE, height: CANVAS_SIZE ,}}
+        className="justify-items-center rounded-xl border-4 border-yellow-500"
+        style={{
+          width: CANVAS_SIZE,
+          height: CANVAS_SIZE,
+          backgroundImage: `url(${tshirtImgUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          position: 'relative',
+        }}
       >
-        <FabricJSCanvas onReady={onReady} className='rounded-xl border-4 border-yellow-500' />
+        <div style={{position: 'absolute', inset: 0}}>
+          <FabricJSCanvas onReady={onReady} className='w-full h-full bg-transparent' />
+        </div>
       </div>
       <button
         onClick={generateImage}

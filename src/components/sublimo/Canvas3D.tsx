@@ -117,22 +117,33 @@ const Model = ({
     ? useLoader(THREE.TextureLoader, textureUrl)
     : null;
 
-
- if (texture) {
-      texture.repeat.y = -1; // Invierte verticalmente
-texture.offset.y = 1;  // Ajusta el origen tras invertir
-texture.needsUpdate = true;
+  if (texture) {
+    texture.repeat.y = -1; // Invierte verticalmente
+    texture.offset.y = 1;  // Ajusta el origen tras invertir
+    texture.needsUpdate = true;
+    texture.format = THREE.RGBAFormat;
   }
 
-  // Aplica color y textura a los materiales del modelo
+  // Aplica color base y textura como capa superior (respetando transparencia)
   gltf.scene.traverse((child: any) => {
     if (child.isMesh) {
-      child.material.color.set(color);
+      // Forzar MeshStandardMaterial para soporte alpha y color base
+      if (!(child.material instanceof THREE.MeshStandardMaterial)) {
+        child.material = new THREE.MeshStandardMaterial();
+      }
       if (texture) {
+        child.material.color.set('#ffffff'); // No tiñe la textura
         child.material.map = texture;
+        child.material.transparent = true;
+        child.material.alphaTest = 0.01;
+        child.material.depthWrite = false;
         child.material.needsUpdate = true;
       } else {
+        child.material.color.set(color);
         child.material.map = null;
+        child.material.transparent = false;
+        child.material.alphaTest = 0;
+        child.material.depthWrite = true;
         child.material.needsUpdate = true;
       }
     }
