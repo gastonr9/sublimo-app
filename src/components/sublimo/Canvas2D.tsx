@@ -17,7 +17,7 @@ import { fabric } from 'fabric';
  */
 function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void }) {
   // Tamaño cuadrado fijo (puedes ajustar el valor si quieres otro tamaño)
-  const CANVAS_SIZE = 200;
+  const CANVAS_SIZE = 350;
   /**
    * @ref
    * @description Referencia al input de tipo archivo para poder activarlo mediante un botón.

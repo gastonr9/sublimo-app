@@ -215,7 +215,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
 
       {/* Panel Canvas2D en esquina inferior derecha */}
       {showCanvas2D && (
-        <div className="fixed bottom-4 right-4 w-96 h-96 bg-white shadow-2xl z-40 flex flex-col rounded-lg border">
+        <div className="fixed bottom-4 right-4 w-120 h-120 bg-white shadow-2xl z-40 flex flex-col rounded-lg border">
           {/* Header del panel */}
           <div className="flex justify-between items-center p-3 border-b bg-gray-50 rounded-t-lg">
             <h3 className="text-sm font-semibold">Canvas 2D</h3>
@@ -228,7 +228,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
           </div>
           
           {/* Contenido del Canvas2D */}
-          <div className="flex-1 overflow-hidden rounded-b-lg">
+          <div className="relative  rounded-b-lg">
             <Canvas2D onImageChange={setCanvas2DTexture} />
           </div>
         </div>
