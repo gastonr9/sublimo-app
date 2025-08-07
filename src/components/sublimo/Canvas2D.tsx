@@ -19,7 +19,7 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
   // Tamaño visual del canvas
   const CANVAS_SIZE = 350;
   // Tamaño de exportación de la textura
-  const EXPORT_SIZE = 10240/2;
+  const EXPORT_SIZE = 4096;
   /**
    * @ref
    * @description Referencia al input de tipo archivo para poder activarlo mediante un botón.
