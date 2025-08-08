@@ -89,7 +89,12 @@ const Sidebar = ({
       onClick={onOpenCanvas2D}
       className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
     >
-      Abrir Canvas 2D
+      Importar Diseño
+    </button>
+    <button
+      className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
+    >
+      Exportar
     </button>
   </aside>
 );
