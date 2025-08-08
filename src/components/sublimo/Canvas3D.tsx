@@ -1,4 +1,4 @@
-
+import { useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
 import { Suspense, useState, useRef } from "react";
@@ -137,6 +137,13 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
     link.click();
   };
 
+  // 🔹 Esto asegura que el color cambie en vivo
+  useEffect(() => {
+    if (rendererRef.current) {
+      rendererRef.current.setClearColor(new THREE.Color(backgroundColor));
+    }
+  }, [backgroundColor]);
+
   return (
     <div className="relative">
       <Sidebar
@@ -165,16 +172,23 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         </div>
       )}
 
-    <Canvas
-  dpr={[1, 2]}
-  shadows
-  camera={{ fov: 50 }}
-  gl={{ preserveDrawingBuffer: true }} // <-- clave para que la captura no salga vacía
-  style={{ position: "fixed", inset: 0, background: backgroundColor }}
-  onCreated={({ gl }) => {
-    rendererRef.current = gl;
-  }}
->
+      <Canvas
+        dpr={[1, 2]}
+        shadows
+        camera={{ fov: 50 }}
+        gl={{
+          preserveDrawingBuffer: true,
+          alpha: false
+        }}
+        onCreated={({ gl }) => {
+          gl.setClearColor(new THREE.Color(backgroundColor));
+          rendererRef.current = gl;
+        }}
+        style={{
+          position: "fixed",
+          inset: 0
+        }}
+      >
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} />
         <Suspense fallback={null}>
