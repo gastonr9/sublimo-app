@@ -83,7 +83,7 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
    */
   
   return (
-    <div className="flex flex-col h-full w-full p-2 bg-gray-800 items-center justify-center">
+    <div className="flex flex-col h-full w-full p-2  items-center justify-center">
       <button
         onClick={() => inputRef.current?.click()}
         className="py-1 px-3 bg-yellow-500 text-white rounded-lg m-2 text-sm"
