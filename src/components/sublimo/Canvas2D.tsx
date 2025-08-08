@@ -33,28 +33,15 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
   const { editor, onReady } = useFabricJSEditor();
   const tshirtImgUrl = `${import.meta.env.BASE_URL}models/tshirt.png`;
 
-  // Setear tamaño cuadrado del canvas cuando esté listo (sin fondo de guía en Fabric)
-  useEffect(() => {
-    if (!editor?.canvas) return;
-    editor.canvas.setWidth(CANVAS_SIZE);
-    editor.canvas.setHeight(CANVAS_SIZE);
-  }, [editor]);
-
   // Notifica al padre cuando el canvas cambia
   useEffect(() => {
     if (!editor?.canvas || !onImageChange) return;
     const handler = () => {
-      // Exportar a alta resolución usando un canvas temporal
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = EXPORT_SIZE;
-      tempCanvas.height = EXPORT_SIZE;
-      const tempCtx = tempCanvas.getContext('2d');
-      if (tempCtx) {
-        // Renderizar el contenido de fabric en el canvas temporal
-        const dataURL = editor.canvas.toDataURL({ format: 'png', multiplier: EXPORT_SIZE / CANVAS_SIZE });
-        // Notificar al padre con la textura de alta resolución
-        onImageChange(dataURL);
-      }
+      const dataURL = editor.canvas.toDataURL({
+        format: 'png',
+        multiplier: EXPORT_SIZE / CANVAS_SIZE,
+      });
+      onImageChange(dataURL);
     };
     editor.canvas.on('object:added', handler);
     editor.canvas.on('object:modified', handler);
