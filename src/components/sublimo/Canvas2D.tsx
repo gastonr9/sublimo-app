@@ -4,7 +4,7 @@
  * @module components/sublimo/Canvas2D
  */
 
-import React, { type ChangeEvent, useEffect, useRef, useState } from 'react';
+import  { type ChangeEvent, useEffect, useRef,  } from 'react';
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react';
 import { fabric } from 'fabric';
 
@@ -94,19 +94,7 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
    * @description Genera una imagen a partir del contenido actual del lienzo y la descarga.
    * Convierte el lienzo a un Data URL y simula un clic en un enlace para descargar la imagen.
    */
-  const generateImage = () => {
-    if (!editor?.canvas) return;
-    // Exportar a alta resolución usando un canvas temporal
-    const dataURL = editor.canvas.toDataURL({ format: 'png', multiplier: EXPORT_SIZE / CANVAS_SIZE });
-    if (dataURL) {
-      const a = document.createElement('a');
-      a.download = 'image.png';
-      a.href = dataURL;
-      a.click();
-      // en lugar de descargar, podemos subirla al server (fetch)
-    }
-  };
-
+  
   return (
     <div className="flex flex-col h-full w-full p-2 bg-gray-800 items-center justify-center">
       <button
@@ -136,11 +124,7 @@ function Canvas2D({ onImageChange }: { onImageChange?: (dataUrl: string) => void
           <FabricJSCanvas onReady={onReady} className='w-full h-full bg-transparent' />
         </div>
       </div>
-      <button
-        onClick={generateImage}
-        className="py-1 px-3 bg-indigo-500 text-white rounded-lg m-2 text-sm"
-        children="Generar archivo"
-      />
+     
     </div>
   );
 }

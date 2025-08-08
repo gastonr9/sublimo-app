@@ -6,10 +6,10 @@
 
 import { useState } from "react";
 import { useOrder } from "../../context/OrderContext";
-import remera from "/public/images/remera.png";
-import remeracolor from "/public/images/remeracolor.png";
-import remerahigh from "/public/images/remerahighlight.png";
-import remerablack from "/public/images/remerablack.png";
+import remera from "../../../public/images/remera.png";
+import remeracolor from "../../../public/images/remeracolor.png";
+import remerahigh from "../../../public/images/remerahighlight.png";
+import remerablack from "../../../public/images/remerablack.png";
 
 /**
  * @const {string[]} talles
