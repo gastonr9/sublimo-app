@@ -1,6 +1,5 @@
-const canvasDownloader = () => {
-  const canvas = document.querySelector<HTMLCanvasElement>("#canvas3d");
-  const dataURL = canvas!.toDataURL();
+const canvasDownloader = (canvas: HTMLCanvasElement) => {
+  const dataURL = canvas.toDataURL();
   const link = document.createElement("a");
 
   link.href = dataURL;
