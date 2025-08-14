@@ -5,6 +5,8 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
 
-  base: "/sublimo-app/", // solo si tu repo se llama así
-  // assetsInclude: ["**/*.glb"], // ✅ si querés importar con `?url`
-});
+build: {
+    outDir: "dist" // tells vite to output the build to a folder called docs
+  },
+  base: '/' // tells vite to request dependencies from the root domain
+})
