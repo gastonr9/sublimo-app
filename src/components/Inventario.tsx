@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { obtenerProductos, agregarProducto, actualizarStock } from '../services/inventario';
+import { obtenerProductos, agregarProducto, actualizarStock, coloresFijos } from '../services/inventario';
 import { Producto, Inventario } from '../types';
 
 const Inventario: React.FC = () => {
@@ -8,12 +8,12 @@ const Inventario: React.FC = () => {
     nombre: '',
     precio: 0,
     descripcion: '',
-    inventario: [{ talla: 'S', color: 'Rojo', stock: 0 }],
+    inventario: [{ talla: 'S', color: coloresFijos[0].nombre, stock: 0 }],
   });
   const [nuevaCombinacion, setNuevaCombinacion] = useState({
     idProducto: '',
     talla: 'S',
-    color: '',
+    color: coloresFijos[0].nombre,
     stock: 0,
   });
 
@@ -27,9 +27,15 @@ const Inventario: React.FC = () => {
 
   const handleAgregarProducto = async () => {
     try {
+      if (!nuevoProducto.inventario[0].color) throw new Error('Seleccione un color');
       await agregarProducto(nuevoProducto);
       setProductos(await obtenerProductos());
-      setNuevoProducto({ nombre: '', precio: 0, descripcion: '', inventario: [{ talla: 'S', color: 'Rojo', stock: 0 }] });
+      setNuevoProducto({
+        nombre: '',
+        precio: 0,
+        descripcion: '',
+        inventario: [{ talla: 'S', color: coloresFijos[0].nombre, stock: 0 }],
+      });
     } catch (error: any) {
       alert(error.message);
     }
@@ -41,7 +47,7 @@ const Inventario: React.FC = () => {
         .find((p) => p.id === idProducto)
         ?.inventario.find((i) => i.talla === talla && i.color === color);
       if (!item) throw new Error('Combinación no encontrada');
-      const cantidad = nuevoStock - item.stock; // Calcular diferencia
+      const cantidad = nuevoStock - item.stock;
       await actualizarStock(idProducto, talla, color, cantidad);
       setProductos(await obtenerProductos());
     } catch (error: any) {
@@ -51,14 +57,10 @@ const Inventario: React.FC = () => {
 
   const handleAgregarCombinacion = async () => {
     try {
-      await actualizarStock(
-        nuevaCombinacion.idProducto,
-        nuevaCombinacion.talla,
-        nuevaCombinacion.color,
-        nuevaCombinacion.stock
-      );
+      if (!nuevaCombinacion.color) throw new Error('Seleccione un color');
+      await actualizarStock(nuevaCombinacion.idProducto, nuevaCombinacion.talla, nuevaCombinacion.color, nuevaCombinacion.stock);
       setProductos(await obtenerProductos());
-      setNuevaCombinacion({ idProducto: '', talla: 'S', color: '', stock: 0 });
+      setNuevaCombinacion({ idProducto: '', talla: 'S', color: coloresFijos[0].nombre, stock: 0 });
     } catch (error: any) {
       alert(error.message);
     }
@@ -68,6 +70,7 @@ const Inventario: React.FC = () => {
     <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Inventario de Camisetas</h1>
 
+     
 
       {/* Lista de productos */}
       <div className="space-y-6">
@@ -122,13 +125,23 @@ const Inventario: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <input
-                  type="text"
-                  placeholder="Color"
-                  value={nuevaCombinacion.color}
-                  onChange={(e) => setNuevaCombinacion({ ...nuevaCombinacion, color: e.target.value })}
-                  className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="relative">
+                  <select
+                    value={nuevaCombinacion.color}
+                    onChange={(e) => setNuevaCombinacion({ ...nuevaCombinacion, color: e.target.value })}
+                    className="border rounded-lg p-2 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full appearance-none"
+                  >
+                    {coloresFijos.map((color) => (
+                      <option key={color.nombre} value={color.nombre}>
+                        {color.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  <div
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full border"
+                    style={{ backgroundColor: coloresFijos.find((c) => c.nombre === nuevaCombinacion.color)?.hex || '#000000' }}
+                  />
+                </div>
                 <input
                   type="number"
                   placeholder="Stock"
@@ -152,8 +165,7 @@ const Inventario: React.FC = () => {
         ))}
       </div>
 
-      
-      {/* Formulario para agregar producto */}
+       {/* Formulario para agregar producto */}
       <div className="bg-white shadow-md rounded-lg p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4 text-gray-700">Agregar Producto</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -178,6 +190,7 @@ const Inventario: React.FC = () => {
             onChange={(e) => setNuevoProducto({ ...nuevoProducto, descripcion: e.target.value })}
             className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:col-span-2"
           />
+          
         </div>
         <button
           onClick={handleAgregarProducto}

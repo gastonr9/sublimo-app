@@ -1,33 +1,22 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState } from 'react';
 
-type Order = {
-  talle: string;
-  producto: string;
-  color: string;
-  diseño: string;
-  precio: number;
-};
+interface Order {
+  talle?: string;
+  color?: string;
+}
 
-type OrderContextType = {
+interface OrderContextType {
   order: Order;
   setOrder: (order: Partial<Order>) => void;
-};
-
-const defaultOrder: Order = {
-  talle: "",
-  producto: "",
-  color: "#ffffff",
-  diseño: "",
-  precio: 0,
-};
+}
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
-  const [order, updateOrder] = useState<Order>(defaultOrder);
+export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [order, setOrderState] = useState<Order>({});
 
-  const setOrder = (newValues: Partial<Order>) => {
-    updateOrder((prev) => ({ ...prev, ...newValues }));
+  const setOrder = (newOrder: Partial<Order>) => {
+    setOrderState((prev) => ({ ...prev, ...newOrder }));
   };
 
   return (
@@ -39,6 +28,6 @@ export const OrderProvider = ({ children }: { children: React.ReactNode }) => {
 
 export const useOrder = () => {
   const context = useContext(OrderContext);
-  if (!context) throw new Error("useOrder debe usarse dentro de OrderProvider");
+  if (!context) throw new Error('useOrder debe usarse dentro de un OrderProvider');
   return context;
 };

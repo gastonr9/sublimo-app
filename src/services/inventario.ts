@@ -1,8 +1,23 @@
 import { db } from '../firebase/config';
 import { collection, addDoc, updateDoc, doc, getDocs, query, where, Timestamp } from 'firebase/firestore';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { Producto,  } from '../types';
+import { Producto, Inventario, Color } from '../types';
+
+// Lista de talles permitidos
+const tallesBase: string[] = ['S', 'M', 'L', 'XL', 'XXL'];
+
+// Lista fija de 10 colores predefinidos para el select en Inventario.tsx
+export const coloresFijos: Color[] = [
+  { nombre: 'Blanco', hex: '#ffffff' },
+  { nombre: 'Negro', hex: '#000000' },
+  { nombre: 'Rojo', hex: '#ff0000' },
+  { nombre: 'Azul', hex: '#0000ff' },
+  { nombre: 'Verde', hex: '#008000' },
+  { nombre: 'Amarillo', hex: '#ffff00' },
+  { nombre: 'Gris', hex: '#808080' },
+  { nombre: 'Rosa', hex: '#ff69b4' },
+  { nombre: 'Naranja', hex: '#ffa500' },
+  { nombre: 'Morado', hex: '#800080' },
+];
 
 export const agregarProducto = async (producto: Omit<Producto, 'id' | 'fechaActualizacion'>) => {
   const docRef = await addDoc(collection(db, 'productos'), {
@@ -32,10 +47,12 @@ export const actualizarStock = async (
   );
 
   if (itemIndex === -1) {
-    // Agregar nueva combinación si no existe
+    // Validar talla
+    if (!tallesBase.includes(talla)) throw new Error('Talla no válida');
+    // Validar que el color esté en la lista fija
+    if (!coloresFijos.some((c) => c.nombre === color)) throw new Error('Color no válido');
     inventario.push({ talla, color, stock: cantidad >= 0 ? cantidad : 0 });
   } else {
-    // Actualizar stock
     const nuevoStock = inventario[itemIndex].stock + cantidad;
     if (nuevoStock < 0) throw new Error('Stock insuficiente');
     inventario[itemIndex].stock = nuevoStock;
@@ -54,4 +71,48 @@ export const obtenerProductos = async (): Promise<Producto[]> => {
     ...doc.data(),
     fechaActualizacion: doc.data().fechaActualizacion.toDate(),
   })) as Producto[];
+};
+
+export const obtenerTallesDisponibles = async (): Promise<string[]> => {
+  const snapshot = await getDocs(collection(db, 'productos'));
+  const talles = new Set<string>();
+  snapshot.docs.forEach((doc) => {
+    const producto = doc.data() as Producto;
+    producto.inventario.forEach((item) => {
+      if (tallesBase.includes(item.talla)) talles.add(item.talla);
+    });
+  });
+  return Array.from(talles).sort();
+};
+
+export const obtenerColoresDisponibles = async (): Promise<Color[]> => {
+  const snapshot = await getDocs(collection(db, 'productos'));
+  const colores = new Set<string>();
+  snapshot.docs.forEach((doc) => {
+    const producto = doc.data() as Producto;
+    producto.inventario.forEach((item) => colores.add(item.color));
+  });
+  return Array.from(colores)
+    .map((nombre) => ({
+      nombre,
+      hex: getDefaultHex(nombre),
+    }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+};
+
+// Función para asignar hex por defecto basado en el nombre del color
+const getDefaultHex = (nombre: string): string => {
+  const coloresConocidos: { [key: string]: string } = {
+    Blanco: '#ffffff',
+    Negro: '#000000',
+    Rojo: '#ff0000',
+    Azul: '#0000ff',
+    Verde: '#008000',
+    Amarillo: '#ffff00',
+    Gris: '#808080',
+    Rosa: '#ff69b4',
+    Naranja: '#ffa500',
+    Morado: '#800080',
+  };
+  return coloresConocidos[nombre] || '#000000'; // Hex por defecto si no está en la lista
 };

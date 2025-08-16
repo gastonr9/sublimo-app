@@ -4,7 +4,7 @@
  * @module pages/Burgon
  */
 
-import SelectProductSection from "../components/burgon/SelectProductSection";
+import SelectProductSection from "../components/SelectProductSection";
 
 /**
  * @function Burgon
