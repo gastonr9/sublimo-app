@@ -1,5 +1,4 @@
 import { Route, Routes } from "react-router-dom";
-import Header from "./components/common/Header";
 import Home from "./pages/Home";
 import Generador from "./pages/Generador";
 import Articulos from "./pages/Articulos";
