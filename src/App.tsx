@@ -9,13 +9,13 @@ import Login from "./pages/Login";
 function App() {
   return (
     <>
-      <Header />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/generador" element={<Generador />} />
         <Route path="/articulos" element={<Articulos />} />
         <Route path="/burgon" element={<Burgon />} />
         <Route path="/login" element={<Login />} />
+
       </Routes>
     </>
   );
