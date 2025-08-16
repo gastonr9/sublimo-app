@@ -4,6 +4,7 @@ import Generador from "./pages/Generador";
 import Articulos from "./pages/Articulos";
 import Burgon from "./pages/Burgon";
 import Login from "./pages/Login";
+import Inventario from "./components/Inventario";
 
 function App() {
   return (
@@ -14,7 +15,7 @@ function App() {
         <Route path="/articulos" element={<Articulos />} />
         <Route path="/burgon" element={<Burgon />} />
         <Route path="/login" element={<Login />} />
-
+        <Route path="inventario" element={  <Inventario />} />
       </Routes>
     </>
   );
