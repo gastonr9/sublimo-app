@@ -43,14 +43,12 @@ const SelectProductSection: React.FC = () => {
           });
           setTalles(tallesUnicos);
 
-          // Filtrar colores disponibles para el talle seleccionado (o el primero si no hay talle)
-          const talleSeleccionado = order.talle || tallesUnicos[0];
-          if (talleSeleccionado && producto.inventario) {
-            const coloresPorTalle = producto.inventario
-              .filter((i) => i.talla === talleSeleccionado && i.stock > 0)
-              .map((i) => ({ nombre: i.color, hex: getDefaultHex(i.color) }))
+          // Mostrar todos los colores del inventario inicialmente (sin filtrar por talle)
+          if (producto.inventario) {
+            const todosLosColores = [...new Set(producto.inventario.map((i) => i.color))]
+              .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
               .sort((a, b) => a.nombre.localeCompare(b.nombre));
-            setColoresDisponibles(coloresPorTalle);
+            setColoresDisponibles(todosLosColores);
           } else {
             setColoresDisponibles([]);
           }
@@ -66,7 +64,24 @@ const SelectProductSection: React.FC = () => {
       }
     };
     cargarProductoSeleccionado();
-  }, [selectedProductoId, order.talle]);
+  }, [selectedProductoId]);
+
+  useEffect(() => {
+    // Filtrar colores solo cuando se seleccione un talle
+    if (selectedProduct && order.talle && selectedProduct.inventario) {
+      const coloresPorTalle = selectedProduct.inventario
+        .filter((i) => i.talla === order.talle && i.stock > 0)
+        .map((i) => ({ nombre: i.color, hex: getDefaultHex(i.color) }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      setColoresDisponibles(coloresPorTalle);
+    } else if (selectedProduct && selectedProduct.inventario) {
+      // Si no hay talle seleccionado, mostrar todos los colores del inventario
+      const todosLosColores = [...new Set(selectedProduct.inventario.map((i) => i.color))]
+        .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      setColoresDisponibles(todosLosColores);
+    }
+  }, [order.talle, selectedProduct]);
 
   const handleProductoSelect = (id: string) => {
     setSelectedProductoId(id);
@@ -75,13 +90,6 @@ const SelectProductSection: React.FC = () => {
 
   const handleTalleSelect = (talle: string) => {
     setOrder({ ...order, talle });
-    if (selectedProduct?.inventario) {
-      const coloresPorTalle = selectedProduct.inventario
-        .filter((i) => i.talla === talle && i.stock > 0)
-        .map((i) => ({ nombre: i.color, hex: getDefaultHex(i.color) }))
-        .sort((a, b) => a.nombre.localeCompare(b.nombre));
-      setColoresDisponibles(coloresPorTalle);
-    }
   };
 
   const handleColorSelect = (colorHex: string) => {
@@ -162,9 +170,9 @@ const SelectProductSection: React.FC = () => {
                 order.color === color.hex
                   ? 'bg-blue-100 border-blue-600'
                   : 'bg-white border-gray-300 hover:bg-gray-100'
-              }`}
-              onClick={() => handleColorSelect(color.hex)}
-              disabled={!selectedProduct}
+              } ${!order.talle ? 'opacity-50 cursor-not-allowed' : ''}`} // Opacidad y cursor cuando no hay talle
+              onClick={() => (order.talle ? handleColorSelect(color.hex) : null)} // Solo clickable si hay talle
+              disabled={!order.talle || !selectedProduct} // Deshabilitado hasta que se seleccione talle
             >
               <span className="text-gray-800">{color.nombre}</span>
               <div
@@ -176,7 +184,7 @@ const SelectProductSection: React.FC = () => {
         ) : selectedProduct && order.talle ? (
           <p className="text-gray-600">No hay colores disponibles para este talle</p>
         ) : (
-          <p className="text-gray-600">Selecciona un talle para ver colores</p>
+          <p className="text-gray-600">Selecciona un talle para habilitar colores</p>
         )}
       </div>
 
