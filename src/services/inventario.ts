@@ -130,6 +130,26 @@ export const obtenerColoresDisponibles = async (): Promise<Color[]> => {
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 };
 
+// Nueva función para obtener colores disponibles por talle
+export const obtenerColoresPorTalle = async (talle: string): Promise<Color[]> => {
+  const snapshot = await getDocs(collection(db, 'productos'));
+  const colores = new Set<string>();
+  snapshot.docs.forEach((doc) => {
+    const producto = doc.data() as Producto;
+    producto.inventario.forEach((item) => {
+      if (item.talla === talle && item.stock > 0) { // Solo colores con stock disponible
+        colores.add(item.color);
+      }
+    });
+  });
+  return Array.from(colores)
+    .map((nombre) => ({
+      nombre,
+      hex: getDefaultHex(nombre),
+    }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+};
+
 // Función para asignar hex por defecto basado en el nombre del color
 const getDefaultHex = (nombre: string): string => {
   const coloresConocidos: { [key: string]: string } = {

@@ -8,7 +8,7 @@ const Inventario: React.FC = () => {
     nombre: '',
     precio: 0,
     descripcion: '',
-    inventario: [{ talla: 'S', color: coloresFijos[0].nombre, stock: 0 }],
+    inventario: [], // Inventario vacío al crear un producto
   });
   const [nuevaCombinacion, setNuevaCombinacion] = useState({
     idProducto: '',
@@ -29,14 +29,13 @@ const Inventario: React.FC = () => {
 
   const handleAgregarProducto = async () => {
     try {
-      if (!nuevoProducto.inventario[0].color) throw new Error('Seleccione un color');
-      await agregarProducto(nuevoProducto);
+      await agregarProducto(nuevoProducto); // No se valida color, ya que no hay inventario inicial
       setProductos(await obtenerProductos());
       setNuevoProducto({
         nombre: '',
         precio: 0,
         descripcion: '',
-        inventario: [{ talla: 'S', color: coloresFijos[0].nombre, stock: 0 }],
+        inventario: [], // Reinicia con inventario vacío
       });
     } catch (error: any) {
       alert(error.message);
@@ -156,7 +155,6 @@ const Inventario: React.FC = () => {
             onChange={(e) => setNuevoProducto({ ...nuevoProducto, descripcion: e.target.value })}
             className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:col-span-2"
           />
-          
         </div>
         <button
           onClick={handleAgregarProducto}
@@ -245,7 +243,7 @@ const Inventario: React.FC = () => {
               </>
             )}
 
-            {/* Inventario ordenado por talla y color */}
+            {/* Inventario ordenado por talla y color con círculo de color */}
             <h4 className="text-md font-medium mt-4 mb-2 text-gray-700">Inventario</h4>
             <ul className="space-y-2">
               {[...producto.inventario].sort((a, b) => {
@@ -254,10 +252,11 @@ const Inventario: React.FC = () => {
                 if (ordenA !== ordenB) return ordenA - ordenB;
                 return a.color.localeCompare(b.color);
               }).map((item, index) => (
-                <li key={index} className="flex items-center gap-4">
+                <li key={index} className="flex items-center gap-2">
                   <span className="text-gray-600">
                     Talla: {item.talla}, Color: {item.color}
                   </span>
+                
                   <input
                     type="number"
                     value={item.stock}

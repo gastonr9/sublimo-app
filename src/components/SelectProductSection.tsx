@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOrder } from '../context/OrderContext';
-import { obtenerTallesDisponibles, obtenerColoresDisponibles } from '../services/inventario';
+import { obtenerTallesDisponibles, obtenerColoresDisponibles, obtenerColoresPorTalle } from '../services/inventario';
 import { Color } from '../types';
 import remera from '/public/images/remera.png';
 import remeracolor from '/public/images/remeracolor.png';
@@ -13,6 +13,7 @@ const SelectProductSection: React.FC = () => {
   const [colores, setColores] = useState<Color[]>([]);
   const [selectedTalle, setSelectedTalle] = useState(order.talle || '');
   const [selectedColor, setSelectedColor] = useState(order.color || '');
+  const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]); // Colores filtrados por talle
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -20,22 +21,39 @@ const SelectProductSection: React.FC = () => {
         obtenerTallesDisponibles(),
         obtenerColoresDisponibles(),
       ]);
-      setTalles(tallesData);
-      setColores(coloresData);
-      if (tallesData.length > 0 && !selectedTalle) setSelectedTalle(tallesData[0]);
-      if (coloresData.length > 0 && !selectedColor) setSelectedColor(coloresData[0].hex);
+      // Ordenar talles manualmente: S > M > L > XL > XXL
+      const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
+      const tallesOrdenados = tallesData.sort((a, b) => ordenTalles[a as keyof typeof ordenTalles] - ordenTalles[b as keyof typeof ordenTalles]);
+      setTalles(tallesOrdenados);
+      setColores(coloresData.sort((a, b) => a.nombre.localeCompare(b.nombre))); // Orden alfabético por nombre
+      if (tallesOrdenados.length > 0 && !selectedTalle) setSelectedTalle(tallesOrdenados[0]);
     };
     cargarDatos();
   }, []);
 
+  useEffect(() => {
+    const actualizarColoresPorTalle = async () => {
+      if (selectedTalle) {
+        const coloresPorTalle = await obtenerColoresPorTalle(selectedTalle);
+        setColoresDisponibles(coloresPorTalle.sort((a, b) => a.nombre.localeCompare(b.nombre))); // Orden alfabético
+      } else {
+        setColoresDisponibles([]);
+      }
+    };
+    actualizarColoresPorTalle();
+  }, [selectedTalle]);
+
   const handleTalleSelect = (talle: string) => {
     setSelectedTalle(talle);
-    setOrder({ talle });
+    setSelectedColor(''); // Resetea el color al cambiar talle
+    setOrder({ talle, color: '' });
   };
 
   const handleColorSelect = (colorHex: string) => {
-    setSelectedColor(colorHex);
-    setOrder({ color: colorHex });
+    if (coloresDisponibles.some((c) => c.hex === colorHex)) {
+      setSelectedColor(colorHex);
+      setOrder({ ...order, color: colorHex });
+    }
   };
 
   return (
@@ -68,23 +86,29 @@ const SelectProductSection: React.FC = () => {
       {/* Selector de color */}
       <div className="flex justify-center gap-4 mb-4 flex-wrap">
         {colores.length > 0 ? (
-          colores.map((color) => (
-            <button
-              key={color.hex}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${
-                selectedColor === color.hex
-                  ? 'bg-blue-100 border-blue-600'
-                  : 'bg-white border-gray-300 hover:bg-gray-100'
-              }`}
-              onClick={() => handleColorSelect(color.hex)}
-            >
-              <span className="text-gray-800">{color.nombre}</span>
-              <div
-                className="w-6 h-6 rounded-full border"
-                style={{ backgroundColor: color.hex }}
-              />
-            </button>
-          ))
+          colores.map((color) => {
+            const estaDisponible = coloresDisponibles.some((c) => c.hex === color.hex);
+            return (
+              <button
+                key={color.hex}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${
+                  selectedColor === color.hex
+                    ? 'bg-blue-100 border-blue-600'
+                    : estaDisponible
+                    ? 'bg-white border-gray-300 hover:bg-gray-100'
+                    : 'bg-gray-200 border-gray-400 cursor-not-allowed opacity-50'
+                }`}
+                onClick={() => (estaDisponible ? handleColorSelect(color.hex) : null)}
+                disabled={!estaDisponible}
+              >
+                <span className="text-gray-800">{color.nombre}</span>
+                <div
+                  className="w-6 h-6 rounded-full border"
+                  style={{ backgroundColor: color.hex }}
+                />
+              </button>
+            );
+          })
         ) : (
           <p className="text-gray-600">No hay colores disponibles</p>
         )}
