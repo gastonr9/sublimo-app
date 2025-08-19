@@ -47,9 +47,7 @@ export const actualizarStock = async (
   );
 
   if (itemIndex === -1) {
-    // Validar talla
     if (!tallesBase.includes(talla)) throw new Error('Talla no válida');
-    // Validar que el color esté en la lista fija
     if (!coloresFijos.some((c) => c.nombre === color)) throw new Error('Color no válido');
     inventario.push({ talla, color, stock: cantidad >= 0 ? cantidad : 0 });
   } else {
@@ -60,6 +58,14 @@ export const actualizarStock = async (
 
   await updateDoc(productoRef, {
     inventario,
+    fechaActualizacion: Timestamp.fromDate(new Date()),
+  });
+};
+
+export const actualizarProducto = async (id: string, producto: Partial<Producto>) => {
+  const productoRef = doc(db, 'productos', id);
+  await updateDoc(productoRef, {
+    ...producto,
     fechaActualizacion: Timestamp.fromDate(new Date()),
   });
 };
