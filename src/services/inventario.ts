@@ -1,3 +1,4 @@
+// src/services/inventario.ts
 import { db } from '../firebase/config';
 import { collection, addDoc, updateDoc, doc, getDocs, query, where, deleteDoc, Timestamp } from 'firebase/firestore';
 import { Producto, Inventario, Color } from '../types';
@@ -130,14 +131,13 @@ export const obtenerColoresDisponibles = async (): Promise<Color[]> => {
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 };
 
-// Nueva función para obtener colores disponibles por talle
 export const obtenerColoresPorTalle = async (talle: string): Promise<Color[]> => {
   const snapshot = await getDocs(collection(db, 'productos'));
   const colores = new Set<string>();
   snapshot.docs.forEach((doc) => {
     const producto = doc.data() as Producto;
     producto.inventario.forEach((item) => {
-      if (item.talla === talle && item.stock > 0) { // Solo colores con stock disponible
+      if (item.talla === talle && item.stock > 0) {
         colores.add(item.color);
       }
     });
@@ -148,6 +148,16 @@ export const obtenerColoresPorTalle = async (talle: string): Promise<Color[]> =>
       hex: getDefaultHex(nombre),
     }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
+};
+
+// Nueva función para obtener un producto por ID
+export const obtenerProductoPorId = async (id: string): Promise<Producto | null> => {
+  const snapshot = await getDocs(query(collection(db, 'productos'), where('__name__', '==', id)));
+  if (!snapshot.empty) {
+    const data = snapshot.docs[0].data() as Producto;
+    return { id: snapshot.docs[0].id, ...data, fechaActualizacion: data.fechaActualizacion.toDate() };
+  }
+  return null;
 };
 
 // Función para asignar hex por defecto basado en el nombre del color
