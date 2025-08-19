@@ -1,5 +1,5 @@
 import { db } from '../firebase/config';
-import { collection, addDoc, updateDoc, doc, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, getDocs, query, where, deleteDoc, Timestamp } from 'firebase/firestore';
 import { Producto, Inventario, Color } from '../types';
 
 // Lista de talles permitidos
@@ -66,6 +66,30 @@ export const actualizarProducto = async (id: string, producto: Partial<Producto>
   const productoRef = doc(db, 'productos', id);
   await updateDoc(productoRef, {
     ...producto,
+    fechaActualizacion: Timestamp.fromDate(new Date()),
+  });
+};
+
+export const eliminarProducto = async (id: string) => {
+  const productoRef = doc(db, 'productos', id);
+  await deleteDoc(productoRef);
+};
+
+export const eliminarCombinacion = async (idProducto: string, talla: string, color: string) => {
+  const productoRef = doc(db, 'productos', idProducto);
+  const productosSnapshot = await getDocs(
+    query(collection(db, 'productos'), where('__name__', '==', idProducto))
+  );
+
+  if (productosSnapshot.empty) throw new Error('Producto no encontrado');
+
+  const producto = productosSnapshot.docs[0].data() as Producto;
+  const inventario = producto.inventario.filter(
+    (item) => !(item.talla === talla && item.color === color)
+  );
+
+  await updateDoc(productoRef, {
+    inventario,
     fechaActualizacion: Timestamp.fromDate(new Date()),
   });
 };

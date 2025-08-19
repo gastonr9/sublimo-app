@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { obtenerProductos, agregarProducto, actualizarStock, coloresFijos, actualizarProducto } from '../services/inventario';
+import { obtenerProductos, agregarProducto, actualizarStock, coloresFijos, actualizarProducto, eliminarProducto, eliminarCombinacion } from '../services/inventario';
 import { Producto, Inventario } from '../types';
 
-// Nueva función para actualizar producto (debe implementarse en services/inventario.ts)
 const Inventario: React.FC = () => {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [nuevoProducto, setNuevoProducto] = useState({
@@ -103,6 +102,28 @@ const Inventario: React.FC = () => {
     setProductoEditado(null);
   };
 
+  const handleEliminarProducto = async (id: string) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.')) {
+      try {
+        await eliminarProducto(id);
+        setProductos(await obtenerProductos());
+      } catch (error: any) {
+        alert(error.message);
+      }
+    }
+  };
+
+  const handleEliminarCombinacion = async (idProducto: string, talla: string, color: string) => {
+    if (window.confirm(`¿Estás seguro de que deseas eliminar la combinación Talla: ${talla}, Color: ${color}? Esta acción no se puede deshacer.`)) {
+      try {
+        await eliminarCombinacion(idProducto, talla, color);
+        setProductos(await obtenerProductos());
+      } catch (error: any) {
+        alert(error.message);
+      }
+    }
+  };
+
   // Mapeo de tallas a un orden numérico
   const tallaOrden = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
 
@@ -135,29 +156,7 @@ const Inventario: React.FC = () => {
             onChange={(e) => setNuevoProducto({ ...nuevoProducto, descripcion: e.target.value })}
             className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:col-span-2"
           />
-          <div className="relative sm:col-span-2">
-            <select
-              value={nuevoProducto.inventario[0].color}
-              onChange={(e) =>
-                setNuevoProducto({
-                  ...nuevoProducto,
-                  inventario: [{ ...nuevoProducto.inventario[0], color: e.target.value }],
-                })
-              }
-              className="border rounded-lg p-2 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full appearance-none"
-            >
-              <option value="">Seleccione un color</option>
-              {coloresFijos.map((color) => (
-                <option key={color.nombre} value={color.nombre}>
-                  {color.nombre}
-                </option>
-              ))}
-            </select>
-            <div
-              className="absolute left-2 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full border"
-              style={{ backgroundColor: coloresFijos.find((c) => c.nombre === nuevoProducto.inventario[0].color)?.hex || '#000000' }}
-            />
-          </div>
+          
         </div>
         <button
           onClick={handleAgregarProducto}
@@ -229,12 +228,20 @@ const Inventario: React.FC = () => {
                     minute: '2-digit',
                   })}
                 </p>
-                <button
-                  onClick={() => handleEditarProducto(producto)}
-                  className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                >
-                  Editar
-                </button>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => handleEditarProducto(producto)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleEliminarProducto(producto.id)}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                  >
+                    Eliminar Producto
+                  </button>
+                </div>
               </>
             )}
 
@@ -260,6 +267,12 @@ const Inventario: React.FC = () => {
                     className="w-20 border rounded-lg p-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min="0"
                   />
+                  <button
+                    onClick={() => handleEliminarCombinacion(producto.id, item.talla, item.color)}
+                    className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 transition text-sm"
+                  >
+                    Eliminar
+                  </button>
                 </li>
               ))}
             </ul>
