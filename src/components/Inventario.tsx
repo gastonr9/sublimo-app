@@ -56,17 +56,24 @@ const Inventario: React.FC = () => {
     }
   };
 
-  const handleAgregarCombinacion = async () => {
-    try {
-      if (!nuevaCombinacion.color) throw new Error('Seleccione un color');
-      await actualizarStock(nuevaCombinacion.idProducto, nuevaCombinacion.talla, nuevaCombinacion.color, nuevaCombinacion.stock);
-      setProductos(await obtenerProductos());
-      setNuevaCombinacion({ idProducto: '', talla: 'S', color: coloresFijos[0].nombre, stock: 0 });
-    } catch (error: any) {
-      alert(error.message);
-    }
-  };
+const handleAgregarCombinacion = async (idProducto: string) => {
+  try {
+    if (!idProducto) throw new Error('Producto no seleccionado');
+    if (!nuevaCombinacion.color) throw new Error('Seleccione un color');
 
+    await actualizarStock(
+      idProducto,
+      nuevaCombinacion.talla,
+      nuevaCombinacion.color,
+      nuevaCombinacion.stock
+    );
+
+    setProductos(await obtenerProductos());
+    setNuevaCombinacion({ idProducto: '', talla: 'S', color: coloresFijos[0].nombre, stock: 0 });
+  } catch (error: any) {
+    alert(error.message);
+  }
+};
   const handleEditarProducto = (producto: Producto) => {
     setEditando({ ...editando, [producto.id]: true });
     setProductoEditado({
@@ -320,15 +327,13 @@ const Inventario: React.FC = () => {
                   min="0"
                 />
               </div>
-              <button
-                onClick={() => {
-                  setNuevaCombinacion({ ...nuevaCombinacion, idProducto: producto.id });
-                  handleAgregarCombinacion();
-                }}
-                className="mt-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-              >
-                Añadir Combinación
-              </button>
+             <button
+  onClick={() => handleAgregarCombinacion(producto.id)}
+  className="mt-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+>
+  Añadir Combinación
+</button>
+
             </div>
           </div>
         ))}

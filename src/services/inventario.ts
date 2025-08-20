@@ -1,12 +1,13 @@
 // src/services/inventario.ts
 import { db } from '../firebase/config';
-import { collection, addDoc, updateDoc, doc, getDocs, query, where, deleteDoc, Timestamp, getDoc  } from 'firebase/firestore';
-import { Producto, Inventario, Color } from '../types';
+import {
+  collection, addDoc, updateDoc, doc, getDocs, getDoc,
+  query, where, deleteDoc, Timestamp
+} from 'firebase/firestore';
+import { Producto, Color } from '../types';
 
-// Lista de talles permitidos
 const tallesBase: string[] = ['S', 'M', 'L', 'XL', 'XXL'];
 
-// Lista fija de 10 colores predefinidos para el select en Inventario.tsx
 export const coloresFijos: Color[] = [
   { nombre: 'Blanco', hex: '#ffffff' },
   { nombre: 'Negro', hex: '#000000' },
@@ -20,7 +21,9 @@ export const coloresFijos: Color[] = [
   { nombre: 'Morado', hex: '#800080' },
 ];
 
-export const agregarProducto = async (producto: Omit<Producto, 'id' | 'fechaActualizacion'>) => {
+export const agregarProducto = async (
+  producto: Omit<Producto, 'id' | 'fechaActualizacion'>
+) => {
   const docRef = await addDoc(collection(db, 'productos'), {
     ...producto,
     fechaActualizacion: Timestamp.fromDate(new Date()),
@@ -34,25 +37,25 @@ export const actualizarStock = async (
   color: string,
   cantidad: number
 ) => {
+  if (!idProducto) throw new Error('idProducto vacío');
+
   const productoRef = doc(db, 'productos', idProducto);
-  const productoSnap = await getDoc(productoRef);
+  const snap = await getDoc(productoRef);
+  if (!snap.exists()) throw new Error('Producto no encontrado');
 
-  if (!productoSnap.exists()) throw new Error('Producto no encontrado');
+  const producto = snap.data() as Producto;
+  const inventario = (producto.inventario || []).slice();
 
-  const producto = productoSnap.data() as Producto;
-  const inventario = producto.inventario || [];
-  const itemIndex = inventario.findIndex(
-    (item) => item.talla === talla && item.color === color
-  );
+  const idx = inventario.findIndex(i => i.talla === talla && i.color === color);
 
-  if (itemIndex === -1) {
+  if (idx === -1) {
     if (!tallesBase.includes(talla)) throw new Error('Talla no válida');
-    if (!coloresFijos.some((c) => c.nombre === color)) throw new Error('Color no válido');
-    inventario.push({ talla, color, stock: cantidad >= 0 ? cantidad : 0 });
+    if (!coloresFijos.some(c => c.nombre === color)) throw new Error('Color no válido');
+    inventario.push({ talla, color, stock: Math.max(0, cantidad) });
   } else {
-    const nuevoStock = inventario[itemIndex].stock + cantidad;
+    const nuevoStock = inventario[idx].stock + cantidad;
     if (nuevoStock < 0) throw new Error('Stock insuficiente');
-    inventario[itemIndex].stock = nuevoStock;
+    inventario[idx].stock = nuevoStock;
   }
 
   await updateDoc(productoRef, {
@@ -62,6 +65,7 @@ export const actualizarStock = async (
 };
 
 export const actualizarProducto = async (id: string, producto: Partial<Producto>) => {
+  if (!id) throw new Error('id vacío');
   const productoRef = doc(db, 'productos', id);
   await updateDoc(productoRef, {
     ...producto,
@@ -70,22 +74,19 @@ export const actualizarProducto = async (id: string, producto: Partial<Producto>
 };
 
 export const eliminarProducto = async (id: string) => {
-  const productoRef = doc(db, 'productos', id);
-  await deleteDoc(productoRef);
+  if (!id) throw new Error('id vacío');
+  await deleteDoc(doc(db, 'productos', id));
 };
 
 export const eliminarCombinacion = async (idProducto: string, talla: string, color: string) => {
+  if (!idProducto) throw new Error('idProducto vacío');
   const productoRef = doc(db, 'productos', idProducto);
-  const productosSnapshot = await getDocs(
-    getDoc(doc(db, 'productos', idProducto))
+  const snap = await getDoc(productoRef);
+  if (!snap.exists()) throw new Error('Producto no encontrado');
 
-  );
-
-  if (productosSnapshot.empty) throw new Error('Producto no encontrado');
-
-  const producto = productosSnapshot.docs[0].data() as Producto;
-  const inventario = producto.inventario.filter(
-    (item) => !(item.talla === talla && item.color === color)
+  const producto = snap.data() as Producto;
+  const inventario = (producto.inventario || []).filter(
+    i => !(i.talla === talla && i.color === color)
   );
 
   await updateDoc(productoRef, {
@@ -96,20 +97,25 @@ export const eliminarCombinacion = async (idProducto: string, talla: string, col
 
 export const obtenerProductos = async (): Promise<Producto[]> => {
   const snapshot = await getDocs(collection(db, 'productos'));
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    fechaActualizacion: doc.data().fechaActualizacion.toDate(),
-  })) as Producto[];
+  return snapshot.docs.map(d => {
+    const data = d.data() as any;
+    return {
+      id: d.id,
+      ...data,
+      fechaActualizacion: data.fechaActualizacion?.toDate
+        ? data.fechaActualizacion.toDate()
+        : new Date(),
+    } as Producto;
+  });
 };
 
 export const obtenerTallesDisponibles = async (): Promise<string[]> => {
   const snapshot = await getDocs(collection(db, 'productos'));
   const talles = new Set<string>();
-  snapshot.docs.forEach((doc) => {
-    const producto = doc.data() as Producto;
-    producto.inventario.forEach((item) => {
-      if (tallesBase.includes(item.talla)) talles.add(item.talla);
+  snapshot.docs.forEach(d => {
+    const p = d.data() as Producto;
+    (p.inventario || []).forEach(i => {
+      if (tallesBase.includes(i.talla)) talles.add(i.talla);
     });
   });
   return Array.from(talles).sort();
@@ -118,51 +124,45 @@ export const obtenerTallesDisponibles = async (): Promise<string[]> => {
 export const obtenerColoresDisponibles = async (): Promise<Color[]> => {
   const snapshot = await getDocs(collection(db, 'productos'));
   const colores = new Set<string>();
-  snapshot.docs.forEach((doc) => {
-    const producto = doc.data() as Producto;
-    producto.inventario.forEach((item) => colores.add(item.color));
+  snapshot.docs.forEach(d => {
+    const p = d.data() as Producto;
+    (p.inventario || []).forEach(i => colores.add(i.color));
   });
   return Array.from(colores)
-    .map((nombre) => ({
-      nombre,
-      hex: getDefaultHex(nombre),
-    }))
+    .map(nombre => ({ nombre, hex: getDefaultHex(nombre) }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 };
 
 export const obtenerColoresPorTalle = async (talle: string): Promise<Color[]> => {
   const snapshot = await getDocs(collection(db, 'productos'));
   const colores = new Set<string>();
-  snapshot.docs.forEach((doc) => {
-    const producto = doc.data() as Producto;
-    producto.inventario.forEach((item) => {
-      if (item.talla === talle && item.stock > 0) {
-        colores.add(item.color);
-      }
+  snapshot.docs.forEach(d => {
+    const p = d.data() as Producto;
+    (p.inventario || []).forEach(i => {
+      if (i.talla === talle && i.stock > 0) colores.add(i.color);
     });
   });
   return Array.from(colores)
-    .map((nombre) => ({
-      nombre,
-      hex: getDefaultHex(nombre),
-    }))
+    .map(nombre => ({ nombre, hex: getDefaultHex(nombre) }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 };
 
-// Nueva función para obtener un producto por ID
 export const obtenerProductoPorId = async (id: string): Promise<Producto | null> => {
-  const productoSnap = await getDoc(doc(db, 'productos', id));
-  if (productoSnap.exists()) {
-    const data = productoSnap.data() as Producto;
-    return { id: productoSnap.id, ...data, fechaActualizacion: data.fechaActualizacion.toDate() };
-  }
-  return null;
+  if (!id) return null;
+  const snap = await getDoc(doc(db, 'productos', id));
+  if (!snap.exists()) return null;
+  const data = snap.data() as any;
+  return {
+    id: snap.id,
+    ...data,
+    fechaActualizacion: data.fechaActualizacion?.toDate
+      ? data.fechaActualizacion.toDate()
+      : new Date(),
+  } as Producto;
 };
 
-
-// Función para asignar hex por defecto basado en el nombre del color
 const getDefaultHex = (nombre: string): string => {
-  const coloresConocidos: { [key: string]: string } = {
+  const m: Record<string, string> = {
     Blanco: '#ffffff',
     Negro: '#000000',
     Rojo: '#ff0000',
@@ -174,5 +174,5 @@ const getDefaultHex = (nombre: string): string => {
     Naranja: '#ffa500',
     Morado: '#800080',
   };
-  return coloresConocidos[nombre] || '#000000'; // Hex por defecto si no está en la lista
+  return m[nombre] || '#000000';
 };
