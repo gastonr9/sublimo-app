@@ -1,6 +1,6 @@
 // src/services/inventario.ts
 import { db } from '../firebase/config';
-import { collection, addDoc, updateDoc, doc, getDocs, query, where, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, getDocs, query, where, deleteDoc, Timestamp, getDoc  } from 'firebase/firestore';
 import { Producto, Inventario, Color } from '../types';
 
 // Lista de talles permitidos
@@ -35,14 +35,12 @@ export const actualizarStock = async (
   cantidad: number
 ) => {
   const productoRef = doc(db, 'productos', idProducto);
-  const productosSnapshot = await getDocs(
-    query(collection(db, 'productos'), where('__name__', '==', idProducto))
-  );
+  const productoSnap = await getDoc(productoRef);
 
-  if (productosSnapshot.empty) throw new Error('Producto no encontrado');
+  if (!productoSnap.exists()) throw new Error('Producto no encontrado');
 
-  const producto = productosSnapshot.docs[0].data() as Producto;
-  const inventario = producto.inventario;
+  const producto = productoSnap.data() as Producto;
+  const inventario = producto.inventario || [];
   const itemIndex = inventario.findIndex(
     (item) => item.talla === talla && item.color === color
   );
@@ -79,7 +77,8 @@ export const eliminarProducto = async (id: string) => {
 export const eliminarCombinacion = async (idProducto: string, talla: string, color: string) => {
   const productoRef = doc(db, 'productos', idProducto);
   const productosSnapshot = await getDocs(
-    query(collection(db, 'productos'), where('__name__', '==', idProducto))
+    getDoc(doc(db, 'productos', idProducto))
+
   );
 
   if (productosSnapshot.empty) throw new Error('Producto no encontrado');
@@ -152,13 +151,14 @@ export const obtenerColoresPorTalle = async (talle: string): Promise<Color[]> =>
 
 // Nueva función para obtener un producto por ID
 export const obtenerProductoPorId = async (id: string): Promise<Producto | null> => {
-  const snapshot = await getDocs(query(collection(db, 'productos'), where('__name__', '==', id)));
-  if (!snapshot.empty) {
-    const data = snapshot.docs[0].data() as Producto;
-    return { id: snapshot.docs[0].id, ...data, fechaActualizacion: data.fechaActualizacion.toDate() };
+  const productoSnap = await getDoc(doc(db, 'productos', id));
+  if (productoSnap.exists()) {
+    const data = productoSnap.data() as Producto;
+    return { id: productoSnap.id, ...data, fechaActualizacion: data.fechaActualizacion.toDate() };
   }
   return null;
 };
+
 
 // Función para asignar hex por defecto basado en el nombre del color
 const getDefaultHex = (nombre: string): string => {
