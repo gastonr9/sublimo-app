@@ -43,9 +43,9 @@ const SelectProductSection: React.FC = () => {
           });
           setTalles(tallesUnicos);
 
-          // Mostrar todos los colores del inventario inicialmente (sin filtrar por talle)
+          // Mostrar solo colores con stock > 0 del inventario inicialmente
           if (producto.inventario) {
-            const todosLosColores = [...new Set(producto.inventario.map((i) => i.color))]
+            const todosLosColores = [...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
               .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
               .sort((a, b) => a.nombre.localeCompare(b.nombre));
             setColoresDisponibles(todosLosColores);
@@ -67,7 +67,7 @@ const SelectProductSection: React.FC = () => {
   }, [selectedProductoId]);
 
   useEffect(() => {
-    // Filtrar colores solo cuando se seleccione un talle
+    // Filtrar colores solo cuando se seleccione un talle, mostrando solo los con stock > 0
     if (selectedProduct && order.talle && selectedProduct.inventario) {
       const coloresPorTalle = selectedProduct.inventario
         .filter((i) => i.talla === order.talle && i.stock > 0)
@@ -75,8 +75,8 @@ const SelectProductSection: React.FC = () => {
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
       setColoresDisponibles(coloresPorTalle);
     } else if (selectedProduct && selectedProduct.inventario) {
-      // Si no hay talle seleccionado, mostrar todos los colores del inventario
-      const todosLosColores = [...new Set(selectedProduct.inventario.map((i) => i.color))]
+      // Si no hay talle seleccionado, mostrar todos los colores con stock > 0
+      const todosLosColores = [...new Set(selectedProduct.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
         .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
       setColoresDisponibles(todosLosColores);
