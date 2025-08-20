@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { obtenerProductos, agregarProducto, actualizarStock, coloresFijos, actualizarProducto, eliminarProducto, eliminarCombinacion } from '../services/inventario';
-import { Producto, Inventario } from '../types';
+import { type Producto, type Inventario } from '../types';
 
 const Inventario: React.FC = () => {
   const [productos, setProductos] = useState<Producto[]>([]);
