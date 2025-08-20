@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { obtenerProductos, agregarProducto, actualizarStock, coloresFijos, actualizarProducto, eliminarProducto, eliminarCombinacion } from '../services/inventario';
+import { obtenerProductos, agregarProducto, actualizarStock, coloresFijos, actualizarProducto, eliminarProducto, eliminarCombinacion } from '../services/exinventario';
 import { type Producto, type Inventario } from '../types';
 
 const Inventario: React.FC = () => {
