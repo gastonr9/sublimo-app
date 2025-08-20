@@ -145,6 +145,7 @@ const Inventario: React.FC = () => {
             type="number"
             placeholder="Precio"
             value={nuevoProducto.precio}
+            onFocus={(e) => e.target.value === '0' && e.target.select()} // Selecciona todo al hacer clic
             onChange={(e) => setNuevoProducto({ ...nuevoProducto, precio: parseFloat(e.target.value) || 0 })}
             className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -183,6 +184,7 @@ const Inventario: React.FC = () => {
                   <input
                     type="number"
                     value={productoEditado?.precio || 0}
+                    onFocus={(e) => e.target.value === '0' && e.target.select()} // Selecciona todo al hacer clic
                     onChange={(e) =>
                       setProductoEditado({ ...productoEditado!, precio: parseFloat(e.target.value) || 0 })
                     }
@@ -256,10 +258,10 @@ const Inventario: React.FC = () => {
                   <span className="text-gray-600">
                     Talla: {item.talla}, Color: {item.color}
                   </span>
-                
                   <input
                     type="number"
                     value={item.stock}
+                    onFocus={(e) => e.target.value === '0' && e.target.select()} // Selecciona todo al hacer clic
                     onChange={(e) =>
                       handleActualizarStock(producto.id, item.talla, item.color, parseInt(e.target.value) || 0)
                     }
@@ -312,6 +314,7 @@ const Inventario: React.FC = () => {
                   type="number"
                   placeholder="Stock"
                   value={nuevaCombinacion.stock}
+                  onFocus={(e) => e.target.value === '0' && e.target.select()} // Selecciona todo al hacer clic
                   onChange={(e) => setNuevaCombinacion({ ...nuevaCombinacion, stock: parseInt(e.target.value) || 0 })}
                   className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="0"
