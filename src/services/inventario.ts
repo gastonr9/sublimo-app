@@ -4,7 +4,7 @@ import {
   collection, addDoc, updateDoc, doc, getDocs, getDoc,
   query, where, deleteDoc, Timestamp
 } from 'firebase/firestore';
-import { Producto, Color } from '../types';
+import type { Producto, Color } from '../types';
 
 const tallesBase: string[] = ['S', 'M', 'L', 'XL', 'XXL'];
 
