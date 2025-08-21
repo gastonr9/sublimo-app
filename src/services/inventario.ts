@@ -2,7 +2,8 @@
 import { supabase } from "../lib/supabaseClient";
 
 import { Producto, Inventario, Color } from '../types/types';
-
+console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
+console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY);
 // =========================
 // Productos
 // =========================
