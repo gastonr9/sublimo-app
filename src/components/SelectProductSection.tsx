@@ -127,7 +127,6 @@ const SelectProductSection: React.FC = () => {
           onChange={(e) => handleProductoSelect(e.target.value)}
           className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">Selecciona un producto</option>
           {productos.map((producto) => (
             <option key={producto.id} value={producto.id}>
               {producto.nombre} - ${producto.precio.toFixed(2)}
