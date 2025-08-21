@@ -167,6 +167,17 @@ const Inventario: React.FC = () => {
   // Orden de tallas
   const tallaOrden = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
 
+  // Validaciones
+  const isAgregarProductoDisabled =
+    !nuevoProducto.nombre.trim() ||
+    nuevoProducto.precio === 0 ||
+    !nuevoProducto.descripcion.trim();
+
+  const isAgregarCombinacionDisabled =
+    nuevaCombinacion.stock === 0 ||
+    !nuevaCombinacion.talla ||
+    !nuevaCombinacion.color;
+
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
@@ -192,7 +203,7 @@ const Inventario: React.FC = () => {
             type="number"
             placeholder="Precio"
             value={nuevoProducto.precio}
-            onFocus={(e) => e.target.value === "0" && e.target.select()} // Borra 0 al enfocar
+            onFocus={(e) => e.target.value === "0" && e.target.select()}
             onChange={(e) =>
               setNuevoProducto({
                 ...nuevoProducto,
@@ -216,7 +227,10 @@ const Inventario: React.FC = () => {
         </div>
         <button
           onClick={handleAgregarProducto}
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg"
+          className={`mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg ${
+            isAgregarProductoDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
+          }`}
+          disabled={isAgregarProductoDisabled}
         >
           Agregar Producto
         </button>
@@ -242,7 +256,7 @@ const Inventario: React.FC = () => {
                 <input
                   type="number"
                   value={productoEditado?.precio || 0}
-                  onFocus={(e) => e.target.value === "0" && e.target.select()} // Borra 0 al enfocar
+                  onFocus={(e) => e.target.value === "0" && e.target.select()}
                   onChange={(e) =>
                     setProductoEditado({
                       ...productoEditado!,
@@ -313,7 +327,7 @@ const Inventario: React.FC = () => {
                     <input
                       type="number"
                       value={item.stock}
-                      onFocus={(e) => e.target.value === "0" && e.target.select()} // Borra 0 al enfocar
+                      onFocus={(e) => e.target.value === "0" && e.target.select()}
                       onChange={(e) =>
                         handleActualizarStock(
                           producto.id,
@@ -374,7 +388,7 @@ const Inventario: React.FC = () => {
               <input
                 type="number"
                 value={nuevaCombinacion.stock}
-                onFocus={(e) => e.target.value === "0" && e.target.select()} // Borra 0 al enfocar
+                onFocus={(e) => e.target.value === "0" && e.target.select()}
                 onChange={(e) =>
                   setNuevaCombinacion({
                     ...nuevaCombinacion,
@@ -391,7 +405,10 @@ const Inventario: React.FC = () => {
                   });
                   handleAgregarCombinacion();
                 }}
-                className="ml-2 bg-green-600 text-white px-4 py-2 rounded-lg"
+                className={`ml-2 bg-green-600 text-white px-4 py-2 rounded-lg ${
+                  isAgregarCombinacionDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"
+                }`}
+                disabled={isAgregarCombinacionDisabled}
               >
                 Añadir
               </button>
