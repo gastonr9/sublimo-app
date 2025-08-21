@@ -83,6 +83,7 @@ const Inventario: React.FC = () => {
 
   const handleAgregarCombinacion = async () => {
     try {
+      if (!nuevaCombinacion.idProducto) throw new Error("Seleccione un producto");
       if (!nuevaCombinacion.color) throw new Error("Seleccione un color");
       await actualizarStock(
         nuevaCombinacion.idProducto,
@@ -174,9 +175,10 @@ const Inventario: React.FC = () => {
     !nuevoProducto.descripcion.trim();
 
   const isAgregarCombinacionDisabled =
-    nuevaCombinacion.stock === 0 ||
+    nuevaCombinacion.stock <= 0 ||
     !nuevaCombinacion.talla ||
-    !nuevaCombinacion.color;
+    !nuevaCombinacion.color ||
+    !nuevaCombinacion.idProducto;
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
@@ -210,6 +212,7 @@ const Inventario: React.FC = () => {
                 precio: parseFloat(e.target.value) || 0,
               })
             }
+            min="0"
             className="border rounded-lg p-2"
           />
           <input
@@ -263,6 +266,7 @@ const Inventario: React.FC = () => {
                       precio: parseFloat(e.target.value) || 0,
                     })
                   }
+                  min="0"
                   className="border rounded-lg p-2"
                 />
                 <input
@@ -336,6 +340,7 @@ const Inventario: React.FC = () => {
                           parseInt(e.target.value) || 0
                         )
                       }
+                      min="0"
                       className="border rounded-lg p-1 w-20"
                     />
                     <button
@@ -354,65 +359,68 @@ const Inventario: React.FC = () => {
                 ))}
             </ul>
 
-            {/* Agregar combinación */}
-            <div className="mt-4">
-              <h4 className="font-semibold">Agregar Combinación</h4>
-              <select
-                value={nuevaCombinacion.talla}
-                onChange={(e) =>
-                  setNuevaCombinacion({
-                    ...nuevaCombinacion,
-                    talla: e.target.value,
-                  })
-                }
-                className="border rounded-lg p-2"
-              >
-                {["S", "M", "L", "XL", "XXL"].map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
-              <select
-                value={nuevaCombinacion.color}
-                onChange={(e) =>
-                  setNuevaCombinacion({
-                    ...nuevaCombinacion,
-                    color: e.target.value,
-                  })
-                }
-                className="border rounded-lg p-2 ml-2"
-              >
-                {coloresFijos.map((c) => (
-                  <option key={c.nombre}>{c.nombre}</option>
-                ))}
-              </select>
-              <input
-                type="number"
-                value={nuevaCombinacion.stock}
-                onFocus={(e) => e.target.value === "0" && e.target.select()}
-                onChange={(e) =>
-                  setNuevaCombinacion({
-                    ...nuevaCombinacion,
-                    stock: parseInt(e.target.value) || 0,
-                  })
-                }
-                className="border rounded-lg p-2 ml-2 w-20"
-              />
-              <button
-                onClick={() => {
-                  setNuevaCombinacion({
-                    ...nuevaCombinacion,
-                    idProducto: producto.id,
-                  });
-                  handleAgregarCombinacion();
-                }}
-                className={`ml-2 bg-green-600 text-white px-4 py-2 rounded-lg ${
-                  isAgregarCombinacionDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"
-                }`}
-                disabled={isAgregarCombinacionDisabled}
-              >
-                Añadir
-              </button>
-            </div>
+           {/* Agregar combinación */}
+<div className="mt-4">
+  <h4 className="font-semibold">Agregar Combinación</h4>
+  <select
+    value={nuevaCombinacion.talla}
+    onChange={(e) =>
+      setNuevaCombinacion({
+        ...nuevaCombinacion,
+        talla: e.target.value,
+        idProducto: producto.id, // 🔥 aseguramos que siempre tenga producto
+      })
+    }
+    className="border rounded-lg p-2"
+  >
+    {["S", "M", "L", "XL", "XXL"].map((t) => (
+      <option key={t}>{t}</option>
+    ))}
+  </select>
+  <select
+    value={nuevaCombinacion.color}
+    onChange={(e) =>
+      setNuevaCombinacion({
+        ...nuevaCombinacion,
+        color: e.target.value,
+        idProducto: producto.id, // 🔥
+      })
+    }
+    className="border rounded-lg p-2 ml-2"
+  >
+    {coloresFijos.map((c) => (
+      <option key={c.nombre}>{c.nombre}</option>
+    ))}
+  </select>
+  <input
+    type="number"
+    value={nuevaCombinacion.stock}
+    onFocus={(e) => e.target.value === "0" && e.target.select()}
+    onChange={(e) => {
+      const newStock = Math.max(0, parseInt(e.target.value) || 0);
+      console.log("Nuevo stock:", newStock);
+      setNuevaCombinacion({
+        ...nuevaCombinacion,
+        stock: newStock,
+        idProducto: producto.id, // 🔥
+      });
+    }}
+    min="0"
+    className="border rounded-lg p-2 ml-2 w-20"
+  />
+  <button
+    onClick={handleAgregarCombinacion}
+    className={`ml-2 bg-green-600 text-white px-4 py-2 rounded-lg ${
+      isAgregarCombinacionDisabled
+        ? "opacity-50 cursor-not-allowed"
+        : "hover:bg-green-700"
+    }`}
+    disabled={isAgregarCombinacionDisabled}
+  >
+    Añadir
+  </button>
+</div>
+
           </div>
         ))}
       </div>
