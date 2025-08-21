@@ -1,4 +1,4 @@
-import { supabase } from '../supabase/client'
+import { supabase } from '../supabaseClient/supabaseClient'
 
 export const obtenerProductos = async () => {
   const { data, error } = await supabase.from('productos').select('*').order('fecha_actualizacion', { ascending: false })

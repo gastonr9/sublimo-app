@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOrder } from '../context/OrderContext';
-import { obtenerProductos, obtenerProductoPorId } from '../services/exinventario';
-import { Producto, Color } from '../types';
+import { obtenerProductos, obtenerProductoPorId } from '../services/inventario';
+import { Producto, Color } from '../types/types';
 import remera from '/public/images/remera.png';
 import remeracolor from '/public/images/remeracolor.png';
 import remerahigh from '/public/images/remerahighlight.png';
