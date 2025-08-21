@@ -224,10 +224,10 @@ const SelectProductSection: React.FC = () => {
       {/* Nombre y precio sincronizados */}
       <div className="text-center mb-4">
         <h3 className="text-lg font-semibold text-gray-800">
-          {selectedProduct?.nombre || 'Remera Hombre'}
+          {selectedProduct?.nombre || ''}
         </h3>
         <p className="text-xl font-bold text-gray-800">
-          ${selectedProduct?.precio.toFixed(2) || '650'}
+          ${selectedProduct?.precio.toFixed(2) || ''}
         </p>
       </div>
 

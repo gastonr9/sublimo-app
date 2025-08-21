@@ -1,4 +1,3 @@
-// src/components/Inventario.tsx
 import React, { useEffect, useState } from "react";
 import {
   obtenerProductos,
@@ -7,10 +6,9 @@ import {
   actualizarProducto,
   eliminarProducto,
   eliminarCombinacion,
-  obtenerColoresFijos, // ✅ ahora sí existe
+  obtenerColoresFijos,
 } from "../services/inventario";
 import { Producto, Color } from "../types/types";
-
 
 const Inventario: React.FC = () => {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -194,6 +192,7 @@ const Inventario: React.FC = () => {
             type="number"
             placeholder="Precio"
             value={nuevoProducto.precio}
+            onFocus={(e) => e.target.value === "0" && e.target.select()} // Borra 0 al enfocar
             onChange={(e) =>
               setNuevoProducto({
                 ...nuevoProducto,
@@ -243,6 +242,7 @@ const Inventario: React.FC = () => {
                 <input
                   type="number"
                   value={productoEditado?.precio || 0}
+                  onFocus={(e) => e.target.value === "0" && e.target.select()} // Borra 0 al enfocar
                   onChange={(e) =>
                     setProductoEditado({
                       ...productoEditado!,
@@ -313,6 +313,7 @@ const Inventario: React.FC = () => {
                     <input
                       type="number"
                       value={item.stock}
+                      onFocus={(e) => e.target.value === "0" && e.target.select()} // Borra 0 al enfocar
                       onChange={(e) =>
                         handleActualizarStock(
                           producto.id,
@@ -373,6 +374,7 @@ const Inventario: React.FC = () => {
               <input
                 type="number"
                 value={nuevaCombinacion.stock}
+                onFocus={(e) => e.target.value === "0" && e.target.select()} // Borra 0 al enfocar
                 onChange={(e) =>
                   setNuevaCombinacion({
                     ...nuevaCombinacion,
