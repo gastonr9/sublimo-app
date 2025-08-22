@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Inventario from "./Inventario";
-import Designs from "./Designs";
+import Designs from "./Disenos";
 // import Usuarios from "./Usuarios";
 
 const AdminControl: React.FC = () => {

@@ -5,7 +5,7 @@ import { Producto, Inventario, Color } from '../types/types';
 // =========================
 // Productos
 // =========================
-export const obtenerProductos = async (): Promise<Producto[]> => {
+export const getProductos = async (): Promise<Producto[]> => {
   const { data, error } = await supabase
     .from('productos')
     .select('*, inventario(*)')
@@ -16,7 +16,7 @@ export const obtenerProductos = async (): Promise<Producto[]> => {
   return data as Producto[];
 };
 
-export const obtenerProductoPorId = async (id: string): Promise<Producto | null> => {
+export const getProductoPorId = async (id: string): Promise<Producto | null> => {
   const { data, error } = await supabase
     .from('productos')
     .select('*, inventario(*)')
@@ -30,7 +30,7 @@ export const obtenerProductoPorId = async (id: string): Promise<Producto | null>
   return data as Producto;
 };
 
-export const agregarProducto = async (producto: Omit<Producto, 'id' | 'fechaActualizacion' | 'inventario'>) => {
+export const addProducto = async (producto: Omit<Producto, 'id' | 'fechaActualizacion' | 'inventario'>) => {
   const { data, error } = await supabase
     .from('productos')
     .insert([producto])
@@ -41,7 +41,7 @@ export const agregarProducto = async (producto: Omit<Producto, 'id' | 'fechaActu
   return data.id;
 };
 
-export const actualizarProducto = async (id: string, producto: Partial<Producto>) => {
+export const uploadProducto = async (id: string, producto: Partial<Producto>) => {
   const { error } = await supabase
     .from('productos')
     .update({
@@ -53,7 +53,7 @@ export const actualizarProducto = async (id: string, producto: Partial<Producto>
   if (error) throw error;
 };
 
-export const eliminarProducto = async (id: string) => {
+export const deleteProducto = async (id: string) => {
   const { error } = await supabase.from('productos').delete().eq('id', id);
   if (error) throw error;
 };
@@ -61,7 +61,7 @@ export const eliminarProducto = async (id: string) => {
 // =========================
 // Inventario (talle + color)
 // =========================
-export const actualizarStock = async (
+export const uploadStock = async (
   productoId: string,
   talla: string,
   color: string,
@@ -101,7 +101,7 @@ export const actualizarStock = async (
   }
 };
 
-export const eliminarCombinacion = async (
+export const deleteCombinacion = async (
   productoId: string,
   talla: string,
   color: string
@@ -119,14 +119,14 @@ export const eliminarCombinacion = async (
 // =========================
 // Colores
 // =========================
-export const obtenerColoresDisponibles = async (): Promise<Color[]> => {
+export const getColoresDisponibles = async (): Promise<Color[]> => {
   const { data, error } = await supabase.from('colores_fijos').select('*');
   if (error) throw error;
   return data as Color[];
 };
 
 // Obtener colores válidos para un talle específico
-export const obtenerColoresPorTalle = async (
+export const getColoresPorTalle = async (
   productoId: string,
   talla: string
 ): Promise<Color[]> => {
@@ -152,7 +152,7 @@ export const obtenerColoresPorTalle = async (
 // =========================
 // Talles
 // =========================
-export const obtenerTallesDisponibles = async (
+export const getTallesDisponibles = async (
   productoId: string
 ): Promise<string[]> => {
   const { data, error } = await supabase
@@ -166,7 +166,7 @@ export const obtenerTallesDisponibles = async (
   return Array.from(new Set(data.map((i) => i.talla))).sort();
 };
 
-export const obtenerColoresFijos = async (): Promise<Color[]> => {
+export const getColoresFijos = async (): Promise<Color[]> => {
   const { data, error } = await supabase
     .from("colores_fijos")
     .select("nombre, hex");

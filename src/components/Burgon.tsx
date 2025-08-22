@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useOrder } from '../context/OrderContext';
-import { obtenerProductos, obtenerProductoPorId } from '../services/inventario';
+import { getProductos, getProductoPorId } from '../services/inventario';
 import { Producto, Color } from '../types/types';
 import remera from '/public/images/remera.png';
 import remeracolor from '/public/images/remeracolor.png';
 import remerahigh from '/public/images/remerahighlight.png';
 import remerablack from '/public/images/remerablack.png';
 
-const SelectProductSection: React.FC = () => {
+const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [selectedProductoId, setSelectedProductoId] = useState(order.productoId || '');
@@ -16,12 +16,12 @@ const SelectProductSection: React.FC = () => {
 
   useEffect(() => {
     const cargarProductos = async () => {
-      const productosData = await obtenerProductos();
+      const productosData = await getProductos();
       setProductos(productosData);
       if (productosData.length > 0 && !selectedProductoId) {
         const firstProductId = productosData[0].id;
         setSelectedProductoId(firstProductId);
-        const producto = await obtenerProductoPorId(firstProductId);
+        const producto = await getProductoPorId(firstProductId);
         if (producto) setSelectedProduct(producto);
       }
     };
@@ -31,7 +31,7 @@ const SelectProductSection: React.FC = () => {
   useEffect(() => {
     const cargarProductoSeleccionado = async () => {
       if (selectedProductoId) {
-        const producto = await obtenerProductoPorId(selectedProductoId);
+        const producto = await getProductoPorId(selectedProductoId);
         if (producto) {
           setSelectedProduct(producto);
           setOrder({ ...order, productoId: selectedProductoId });
@@ -248,4 +248,4 @@ const SelectProductSection: React.FC = () => {
   );
 };
 
-export default SelectProductSection;
+export default Burgon;

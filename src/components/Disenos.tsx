@@ -1,34 +1,34 @@
 import React, { useEffect, useState } from "react";
 import {
-  getDesigns,
-  addDesign,
-  updateDesign,
-  deleteDesign,
-  uploadDesignImage,
-  Design,
-} from "../services/designs";
+  getDisenos,
+  addDisenos,
+  updateDisenos,
+  deleteDisenos,
+  uploadDisenosImage,
+  Disenos,
+} from "../services/disenos";
 
-const Designs: React.FC = () => {
-  const [designs, setDesigns] = useState<Design[]>([]);
-  const [newDesign, setNewDesign] = useState({ nombre: "", imagen_url: "", stock: 0 });
+const Disenos: React.FC = () => {
+  const [designs, setDisenos] = useState<Disenos[]>([]);
+  const [newDisenos, setNewDisenos] = useState({ nombre: "", imagen_url: "", stock: 0 });
   const [file, setFile] = useState<File | null>(null);
 
   // Cargar diseños
   useEffect(() => {
-    const fetchDesigns = async () => {
-      const data = await getDesigns();
-      setDesigns(data);
+    const fetchDisenos = async () => {
+      const data = await getDisenos();
+      setDisenos(data);
     };
-    fetchDesigns();
+    fetchDisenos();
   }, []);
 
   const handleUpload = async () => {
     if (!file) return alert("Selecciona una imagen primero");
     try {
-      const imageUrl = await uploadDesignImage(file);
-      await addDesign({ ...newDesign, imagen_url: imageUrl });
-      setDesigns(await getDesigns());
-      setNewDesign({ nombre: "", imagen_url: "", stock: 0 });
+      const imageUrl = await uploadDisenosImage(file);
+      await addDisenos({ ...newDisenos, imagen_url: imageUrl });
+      setDisenos(await getDisenos());
+      setNewDisenos({ nombre: "", imagen_url: "", stock: 0 });
       setFile(null);
     } catch (error: any) {
       alert(error.message);
@@ -37,19 +37,19 @@ const Designs: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (window.confirm("¿Eliminar este diseño?")) {
-      await deleteDesign(id);
-      setDesigns(await getDesigns());
+      await deleteDisenos(id);
+      setDisenos(await getDisenos());
     }
   };
 
   const handleUpdateStock = async (id: string, stock: number) => {
-    await updateDesign(id, { stock });
-    setDesigns(await getDesigns());
+    await updateDisenos(id, { stock });
+    setDisenos(await getDisenos());
   };
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Diseños</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Disenos</h1>
 
       {/* Subir diseño */}
       <div className="bg-white shadow-md rounded-lg p-6 mb-8">
@@ -57,15 +57,15 @@ const Designs: React.FC = () => {
         <input
           type="text"
           placeholder="Nombre del diseño"
-          value={newDesign.nombre}
-          onChange={(e) => setNewDesign({ ...newDesign, nombre: e.target.value })}
+          value={newDisenos.nombre}
+          onChange={(e) => setNewDisenos({ ...newDisenos, nombre: e.target.value })}
           className="border rounded-lg p-2 mb-2 w-full"
         />
         <input
           type="number"
           placeholder="Stock inicial"
-          value={newDesign.stock}
-          onChange={(e) => setNewDesign({ ...newDesign, stock: parseInt(e.target.value) || 0 })}
+          value={newDisenos.stock}
+          onChange={(e) => setNewDisenos({ ...newDisenos, stock: parseInt(e.target.value) || 0 })}
           className="border rounded-lg p-2 mb-2 w-full"
         />
         <input
@@ -107,4 +107,4 @@ const Designs: React.FC = () => {
   );
 };
 
-export default Designs;
+export default Disenos;

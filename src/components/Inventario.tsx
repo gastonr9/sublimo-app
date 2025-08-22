@@ -1,13 +1,13 @@
 //src/components/Inventario.tsx
 import React, { useEffect, useState } from "react";
 import {
-  obtenerProductos,
-  agregarProducto,
-  actualizarStock,
-  actualizarProducto,
-  eliminarProducto,
-  eliminarCombinacion,
-  obtenerColoresFijos,
+  getProductos,
+  addProducto,
+  uploadStock,
+  uploadProducto,
+  deleteProducto,
+  deleteCombinacion,
+  getColoresFijos,
 } from "../services/inventario";
 import { Producto, Color } from "../types/types";
 
@@ -36,10 +36,10 @@ const Inventario: React.FC = () => {
   // === Cargar productos y colores ===
   useEffect(() => {
     const cargarDatos = async () => {
-      const productosData = await obtenerProductos();
+      const productosData = await getProductos();
       setProductos(productosData);
 
-      const coloresData = await obtenerColoresFijos();
+      const coloresData = await getColoresFijos();
       setColoresFijos(coloresData);
 
       if (coloresData.length > 0) {
@@ -54,8 +54,8 @@ const Inventario: React.FC = () => {
 
   const handleAgregarProducto = async () => {
     try {
-      await agregarProducto(nuevoProducto);
-      setProductos(await obtenerProductos());
+      await addProducto(nuevoProducto);
+      setProductos(await getProductos());
       setNuevoProducto({ nombre: "", precio: 0, descripcion: "" });
     } catch (error: any) {
       alert(error.message);
@@ -75,8 +75,8 @@ const Inventario: React.FC = () => {
       );
       if (!item) throw new Error("Combinación no encontrada");
       const cantidad = nuevoStock - item.stock;
-      await actualizarStock(idProducto, talla, color, cantidad);
-      setProductos(await obtenerProductos());
+      await uploadStock(idProducto, talla, color, cantidad);
+      setProductos(await getProductos());
     } catch (error: any) {
       alert(error.message);
     }
@@ -86,13 +86,13 @@ const Inventario: React.FC = () => {
     try {
       if (!nuevaCombinacion.idProducto) throw new Error("Seleccione un producto");
       if (!nuevaCombinacion.color) throw new Error("Seleccione un color");
-      await actualizarStock(
+      await uploadStock(
         nuevaCombinacion.idProducto,
         nuevaCombinacion.talla,
         nuevaCombinacion.color,
         nuevaCombinacion.stock
       );
-      setProductos(await obtenerProductos());
+      setProductos(await getProductos());
       setNuevaCombinacion({
         idProducto: "",
         talla: "S",
@@ -117,12 +117,12 @@ const Inventario: React.FC = () => {
   const handleGuardarEdicion = async () => {
     if (productoEditado) {
       try {
-        await actualizarProducto(productoEditado.id, {
+        await uploadProducto(productoEditado.id, {
           nombre: productoEditado.nombre,
           precio: productoEditado.precio,
           descripcion: productoEditado.descripcion,
         });
-        setProductos(await obtenerProductos());
+        setProductos(await getProductos());
         setEditando({ ...editando, [productoEditado.id]: false });
         setProductoEditado(null);
       } catch (error: any) {
@@ -139,8 +139,8 @@ const Inventario: React.FC = () => {
   const handleEliminarProducto = async (id: string) => {
     if (window.confirm("¿Eliminar este producto?")) {
       try {
-        await eliminarProducto(id);
-        setProductos(await obtenerProductos());
+        await deleteProducto(id);
+        setProductos(await getProductos());
       } catch (error: any) {
         alert(error.message);
       }
@@ -158,8 +158,8 @@ const Inventario: React.FC = () => {
       )
     ) {
       try {
-        await eliminarCombinacion(idProducto, talla, color);
-        setProductos(await obtenerProductos());
+        await deleteCombinacion(idProducto, talla, color);
+        setProductos(await getProductos());
       } catch (error: any) {
         alert(error.message);
       }
