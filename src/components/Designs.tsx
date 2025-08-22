@@ -54,7 +54,7 @@ const Designs: React.FC = () => {
             <img
               src={design.imagen_url}
               alt={design.nombre}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain p-1"
             />
           </div>
         ))}

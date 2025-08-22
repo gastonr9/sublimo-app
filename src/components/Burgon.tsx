@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useOrder } from '../context/OrderContext';
 import { getProductos, getProductoPorId } from '../services/inventario';
 import { Producto, Color } from '../types/types';
+import diseño from '/public/images/dead-cool.png';
 import remera from '/public/images/remera.png';
 import remeracolor from '/public/images/remeracolor.png';
 import remerahigh from '/public/images/remerahighlight.png';
@@ -197,6 +198,7 @@ const Burgon: React.FC = () => {
               maskImage: `url(${remeracolor})`,
             }}
           ></div>
+          
           <img
             src={remera}
             alt="Remera"
@@ -216,6 +218,11 @@ const Burgon: React.FC = () => {
             src={remerablack}
             alt="Remera"
             className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={diseño}
+            alt="Remera"
+            className="opacity-100 mix-blend-normal absolute inset-0 z-20 w-full h-[50%] top-[20%] object-contain pointer-events-none"
           />
         </div>
       </div>

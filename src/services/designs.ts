@@ -9,30 +9,35 @@ export const getDesigns = async () => {
   return data;
 };
 
-export const addDesign = async (file: File) => {
-  // 1. Subir archivo al bucket "designs"
-  const filePath = `designs/${Date.now()}_${file.name}`;
-  const { error: uploadError } = await supabase.storage
-    .from("designs") // 👈 bucket llamado "designs"
-    .upload(filePath, file);
+export async function addDesign(file: File) {
+  const fileName = `${Date.now()}_${file.name}`;
+  
+  // 1. Subir a Storage
+  const { data: storageData, error: storageError } = await supabase.storage
+    .from("designs")
+    .upload(fileName, file);
 
-  if (uploadError) throw uploadError;
+  if (storageError) throw storageError;
 
   // 2. Obtener URL pública
   const { data: publicUrlData } = supabase.storage
     .from("designs")
-    .getPublicUrl(filePath);
+    .getPublicUrl(fileName);
 
-  const imagen_url = publicUrlData.publicUrl;
-  const nombre = file.name.split(".")[0]; // usa el nombre del archivo sin extensión
-
-  // 3. Insertar en tabla "disenos"
+  // 3. Insertar en la tabla
   const { data, error } = await supabase
     .from("disenos")
-    .insert([{ nombre, imagen_url, stock: 0 }])
+    .insert([
+      {
+        nombre: file.name,
+        imagen_url: publicUrlData.publicUrl,
+        stock: 0,
+      },
+    ])
     .select()
     .single();
 
   if (error) throw error;
+
   return data;
-};
+}
