@@ -5,6 +5,7 @@ import Articulos from "./pages/Articulos";
 import Burgon from "./components/SelectProductSection";
 import Login from "./pages/Login";
 import Inventario from "./components/Inventario";
+import Panel from "./components/AdminControl";
 
 function App() {
   return (
@@ -15,7 +16,8 @@ function App() {
         <Route path="/articulos" element={<Articulos />} />
         <Route path="/burgon" element={<Burgon />} />
         <Route path="/login" element={<Login />} />
-        <Route path="inventario" element={  <Inventario />} />
+        <Route path="/inventario" element={  <Inventario />} />
+        <Route path="/panel" element={  <Panel />} />
       </Routes>
     </>
   );
