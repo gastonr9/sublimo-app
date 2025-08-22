@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Inventario from "./Inventario";
-import Designs from "./Disenos";
+import Disenos from "./Disenos";
+import Designs from "./Designs";
 // import Usuarios from "./Usuarios";
 
 const AdminControl: React.FC = () => {
@@ -11,6 +12,8 @@ const AdminControl: React.FC = () => {
       case "inventario":
         return <Inventario />;
       case "disenos":
+        return <Disenos />;
+      case "designs":
         return <Designs />;
       case "usuarios":
         return <Usuarios />;
@@ -44,6 +47,16 @@ const AdminControl: React.FC = () => {
             }`}
           >
             Diseños
+          </button>
+          <button
+            onClick={() => setActiveTab("designs")}
+            className={`block w-full text-left px-4 py-2 rounded-lg transition ${
+              activeTab === "designs"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            Designs
           </button>
           <button
             onClick={() => setActiveTab("usuarios")}
