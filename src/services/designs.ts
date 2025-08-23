@@ -1,22 +1,30 @@
+// services/designs.ts
 import { supabase } from "../lib/supabaseClient";
 
 export const getDesigns = async () => {
   const { data, error } = await supabase
     .from("disenos")
+    .select("*");
+  if (error) throw error;
+  return data;
+};
+
+export const getAvailableDesigns = async () => {
+  const { data, error } = await supabase
+    .from("disenos")
     .select("*")
-    .order("created_at", { ascending: false }); // si tenés created_at
+    .gt("stock", 0);   // solo diseños con stock > 0
   if (error) throw error;
   return data;
 };
 
 export async function addDesign(file: File) {
   const fileName = `${Date.now()}_${file.name}`;
-  
+
   // 1. Subir a Storage
-  const { data: storageData, error: storageError } = await supabase.storage
+  const { error: storageError } = await supabase.storage
     .from("designs")
     .upload(fileName, file);
-
   if (storageError) throw storageError;
 
   // 2. Obtener URL pública
@@ -38,6 +46,5 @@ export async function addDesign(file: File) {
     .single();
 
   if (error) throw error;
-
   return data;
 }

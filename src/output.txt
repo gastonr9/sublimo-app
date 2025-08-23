@@ -1,3 +1,5 @@
+// Contenido de: components/Burgon.tsx
+
 import React, { useState, useEffect } from 'react';
 import { useOrder } from '../context/OrderContext';
 import { getProductos, getProductoPorId } from '../services/inventario';
@@ -7,14 +9,14 @@ import remera from '/public/images/remera.png';
 import remeracolor from '/public/images/remeracolor.png';
 import remerahigh from '/public/images/remerahighlight.png';
 import remerablack from '/public/images/remerablack.png';
-import { getAvailableDesigns } from "../services/designs";
+
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [selectedProductoId, setSelectedProductoId] = useState(order.productoId || '');
   const [talles, setTalles] = useState<string[]>([]);
   const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
-const [designs, setDesigns] = useState<any[]>([]);
+
   useEffect(() => {
     const cargarProductos = async () => {
       const productosData = await getProductos();
@@ -115,37 +117,6 @@ const [designs, setDesigns] = useState<any[]>([]);
     return coloresConocidos[nombre] || '#000000';
   };
 
-  // cargar productos
-  useEffect(() => {
-    const cargarProductos = async () => {
-      const productosData = await getProductos();
-      setProductos(productosData);
-
-      if (productosData.length > 0 && !selectedProductoId) {
-        const firstProductId = productosData[0].id;
-        setSelectedProductoId(firstProductId);
-        const producto = await getProductoPorId(firstProductId);
-        if (producto) setSelectedProduct(producto);
-      }
-    };
-    cargarProductos();
-  }, []);
-
-  // cargar diseños disponibles
-  useEffect(() => {
-    const cargarDesigns = async () => {
-      try {
-        const data = await getAvailableDesigns();
-        setDesigns(data);
-      } catch (err) {
-        console.error("Error trayendo diseños:", err);
-      }
-    };
-    cargarDesigns();
-  }, []);
-
-
-
   return (
     <section className="bg-white py-10 px-4 w-full max-w-screen-xl mx-auto">
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
@@ -220,72 +191,44 @@ const [designs, setDesigns] = useState<any[]>([]);
       </div>
 
       {/* Imagen con color aplicado */}
-<div className="relative w-full flex justify-center">
-  <div className="relative w-64 h-64">
-    <div
-      className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
-      style={{
-        backgroundColor: order.color || '#ffffff',
-        maskImage: `url(${remeracolor})`,
-      }}
-    ></div>
-
-    <img
-      src={remera}
-      alt="Remera"
-      className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-    <img
-      src={remerahigh}
-      alt="Remera"
-      className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-    <img
-      src={remera}
-      alt="Remera"
-      className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-    <img
-      src={remerablack}
-      alt="Remera"
-      className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-
-    {/* 👇 Diseño seleccionado dinámico */}
-    {order.disenoUrl && (
-      <img
-        src={order.disenoUrl}
-        alt="diseño"
-        className="opacity-100 mix-blend-normal absolute inset-0 z-30 w-full h-[50%] top-[20%]  object-contain pointer-events-none"
-      />
-    )}
-  </div>
-</div>
- {/* NUEVO: Contenedor de diseños */}
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">Elegí un diseño</h3>
-        <div className="flex flex-wrap gap-4 justify-center">
-          {designs.length > 0 ? (
-            designs.map((design) => (
-              <button
-                key={design.id}
-                className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
-                  order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
-                }`}
-                onClick={() => setOrder({ ...order, disenoId: design.id, disenoUrl: design.imagen_url, })}
-              >
-                <img
-                  src={design.imagen_url}
-                  alt={design.nombre}
-                  className="w-full h-full object-contain p-1"
-                />
-              </button>
-            ))
-          ) : (
-            <p className="text-gray-600">No hay diseños disponibles</p>
-          )}
+      <div className="relative w-full flex justify-center">
+        <div className="relative w-64 h-64">
+          <div
+            className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
+            style={{
+              backgroundColor: order.color || '#ffffff',
+              maskImage: `url(${remeracolor})`,
+            }}
+          ></div>
+          
+          <img
+            src={remera}
+            alt="Remera"
+            className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={remerahigh}
+            alt="Remera"
+            className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={remera}
+            alt="Remera"
+            className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={remerablack}
+            alt="Remera"
+            className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={diseño}
+            alt="diseño"
+            className="opacity-100 mix-blend-normal absolute inset-0 z-20 w-full h-[50%] top-[20%] object-contain pointer-events-none"
+          />
         </div>
       </div>
+
       {/* Nombre y precio sincronizados */}
     <div className="text-center mb-4">
   <h3 className="text-lg font-semibold text-gray-800">
@@ -315,3 +258,132 @@ const [designs, setDesigns] = useState<any[]>([]);
 };
 
 export default Burgon;
+
+// Contenido de: components/Designs.tsx
+
+import React, { useEffect, useState } from "react";
+import { getDesigns, addDesign } from "../services/designs";
+
+interface Design {
+  id: string;
+  nombre: string;
+  imagen_url: string;
+  stock: number;
+}
+
+const Designs: React.FC = () => {
+  const [designs, setDesigns] = useState<Design[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    fetchDesigns();
+  }, []);
+
+  const fetchDesigns = async () => {
+    try {
+      const data = await getDesigns();
+      setDesigns(data);
+    } catch (err) {
+      console.error("Error al traer diseños:", err);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      if (!event.target.files || event.target.files.length === 0) return;
+      setUploading(true);
+      const file = event.target.files[0];
+      await addDesign(file);
+      await fetchDesigns(); // refrescar después de subir
+    } catch (err) {
+      console.error("Error subiendo diseño:", err);
+    } finally {
+      setUploading(false);
+      event.target.value = ""; // reset input
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">Diseños</h2>
+
+      {/* Contenedor superior */}
+      <div className="flex flex-wrap gap-4 p-4 border rounded-lg mb-6">
+        {designs.map((design) => (
+          <div
+            key={design.id}
+            className="relative w-24 h-24 border rounded-lg overflow-hidden"
+          >
+            <img
+              src={design.imagen_url}
+              alt={design.nombre}
+              className="w-full h-full object-contain p-1"
+            />
+          </div>
+        ))}
+
+        {/* Botón de subir imagen */}
+        <label className="w-24 h-24 border-2 border-dashed flex items-center justify-center text-xl text-gray-500 rounded-lg cursor-pointer">
+          {uploading ? "..." : "+"}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+        </label>
+      </div>
+    </div>
+  );
+};
+
+export default Designs;
+
+
+// Contenido de: services/designs.ts
+
+import { supabase } from "../lib/supabaseClient";
+
+export const getDesigns = async () => {
+  const { data, error } = await supabase
+    .from("disenos")
+    .select("*")
+    .order("created_at", { ascending: false }); // si tenés created_at
+  if (error) throw error;
+  return data;
+};
+
+export async function addDesign(file: File) {
+  const fileName = `${Date.now()}_${file.name}`;
+  
+  // 1. Subir a Storage
+  const { data: storageData, error: storageError } = await supabase.storage
+    .from("designs")
+    .upload(fileName, file);
+
+  if (storageError) throw storageError;
+
+  // 2. Obtener URL pública
+  const { data: publicUrlData } = supabase.storage
+    .from("designs")
+    .getPublicUrl(fileName);
+
+  // 3. Insertar en la tabla
+  const { data, error } = await supabase
+    .from("disenos")
+    .insert([
+      {
+        nombre: file.name,
+        imagen_url: publicUrlData.publicUrl,
+        stock: 0,
+      },
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
+
