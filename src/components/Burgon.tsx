@@ -8,13 +8,15 @@ import remeracolor from '/public/images/remeracolor.png';
 import remerahigh from '/public/images/remerahighlight.png';
 import remerablack from '/public/images/remerablack.png';
 import { getDesigns } from "../services/designs";
+
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [selectedProductoId, setSelectedProductoId] = useState(order.productoId || '');
   const [talles, setTalles] = useState<string[]>([]);
   const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
-const [designs, setDesigns] = useState<any[]>([]);
+  const [designs, setDesigns] = useState<any[]>([]);
+
   useEffect(() => {
     const cargarProductos = async () => {
       const productosData = await getProductos();
@@ -84,6 +86,20 @@ const [designs, setDesigns] = useState<any[]>([]);
     }
   }, [order.talle, selectedProduct]);
 
+  useEffect(() => {
+    const cargarDesigns = async () => {
+      try {
+        const data = await getDesigns();
+        // Filtrar diseños con stock > 0 y selected = true
+        const filteredDesigns = data.filter((design) => design.stock > 0 && design.selected);
+        setDesigns(filteredDesigns);
+      } catch (err) {
+        console.error("Error trayendo diseños:", err);
+      }
+    };
+    cargarDesigns();
+  }, []);
+
   const handleProductoSelect = (id: string) => {
     setSelectedProductoId(id);
     setOrder({ ...order, talle: '', color: '', productoId: id }); // Resetea talle y color al cambiar producto
@@ -114,37 +130,6 @@ const [designs, setDesigns] = useState<any[]>([]);
     };
     return coloresConocidos[nombre] || '#000000';
   };
-
-  // cargar productos
-  useEffect(() => {
-    const cargarProductos = async () => {
-      const productosData = await getProductos();
-      setProductos(productosData);
-
-      if (productosData.length > 0 && !selectedProductoId) {
-        const firstProductId = productosData[0].id;
-        setSelectedProductoId(firstProductId);
-        const producto = await getProductoPorId(firstProductId);
-        if (producto) setSelectedProduct(producto);
-      }
-    };
-    cargarProductos();
-  }, []);
-
-  // cargar diseños disponibles
-  useEffect(() => {
-    const cargarDesigns = async () => {
-      try {
-        const data = await getDesigns();
-        setDesigns(data);
-      } catch (err) {
-        console.error("Error trayendo diseños:", err);
-      }
-    };
-    cargarDesigns();
-  }, []);
-
-
 
   return (
     <section className="bg-white py-10 px-4 w-full max-w-screen-xl mx-auto">
@@ -220,48 +205,49 @@ const [designs, setDesigns] = useState<any[]>([]);
       </div>
 
       {/* Imagen con color aplicado */}
-<div className="relative w-full flex justify-center">
-  <div className="relative w-64 h-64">
-    <div
-      className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
-      style={{
-        backgroundColor: order.color || '#ffffff',
-        maskImage: `url(${remeracolor})`,
-      }}
-    ></div>
+      <div className="relative w-full flex justify-center">
+        <div className="relative w-64 h-64">
+          <div
+            className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
+            style={{
+              backgroundColor: order.color || '#ffffff',
+              maskImage: `url(${remeracolor})`,
+            }}
+          ></div>
 
-    <img
-      src={remera}
-      alt="Remera"
-      className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-    <img
-      src={remerahigh}
-      alt="Remera"
-      className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-    <img
-      src={remera}
-      alt="Remera"
-      className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-    <img
-      src={remerablack}
-      alt="Remera"
-      className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
+          <img
+            src={remera}
+            alt="Remera"
+            className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={remerahigh}
+            alt="Remera"
+            className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={remera}
+            alt="Remera"
+            className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={remerablack}
+            alt="Remera"
+            className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
 
-    {/* 👇 Diseño seleccionado dinámico */}
-    {order.disenoUrl && (
-      <img
-        src={order.disenoUrl}
-        alt="diseño"
-        className="opacity-100 mix-blend-normal absolute inset-0 z-30 w-full h-[50%] top-[20%]  object-contain pointer-events-none"
-      />
-    )}
-  </div>
-</div>
- {/* NUEVO: Contenedor de diseños */}
+          {/* 👇 Diseño seleccionado dinámico */}
+          {order.disenoUrl && (
+            <img
+              src={order.disenoUrl}
+              alt="diseño"
+              className="opacity-100 mix-blend-normal absolute inset-0 z-30 w-full h-[50%] top-[20%] object-contain pointer-events-none"
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Contenedor de diseños */}
       <div className="mt-8">
         <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">Elegí un diseño</h3>
         <div className="flex flex-wrap gap-4 justify-center">
@@ -272,7 +258,7 @@ const [designs, setDesigns] = useState<any[]>([]);
                 className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
                   order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
                 }`}
-                onClick={() => setOrder({ ...order, disenoId: design.id, disenoUrl: design.imagen_url, })}
+                onClick={() => setOrder({ ...order, disenoId: design.id, disenoUrl: design.imagen_url })}
               >
                 <img
                   src={design.imagen_url}
@@ -286,17 +272,18 @@ const [designs, setDesigns] = useState<any[]>([]);
           )}
         </div>
       </div>
+
       {/* Nombre y precio sincronizados */}
-    <div className="text-center mb-4">
-  <h3 className="text-lg font-semibold text-gray-800">
-    {selectedProduct?.nombre || ''}
-  </h3>
-  {selectedProduct?.precio ? (
-    <p className="text-xl font-bold text-gray-800">
-      ${selectedProduct.precio.toFixed(2)}
-    </p>
-  ) : null}
-</div>
+      <div className="text-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-800">
+          {selectedProduct?.nombre || ''}
+        </h3>
+        {selectedProduct?.precio ? (
+          <p className="text-xl font-bold text-gray-800">
+            ${selectedProduct.precio.toFixed(2)}
+          </p>
+        ) : null}
+      </div>
 
       {/* Botón siguiente */}
       <div className="flex justify-center mt-6">
