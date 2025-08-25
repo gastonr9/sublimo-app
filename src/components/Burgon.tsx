@@ -15,7 +15,7 @@ const Burgon: React.FC = () => {
   const [talles, setTalles] = useState<string[]>([]);
   const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
   const [designs, setDesigns] = useState<any[]>([]);
-  const [designStyle, setDesignStyle] = useState({ maxWidth: '70%', maxHeight: '80%' }); // Estado inicial
+  const [designStyle, setDesignStyle] = useState({ maxWidth: '70%', maxHeight: '80%', top: '20%' }); // Estado inicial con top
 
   useEffect(() => {
     const cargarProductos = async () => {
@@ -103,18 +103,21 @@ const Burgon: React.FC = () => {
         const aspectRatio = img.width / img.height;
         let maxWidth = '70%';
         let maxHeight = '80%';
-        if (aspectRatio > 1) { // Diseño horizontal (e.g., 3:2 o más)
+        let top = '20%'; // Valor por defecto para top
+        if (aspectRatio > 1) { // Diseño horizontal (e.g., ancho mayor que alto)
           maxWidth = '40%';
           maxHeight = '80%';
+          top = '25%'; // Ajuste hacia arriba para diseños horizontales
         } else if (aspectRatio < 0.67) { // Diseño vertical (e.g., 2:3 o menos)
           maxWidth = '80%';
-          maxHeight = '90%';
+          maxHeight = '50%';top = '25%'; 
         } else { // Diseño cuadrado o casi cuadrado (0.67 a 1.5)
           maxWidth = '70%';
-          maxHeight = '80%';
+          maxHeight = '50%';
+          top = '25%'; 
         }
 
-        setDesignStyle({ maxWidth, maxHeight});
+        setDesignStyle({ maxWidth, maxHeight, top });
       };
     }
   }, [order.disenoUrl]);
@@ -254,11 +257,12 @@ const Burgon: React.FC = () => {
             <img
               src={order.disenoUrl}
               alt="diseño"
-              className="absolute z-30 w-full h-[50%] top-[20%] object-contain pointer-events-none"
+              className="absolute z-30 w-full  object-contain pointer-events-none"
               style={{
                 ...designStyle,
-                left: '50%',
+                left: '51%',
                 transform: 'translateX(-50%)',
+                top: designStyle.top, // Aplicar el top dinámico
               }}
             />
           )}
