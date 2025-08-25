@@ -15,6 +15,7 @@ const Burgon: React.FC = () => {
   const [talles, setTalles] = useState<string[]>([]);
   const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
   const [designs, setDesigns] = useState<any[]>([]);
+  const [designStyle, setDesignStyle] = useState({ maxWidth: '70%', maxHeight: '80%' }); // Estado inicial
 
   useEffect(() => {
     const cargarProductos = async () => {
@@ -38,14 +39,12 @@ const Burgon: React.FC = () => {
           setSelectedProduct(producto);
           setOrder({ ...order, productoId: selectedProductoId });
 
-          // Extraer talles únicos del inventario
           const tallesUnicos = [...new Set(producto.inventario.map((i) => i.talla))].sort((a, b) => {
             const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
             return ordenTalles[a as keyof typeof ordenTalles] - ordenTalles[b as keyof typeof ordenTalles];
           });
           setTalles(tallesUnicos);
 
-          // Mostrar solo colores con stock > 0 del inventario inicialmente
           if (producto.inventario) {
             const todosLosColores = [...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
               .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
@@ -69,7 +68,6 @@ const Burgon: React.FC = () => {
   }, [selectedProductoId]);
 
   useEffect(() => {
-    // Filtrar colores solo cuando se seleccione un talle, mostrando solo los con stock > 0
     if (selectedProduct && order.talle && selectedProduct.inventario) {
       const coloresPorTalle = selectedProduct.inventario
         .filter((i) => i.talla === order.talle && i.stock > 0)
@@ -77,7 +75,6 @@ const Burgon: React.FC = () => {
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
       setColoresDisponibles(coloresPorTalle);
     } else if (selectedProduct && selectedProduct.inventario) {
-      // Si no hay talle seleccionado, mostrar todos los colores con stock > 0
       const todosLosColores = [...new Set(selectedProduct.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
         .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
@@ -89,7 +86,6 @@ const Burgon: React.FC = () => {
     const cargarDesigns = async () => {
       try {
         const data = await getDesigns();
-        // Filtrar diseños con stock > 0 y selected = true
         const filteredDesigns = data.filter((design) => design.stock > 0 && design.selected);
         setDesigns(filteredDesigns);
       } catch (err) {
@@ -99,9 +95,34 @@ const Burgon: React.FC = () => {
     cargarDesigns();
   }, []);
 
+  useEffect(() => {
+    if (order.disenoUrl) {
+      const img = new Image();
+      img.src = order.disenoUrl;
+      img.onload = () => {
+        const aspectRatio = img.width / img.height;
+        let maxWidth = '70%';
+        let maxHeight = '80%';
+
+        if (aspectRatio > 1) { // Diseño horizontal (e.g., 3:2 o más)
+          maxWidth = '40%';
+          maxHeight = '80%';
+        } else if (aspectRatio < 0.67) { // Diseño vertical (e.g., 2:3 o menos)
+          maxWidth = '80%';
+          maxHeight = '90%';
+        } else { // Diseño cuadrado o casi cuadrado (0.67 a 1.5)
+          maxWidth = '70%';
+          maxHeight = '80%';
+        }
+
+        setDesignStyle({ maxWidth, maxHeight });
+      };
+    }
+  }, [order.disenoUrl]);
+
   const handleProductoSelect = (id: string) => {
     setSelectedProductoId(id);
-    setOrder({ ...order, talle: '', color: '', productoId: id }); // Resetea talle y color al cambiar producto
+    setOrder({ ...order, talle: '', color: '', productoId: id });
   };
 
   const handleTalleSelect = (talle: string) => {
@@ -113,7 +134,6 @@ const Burgon: React.FC = () => {
     if (colorNombre) setOrder({ ...order, color: colorHex });
   };
 
-  // Función auxiliar para asignar hex por defecto
   const getDefaultHex = (nombre: string): string => {
     const coloresConocidos = {
       Blanco: '#ffffff',
@@ -136,7 +156,6 @@ const Burgon: React.FC = () => {
         Elegí la prenda y el talle
       </h2>
 
-      {/* Selector de Productos */}
       <div className="flex justify-center mb-6">
         <select
           value={selectedProductoId}
@@ -151,7 +170,6 @@ const Burgon: React.FC = () => {
         </select>
       </div>
 
-      {/* Talles */}
       <div className="flex justify-center gap-4 mb-6 flex-wrap">
         {talles.length > 0 ? (
           talles.map((talle) => (
@@ -175,7 +193,6 @@ const Burgon: React.FC = () => {
         )}
       </div>
 
-      {/* Selector de color */}
       <div className="flex justify-center gap-4 mb-4 flex-wrap">
         {coloresDisponibles.length > 0 ? (
           coloresDisponibles.map((color) => (
@@ -185,9 +202,9 @@ const Burgon: React.FC = () => {
                 order.color === color.hex
                   ? 'bg-blue-100 border-blue-600'
                   : 'bg-white border-gray-300 hover:bg-gray-100'
-              } ${!order.talle ? 'opacity-50 cursor-not-allowed' : ''}`} // Opacidad y cursor cuando no hay talle
-              onClick={() => (order.talle ? handleColorSelect(color.hex) : null)} // Solo clickable si hay talle
-              disabled={!order.talle || !selectedProduct} // Deshabilitado hasta que se seleccione talle
+              } ${!order.talle ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => (order.talle ? handleColorSelect(color.hex) : null)}
+              disabled={!order.talle || !selectedProduct}
             >
               <span className="text-gray-800">{color.nombre}</span>
               <div
@@ -203,7 +220,6 @@ const Burgon: React.FC = () => {
         )}
       </div>
 
-      {/* Imagen con color aplicado */}
       <div className="relative w-full flex justify-center">
         <div className="relative w-64 h-64">
           <div
@@ -235,18 +251,21 @@ const Burgon: React.FC = () => {
             className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
           />
 
-          {/* 👇 Diseño seleccionado dinámico */}
           {order.disenoUrl && (
             <img
               src={order.disenoUrl}
               alt="diseño"
-              className="opacity-100 mix-blend-normal absolute inset-0 z-30 w-full h-[50%] top-[20%] object-contain pointer-events-none"
+              className="absolute z-30 w-full h-[50%] top-[20%] object-contain pointer-events-none"
+              style={{
+                ...designStyle,
+                left: '50%',
+                transform: 'translateX(-50%)',
+              }}
             />
           )}
         </div>
       </div>
 
-      {/* Contenedor de diseños */}
       <div className="mt-8">
         <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">Elegí un diseño</h3>
         <div className="flex flex-wrap gap-4 justify-center">
@@ -272,7 +291,6 @@ const Burgon: React.FC = () => {
         </div>
       </div>
 
-      {/* Nombre y precio sincronizados */}
       <div className="text-center mb-4">
         <h3 className="text-lg font-semibold text-gray-800">
           {selectedProduct?.nombre || ''}
@@ -284,7 +302,6 @@ const Burgon: React.FC = () => {
         ) : null}
       </div>
 
-      {/* Botón siguiente */}
       <div className="flex justify-center mt-6">
         <button
           className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"

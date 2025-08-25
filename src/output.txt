@@ -1,328 +1,8 @@
-// Contenido de: components/Burgon.tsx
-
-import React, { useState, useEffect } from 'react';
-import { useOrder } from '../context/OrderContext';
-import { getProductos, getProductoPorId } from '../services/inventario';
-import { Producto, Color } from '../types/types';
-import diseño from '/public/images/dead-cool.png';
-import remera from '/public/images/remera.png';
-import remeracolor from '/public/images/remeracolor.png';
-import remerahigh from '/public/images/remerahighlight.png';
-import remerablack from '/public/images/remerablack.png';
-import { getDesigns } from "../services/designs";
-const Burgon: React.FC = () => {
-  const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [selectedProductoId, setSelectedProductoId] = useState(order.productoId || '');
-  const [talles, setTalles] = useState<string[]>([]);
-  const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
-const [designs, setDesigns] = useState<any[]>([]);
-  useEffect(() => {
-    const cargarProductos = async () => {
-      const productosData = await getProductos();
-      setProductos(productosData);
-      if (productosData.length > 0 && !selectedProductoId) {
-        const firstProductId = productosData[0].id;
-        setSelectedProductoId(firstProductId);
-        const producto = await getProductoPorId(firstProductId);
-        if (producto) setSelectedProduct(producto);
-      }
-    };
-    cargarProductos();
-  }, []);
-
-  useEffect(() => {
-    const cargarProductoSeleccionado = async () => {
-      if (selectedProductoId) {
-        const producto = await getProductoPorId(selectedProductoId);
-        if (producto) {
-          setSelectedProduct(producto);
-          setOrder({ ...order, productoId: selectedProductoId });
-
-          // Extraer talles únicos del inventario
-          const tallesUnicos = [...new Set(producto.inventario.map((i) => i.talla))].sort((a, b) => {
-            const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
-            return ordenTalles[a as keyof typeof ordenTalles] - ordenTalles[b as keyof typeof ordenTalles];
-          });
-          setTalles(tallesUnicos);
-
-          // Mostrar solo colores con stock > 0 del inventario inicialmente
-          if (producto.inventario) {
-            const todosLosColores = [...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
-              .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
-              .sort((a, b) => a.nombre.localeCompare(b.nombre));
-            setColoresDisponibles(todosLosColores);
-          } else {
-            setColoresDisponibles([]);
-          }
-        } else {
-          setSelectedProduct(null);
-          setTalles([]);
-          setColoresDisponibles([]);
-        }
-      } else {
-        setSelectedProduct(null);
-        setTalles([]);
-        setColoresDisponibles([]);
-      }
-    };
-    cargarProductoSeleccionado();
-  }, [selectedProductoId]);
-
-  useEffect(() => {
-    // Filtrar colores solo cuando se seleccione un talle, mostrando solo los con stock > 0
-    if (selectedProduct && order.talle && selectedProduct.inventario) {
-      const coloresPorTalle = selectedProduct.inventario
-        .filter((i) => i.talla === order.talle && i.stock > 0)
-        .map((i) => ({ nombre: i.color, hex: getDefaultHex(i.color) }))
-        .sort((a, b) => a.nombre.localeCompare(b.nombre));
-      setColoresDisponibles(coloresPorTalle);
-    } else if (selectedProduct && selectedProduct.inventario) {
-      // Si no hay talle seleccionado, mostrar todos los colores con stock > 0
-      const todosLosColores = [...new Set(selectedProduct.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
-        .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
-        .sort((a, b) => a.nombre.localeCompare(b.nombre));
-      setColoresDisponibles(todosLosColores);
-    }
-  }, [order.talle, selectedProduct]);
-
-  const handleProductoSelect = (id: string) => {
-    setSelectedProductoId(id);
-    setOrder({ ...order, talle: '', color: '', productoId: id }); // Resetea talle y color al cambiar producto
-  };
-
-  const handleTalleSelect = (talle: string) => {
-    setOrder({ ...order, talle });
-  };
-
-  const handleColorSelect = (colorHex: string) => {
-    const colorNombre = coloresDisponibles.find((c) => c.hex === colorHex)?.nombre;
-    if (colorNombre) setOrder({ ...order, color: colorHex });
-  };
-
-  // Función auxiliar para asignar hex por defecto
-  const getDefaultHex = (nombre: string): string => {
-    const coloresConocidos = {
-      Blanco: '#ffffff',
-      Negro: '#000000',
-      Rojo: '#ff0000',
-      Azul: '#0000ff',
-      Verde: '#008000',
-      Amarillo: '#ffff00',
-      Gris: '#808080',
-      Rosa: '#ff69b4',
-      Naranja: '#ffa500',
-      Morado: '#800080',
-    };
-    return coloresConocidos[nombre] || '#000000';
-  };
-
-  // cargar productos
-  useEffect(() => {
-    const cargarProductos = async () => {
-      const productosData = await getProductos();
-      setProductos(productosData);
-
-      if (productosData.length > 0 && !selectedProductoId) {
-        const firstProductId = productosData[0].id;
-        setSelectedProductoId(firstProductId);
-        const producto = await getProductoPorId(firstProductId);
-        if (producto) setSelectedProduct(producto);
-      }
-    };
-    cargarProductos();
-  }, []);
-
-  // cargar diseños disponibles
-  useEffect(() => {
-    const cargarDesigns = async () => {
-      try {
-        const data = await getDesigns();
-        setDesigns(data);
-      } catch (err) {
-        console.error("Error trayendo diseños:", err);
-      }
-    };
-    cargarDesigns();
-  }, []);
-
-
-
-  return (
-    <section className="bg-white py-10 px-4 w-full max-w-screen-xl mx-auto">
-      <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
-        Elegí la prenda y el talle
-      </h2>
-
-      {/* Selector de Productos */}
-      <div className="flex justify-center mb-6">
-        <select
-          value={selectedProductoId}
-          onChange={(e) => handleProductoSelect(e.target.value)}
-          className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {productos.map((producto) => (
-            <option key={producto.id} value={producto.id}>
-              {producto.nombre} - ${producto.precio.toFixed(2)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Talles */}
-      <div className="flex justify-center gap-4 mb-6 flex-wrap">
-        {talles.length > 0 ? (
-          talles.map((talle) => (
-            <button
-              key={talle}
-              className={`px-4 py-2 rounded-lg border transition ${
-                order.talle === talle
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
-              }`}
-              onClick={() => handleTalleSelect(talle)}
-              disabled={!selectedProduct}
-            >
-              {talle}
-            </button>
-          ))
-        ) : selectedProduct ? (
-          <p className="text-gray-600">No hay talles disponibles para este producto</p>
-        ) : (
-          <p className="text-gray-600">Selecciona un producto para ver talles</p>
-        )}
-      </div>
-
-      {/* Selector de color */}
-      <div className="flex justify-center gap-4 mb-4 flex-wrap">
-        {coloresDisponibles.length > 0 ? (
-          coloresDisponibles.map((color) => (
-            <button
-              key={color.hex}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${
-                order.color === color.hex
-                  ? 'bg-blue-100 border-blue-600'
-                  : 'bg-white border-gray-300 hover:bg-gray-100'
-              } ${!order.talle ? 'opacity-50 cursor-not-allowed' : ''}`} // Opacidad y cursor cuando no hay talle
-              onClick={() => (order.talle ? handleColorSelect(color.hex) : null)} // Solo clickable si hay talle
-              disabled={!order.talle || !selectedProduct} // Deshabilitado hasta que se seleccione talle
-            >
-              <span className="text-gray-800">{color.nombre}</span>
-              <div
-                className="w-6 h-6 rounded-full border"
-                style={{ backgroundColor: color.hex }}
-              />
-            </button>
-          ))
-        ) : selectedProduct && order.talle ? (
-          <p className="text-gray-600">No hay colores disponibles para este talle</p>
-        ) : (
-          <p className="text-gray-600">Selecciona un talle para habilitar colores</p>
-        )}
-      </div>
-
-      {/* Imagen con color aplicado */}
-<div className="relative w-full flex justify-center">
-  <div className="relative w-64 h-64">
-    <div
-      className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
-      style={{
-        backgroundColor: order.color || '#ffffff',
-        maskImage: `url(${remeracolor})`,
-      }}
-    ></div>
-
-    <img
-      src={remera}
-      alt="Remera"
-      className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-    <img
-      src={remerahigh}
-      alt="Remera"
-      className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-    <img
-      src={remera}
-      alt="Remera"
-      className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-    <img
-      src={remerablack}
-      alt="Remera"
-      className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-    />
-
-    {/* 👇 Diseño seleccionado dinámico */}
-    {order.disenoUrl && (
-      <img
-        src={order.disenoUrl}
-        alt="diseño"
-        className="opacity-100 mix-blend-normal absolute inset-0 z-30 w-full h-[50%] top-[20%]  object-contain pointer-events-none"
-      />
-    )}
-  </div>
-</div>
- {/* NUEVO: Contenedor de diseños */}
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">Elegí un diseño</h3>
-        <div className="flex flex-wrap gap-4 justify-center">
-          {designs.length > 0 ? (
-            designs.map((design) => (
-              <button
-                key={design.id}
-                className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
-                  order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
-                }`}
-                onClick={() => setOrder({ ...order, disenoId: design.id, disenoUrl: design.imagen_url, })}
-              >
-                <img
-                  src={design.imagen_url}
-                  alt={design.nombre}
-                  className="w-full h-full object-contain p-1"
-                />
-              </button>
-            ))
-          ) : (
-            <p className="text-gray-600">No hay diseños disponibles</p>
-          )}
-        </div>
-      </div>
-      {/* Nombre y precio sincronizados */}
-    <div className="text-center mb-4">
-  <h3 className="text-lg font-semibold text-gray-800">
-    {selectedProduct?.nombre || ''}
-  </h3>
-  {selectedProduct?.precio ? (
-    <p className="text-xl font-bold text-gray-800">
-      ${selectedProduct.precio.toFixed(2)}
-    </p>
-  ) : null}
-</div>
-
-      {/* Botón siguiente */}
-      <div className="flex justify-center mt-6">
-        <button
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-          onClick={() => {
-            console.log('Siguiente');
-          }}
-          disabled={!selectedProduct || !order.talle || !order.color}
-        >
-          Siguiente
-        </button>
-      </div>
-    </section>
-  );
-};
-
-export default Burgon;
-
 // Contenido de: components/Designs.tsx
 
 import React, { useEffect, useState } from "react";
-import { listDesignsFromStorage, uploadDesign } from "../services/storage";
-import { getDesigns, addDesignMeta, updateDesign } from "../services/designs";
+import { listDesignsFromStorage, uploadDesign, removeDesignFromStorage } from "../services/storage";
+import { getDesigns, addDesignMeta, updateDesign, deleteDesign } from "../services/designs";
 
 interface StorageDesign {
   name: string;
@@ -425,11 +105,33 @@ const Designs: React.FC = () => {
     }
   };
 
+  const handleDeleteDesign = async (storageDesign: StorageDesign) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar esta imagen y su registro? Esta acción no se puede deshacer.")) {
+      return;
+    }
+
+    try {
+      const designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
+      if (designRow) {
+        // Eliminar de Storage
+        await removeDesignFromStorage(storageDesign.name);
+        // Eliminar de la tabla disenos
+        await deleteDesign(designRow.id);
+        // Actualizar estados
+        setStorageDesigns((prev) => prev.filter((d) => d.name !== storageDesign.name));
+        setDesignsTable((prev) => prev.filter((d) => d.id !== designRow.id));
+        setSelectedDesigns((prev) => prev.filter((d) => d.id !== designRow.id));
+      }
+    } catch (err) {
+      console.error("Error al eliminar diseño:", err);
+    }
+  };
+
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Diseños</h2>
 
-      {/* Contenedor superior → Imágenes de Storage con botón de carga */}
+      {/* Contenedor superior → Imágenes de Storage con botón de carga y eliminación */}
       <div className="bg-white shadow-md rounded-lg p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold text-gray-700">Imágenes Disponibles en Storage</h3>
@@ -446,30 +148,46 @@ const Designs: React.FC = () => {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {storageDesigns.length > 0 ? (
-            storageDesigns.map((design) => {
-              const designRow = designsTable.find((d) => d.imagen_url === design.url);
-              const isSelected = designRow?.selected || false;
-              return (
-                <div
-                  key={design.name}
-                  className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
-                    isSelected ? "border-4 border-blue-500" : "border-gray-300 hover:border-gray-400"
-                  }`}
-                  onClick={() => designRow && toggleSelectDesign(design)}
-                >
-                  <img
-                    src={design.url}
-                    alt={design.name}
-                    className="w-full h-full object-contain p-1"
-                  />
-                  {isSelected && (
-                    <span className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                      Seleccionado
-                    </span>
-                  )}
-                </div>
-              );
-            })
+            storageDesigns
+              .map((design) => {
+                const designRow = designsTable.find((d) => d.imagen_url === design.url);
+                return { ...design, ...designRow }; // Combinar storageDesign con designRow para tener stock y selected
+              })
+              .sort((a, b) => {
+                // Ordenar primero por selected (true antes que false) y luego por stock (descendente)
+                if (a.selected !== b.selected) {
+                  return a.selected ? -1 : 1; // true (seleccionados) primero
+                }
+                return b.stock - a.stock; // Dentro de cada grupo, ordenar por stock descendente
+              })
+              .map((design) => {
+                const isSelected = design.selected || false;
+                return (
+                  <div
+                    key={design.name}
+                    className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
+                      isSelected ? "border-4 border-blue-500" : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <img
+                      src={design.url}
+                      alt={design.name}
+                      className="w-full h-full object-contain p-1"
+                    />
+                    {isSelected && (
+                      <span className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                        Seleccionado
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleDeleteDesign(design)}
+                      className="absolute top-1 left-1 bg-red-600 text-white text-xs px-2 py-1 rounded-lg hover:bg-red-700 transition"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                );
+              })
           ) : (
             <p className="text-gray-600 col-span-full text-center">No hay diseños disponibles en storage</p>
           )}
@@ -553,5 +271,69 @@ export const updateDesign = async (id: string, fields: Partial<{ nombre: string;
     .single();
   if (error) throw error;
   return data;
+};
+export const deleteDesign = async (id: string) => {
+  const { error } = await supabase
+    .from("disenos")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+};
+
+// Contenido de: services/storage.ts
+
+// storage.ts
+import { supabase } from "../lib/supabaseClient";
+
+// Listar imágenes desde el bucket "designs"
+export const listDesignsFromStorage = async () => {
+  const { data, error } = await supabase.storage
+    .from("designs")
+    .list("", { limit: 100, sortBy: { column: "created_at", order: "desc" } });
+
+  if (error) throw error;
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  if (!supabaseUrl) {
+    throw new Error("VITE_SUPABASE_URL no está definido en el entorno");
+  }
+
+  return data.map((file) => ({
+    name: file.name,
+    url: `${supabaseUrl}/storage/v1/object/public/designs/${file.name}`,
+  }));
+};
+
+// Subir imagen y crear registro en la tabla disenos
+export const uploadDesign = async (file: File) => {
+  const fileName = `${Date.now()}-${file.name}`; // Nombre único con timestamp
+  const { error: uploadError } = await supabase.storage
+    .from("designs")
+    .upload(fileName, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+
+  if (uploadError) throw uploadError;
+
+  // Crear registro en la tabla disenos
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const imagenUrl = `${supabaseUrl}/storage/v1/object/public/designs/${fileName}`;
+  const { data, error: insertError } = await supabase
+    .from("disenos")
+    .insert([{ nombre: file.name, imagen_url: imagenUrl, stock: 0 }])
+    .select()
+    .single();
+
+  if (insertError) throw insertError;
+
+  return data;
+};
+
+export const removeDesignFromStorage = async (fileName: string) => {
+  const { error } = await supabase.storage
+    .from("designs")
+    .remove([fileName]);
+  if (error) throw error;
 };
 
