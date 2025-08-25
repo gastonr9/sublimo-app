@@ -45,7 +45,7 @@ const AdminControl: React.FC = () => {
                 : "text-gray-700 hover:bg-gray-100"
             }`}
           >
-            Designs
+            Diseños
           </button>
           <button
             onClick={() => setActiveTab("usuarios")}

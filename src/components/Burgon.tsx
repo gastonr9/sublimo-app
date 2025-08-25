@@ -103,7 +103,6 @@ const Burgon: React.FC = () => {
         const aspectRatio = img.width / img.height;
         let maxWidth = '70%';
         let maxHeight = '80%';
-
         if (aspectRatio > 1) { // Diseño horizontal (e.g., 3:2 o más)
           maxWidth = '40%';
           maxHeight = '80%';
@@ -115,7 +114,7 @@ const Burgon: React.FC = () => {
           maxHeight = '80%';
         }
 
-        setDesignStyle({ maxWidth, maxHeight });
+        setDesignStyle({ maxWidth, maxHeight});
       };
     }
   }, [order.disenoUrl]);
