@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useOrder } from '../context/OrderContext';
 import { getProductos, getProductoPorId } from '../services/inventario';
 import { Producto, Color } from '../types/types';
-import diseño from '/public/images/dead-cool.png';
 import remera from '/public/images/remera.png';
 import remeracolor from '/public/images/remeracolor.png';
 import remerahigh from '/public/images/remerahighlight.png';
