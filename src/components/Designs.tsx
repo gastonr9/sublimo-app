@@ -77,11 +77,29 @@ const Designs: React.FC = () => {
 
   const handleUpdate = async (id: string, field: "nombre" | "stock", value: string | number) => {
     try {
-      const updated = await updateDesign(id, { [field]: value });
+      let updatedValue = value;
+      if (field === "nombre") {
+        // Extraer solo el nombre base sin extensión
+        const nameWithoutExt = value.toString().replace(/\.[^/.]+$/, ""); // Elimina la extensión
+        updatedValue = nameWithoutExt || "Sin nombre"; // Evita que quede vacío
+      }
+      const updated = await updateDesign(id, { [field]: updatedValue });
       setDesignsTable((prev) => prev.map((d) => (d.id === id ? updated : d)));
       setSelectedDesigns((prev) => prev.map((d) => (d.id === id ? updated : d)));
     } catch (err) {
       console.error("Error actualizando diseño:", err);
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    try {
+      const updatedDesign = await updateDesign(id, { selected: false });
+      setDesignsTable((prev) =>
+        prev.map((d) => (d.id === id ? updatedDesign : d))
+      );
+      setSelectedDesigns((prev) => prev.filter((d) => d.id !== id));
+    } catch (err) {
+      console.error("Error al quitar diseño:", err);
     }
   };
 
@@ -142,13 +160,14 @@ const Designs: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {selectedDesigns.length > 0 ? (
             selectedDesigns.map((design) => (
-              <div key={design.id} className="bg-white shadow-md rounded-lg p-4">
+              <div key={design.id} className="bg-white shadow-md rounded-lg p-4 relative">
                 <img src={design.imagen_url} alt={design.nombre} className="w-full h-40 object-contain" />
                 <input
                   type="text"
-                  value={design.nombre}
+                  value={design.nombre.replace(/\.[^/.]+$/, "")} // Mostrar solo nombre base
                   onChange={(e) => handleUpdate(design.id, "nombre", e.target.value)}
                   className="mt-2 border rounded-lg p-1 w-full"
+                  placeholder="Nombre (sin extensión)"
                 />
                 <input
                   type="number"
@@ -157,6 +176,12 @@ const Designs: React.FC = () => {
                   className="mt-2 border rounded-lg p-1 w-24"
                   min="0"
                 />
+                <button
+                  onClick={() => handleRemove(design.id)}
+                  className="mt-2 bg-red-600 text-white px-4 py-1 rounded-lg hover:bg-red-700 transition"
+                >
+                  Quitar
+                </button>
               </div>
             ))
           ) : (
