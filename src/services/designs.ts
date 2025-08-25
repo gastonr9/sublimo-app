@@ -48,3 +48,16 @@ export async function addDesign(file: File) {
   if (error) throw error;
   return data;
 }
+
+// Eliminar diseño
+export const deleteDesign = async (id: string, filePath: string) => {
+  // 1. Borrar de tabla
+  const { error: dbError } = await supabase.from("disenos").delete().eq("id", id);
+  if (dbError) throw dbError;
+
+  // 2. Borrar de storage
+  const { error: storageError } = await supabase.storage.from("designs").remove([filePath]);
+  if (storageError) throw storageError;
+
+  return true;
+};
