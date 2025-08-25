@@ -30,7 +30,6 @@ const Designs: React.FC = () => {
       const [storage, table] = await Promise.all([listDesignsFromStorage(), getDesigns()]);
       setStorageDesigns(storage);
       setDesignsTable(table);
-      // Sincronizar selectedDesigns con los que tienen selected = true
       const initiallySelected = table.filter((design) => design.selected);
       setSelectedDesigns(initiallySelected);
     } catch (err) {
@@ -61,7 +60,13 @@ const Designs: React.FC = () => {
 
   const toggleSelectDesign = async (storageDesign: StorageDesign) => {
     const designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
-    if (!designRow) return;
+    if (!designRow) {
+      // Si no existe en designsTable, crear un nuevo registro
+      const newDesign = await addDesignMeta(storageDesign.name, storageDesign.url);
+      setDesignsTable((prev) => [...prev, newDesign]);
+      setSelectedDesigns((prev) => [...prev, newDesign]);
+      return;
+    }
 
     const newSelected = !designRow.selected;
     const updatedDesign = await updateDesign(designRow.id, { selected: newSelected });
@@ -79,9 +84,8 @@ const Designs: React.FC = () => {
     try {
       let updatedValue = value;
       if (field === "nombre") {
-        // Extraer solo el nombre base sin extensión
-        const nameWithoutExt = value.toString().replace(/\.[^/.]+$/, ""); // Elimina la extensión
-        updatedValue = nameWithoutExt || "Sin nombre"; // Evita que quede vacío
+        const nameWithoutExt = value.toString().replace(/\.[^/.]+$/, "");
+        updatedValue = nameWithoutExt || "Sin nombre";
       }
       const updated = await updateDesign(id, { [field]: updatedValue });
       setDesignsTable((prev) => prev.map((d) => (d.id === id ? updated : d)));
@@ -111,11 +115,8 @@ const Designs: React.FC = () => {
     try {
       const designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
       if (designRow) {
-        // Eliminar de Storage
         await removeDesignFromStorage(storageDesign.name);
-        // Eliminar de la tabla disenos
         await deleteDesign(designRow.id);
-        // Actualizar estados
         setStorageDesigns((prev) => prev.filter((d) => d.name !== storageDesign.name));
         setDesignsTable((prev) => prev.filter((d) => d.id !== designRow.id));
         setSelectedDesigns((prev) => prev.filter((d) => d.id !== designRow.id));
@@ -149,14 +150,7 @@ const Designs: React.FC = () => {
             storageDesigns
               .map((design) => {
                 const designRow = designsTable.find((d) => d.imagen_url === design.url);
-                return { ...design, ...designRow }; // Combinar storageDesign con designRow para tener stock y selected
-              })
-              .sort((a, b) => {
-                // Ordenar primero por selected (true antes que false) y luego por stock (descendente)
-                if (a.selected !== b.selected) {
-                  return a.selected ? -1 : 1; // true (seleccionados) primero
-                }
-                return b.stock - a.stock; // Dentro de cada grupo, ordenar por stock descendente
+                return { ...design, ...designRow }; // Combinar storageDesign con designRow
               })
               .map((design) => {
                 const isSelected = design.selected || false;
@@ -166,6 +160,7 @@ const Designs: React.FC = () => {
                     className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
                       isSelected ? "border-4 border-blue-500" : "border-gray-300 hover:border-gray-400"
                     }`}
+                    onClick={() => toggleSelectDesign(design)} // Permitir clic en cualquier diseño
                   >
                     <img
                       src={design.url}
@@ -178,7 +173,10 @@ const Designs: React.FC = () => {
                       </span>
                     )}
                     <button
-                      onClick={() => handleDeleteDesign(design)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteDesign(design);
+                      }}
                       className="absolute top-1 left-1 bg-red-600 text-white text-xs px-2 py-1 rounded-lg hover:bg-red-700 transition"
                     >
                       Eliminar
@@ -202,7 +200,7 @@ const Designs: React.FC = () => {
                 <img src={design.imagen_url} alt={design.nombre} className="w-full h-40 object-contain" />
                 <input
                   type="text"
-                  value={design.nombre.replace(/\.[^/.]+$/, "")} // Mostrar solo nombre base
+                  value={design.nombre.replace(/\.[^/.]+$/, "")}
                   onChange={(e) => handleUpdate(design.id, "nombre", e.target.value)}
                   className="mt-2 border rounded-lg p-1 w-full"
                   placeholder="Nombre (sin extensión)"
