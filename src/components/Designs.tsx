@@ -61,7 +61,6 @@ const Designs: React.FC = () => {
   const toggleSelectDesign = async (storageDesign: StorageDesign) => {
     const designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
     if (!designRow) {
-      // Si no existe en designsTable, crear un nuevo registro
       const newDesign = await addDesignMeta(storageDesign.name, storageDesign.url);
       setDesignsTable((prev) => [...prev, newDesign]);
       setSelectedDesigns((prev) => [...prev, newDesign]);
@@ -152,6 +151,11 @@ const Designs: React.FC = () => {
                 const designRow = designsTable.find((d) => d.imagen_url === design.url);
                 return { ...design, ...designRow }; // Combinar storageDesign con designRow
               })
+              .sort((a, b) => {
+                // Ordenar por selected (true primero) y luego por stock (descendente)
+                if (a.selected !== b.selected) return a.selected ? -1 : 1;
+                return (b.stock || 0) - (a.stock || 0); // Usar 0 si stock es undefined
+              })
               .map((design) => {
                 const isSelected = design.selected || false;
                 return (
@@ -160,7 +164,7 @@ const Designs: React.FC = () => {
                     className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
                       isSelected ? "border-4 border-blue-500" : "border-gray-300 hover:border-gray-400"
                     }`}
-                    onClick={() => toggleSelectDesign(design)} // Permitir clic en cualquier diseño
+                    onClick={() => toggleSelectDesign(design)}
                   >
                     <img
                       src={design.url}
