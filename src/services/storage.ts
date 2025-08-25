@@ -45,3 +45,10 @@ export const uploadDesign = async (file: File) => {
 
   return data;
 };
+
+export const removeDesignFromStorage = async (fileName: string) => {
+  const { error } = await supabase.storage
+    .from("designs")
+    .remove([fileName]);
+  if (error) throw error;
+};

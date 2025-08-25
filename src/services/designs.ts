@@ -33,3 +33,10 @@ export const updateDesign = async (id: string, fields: Partial<{ nombre: string;
   if (error) throw error;
   return data;
 };
+export const deleteDesign = async (id: string) => {
+  const { error } = await supabase
+    .from("disenos")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+};

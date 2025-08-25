@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { listDesignsFromStorage, uploadDesign } from "../services/storage";
-import { getDesigns, addDesignMeta, updateDesign } from "../services/designs";
+import { listDesignsFromStorage, uploadDesign, removeDesignFromStorage } from "../services/storage";
+import { getDesigns, addDesignMeta, updateDesign, deleteDesign } from "../services/designs";
 
 interface StorageDesign {
   name: string;
@@ -103,11 +103,33 @@ const Designs: React.FC = () => {
     }
   };
 
+  const handleDeleteDesign = async (storageDesign: StorageDesign) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar esta imagen y su registro? Esta acción no se puede deshacer.")) {
+      return;
+    }
+
+    try {
+      const designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
+      if (designRow) {
+        // Eliminar de Storage
+        await removeDesignFromStorage(storageDesign.name);
+        // Eliminar de la tabla disenos
+        await deleteDesign(designRow.id);
+        // Actualizar estados
+        setStorageDesigns((prev) => prev.filter((d) => d.name !== storageDesign.name));
+        setDesignsTable((prev) => prev.filter((d) => d.id !== designRow.id));
+        setSelectedDesigns((prev) => prev.filter((d) => d.id !== designRow.id));
+      }
+    } catch (err) {
+      console.error("Error al eliminar diseño:", err);
+    }
+  };
+
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Diseños</h2>
 
-      {/* Contenedor superior → Imágenes de Storage con botón de carga */}
+      {/* Contenedor superior → Imágenes de Storage con botón de carga y eliminación */}
       <div className="bg-white shadow-md rounded-lg p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold text-gray-700">Imágenes Disponibles en Storage</h3>
@@ -124,30 +146,46 @@ const Designs: React.FC = () => {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {storageDesigns.length > 0 ? (
-            storageDesigns.map((design) => {
-              const designRow = designsTable.find((d) => d.imagen_url === design.url);
-              const isSelected = designRow?.selected || false;
-              return (
-                <div
-                  key={design.name}
-                  className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
-                    isSelected ? "border-4 border-blue-500" : "border-gray-300 hover:border-gray-400"
-                  }`}
-                  onClick={() => designRow && toggleSelectDesign(design)}
-                >
-                  <img
-                    src={design.url}
-                    alt={design.name}
-                    className="w-full h-full object-contain p-1"
-                  />
-                  {isSelected && (
-                    <span className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                      Seleccionado
-                    </span>
-                  )}
-                </div>
-              );
-            })
+            storageDesigns
+              .map((design) => {
+                const designRow = designsTable.find((d) => d.imagen_url === design.url);
+                return { ...design, ...designRow }; // Combinar storageDesign con designRow para tener stock y selected
+              })
+              .sort((a, b) => {
+                // Ordenar primero por selected (true antes que false) y luego por stock (descendente)
+                if (a.selected !== b.selected) {
+                  return a.selected ? -1 : 1; // true (seleccionados) primero
+                }
+                return b.stock - a.stock; // Dentro de cada grupo, ordenar por stock descendente
+              })
+              .map((design) => {
+                const isSelected = design.selected || false;
+                return (
+                  <div
+                    key={design.name}
+                    className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
+                      isSelected ? "border-4 border-blue-500" : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <img
+                      src={design.url}
+                      alt={design.name}
+                      className="w-full h-full object-contain p-1"
+                    />
+                    {isSelected && (
+                      <span className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                        Seleccionado
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleDeleteDesign(design)}
+                      className="absolute top-1 left-1 bg-red-600 text-white text-xs px-2 py-1 rounded-lg hover:bg-red-700 transition"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                );
+              })
           ) : (
             <p className="text-gray-600 col-span-full text-center">No hay diseños disponibles en storage</p>
           )}
