@@ -1,63 +1,68 @@
-// services/designs.ts
 import { supabase } from "../lib/supabaseClient";
 
+// Obtener imágenes cargadas en storage (contenedor)
+export const getStorageDesigns = async () => {
+  const { data, error } = await supabase.storage.from("designs").list("", {
+    limit: 100,
+    offset: 0,
+  });
+
+  if (error) throw error;
+
+  // Normalizamos cada archivo con su URL pública
+  return data.map((file) => {
+    const { data: publicUrlData } = supabase.storage
+      .from("designs")
+      .getPublicUrl(file.name);
+
+    return {
+      name: file.name,
+      url: publicUrlData.publicUrl,
+    };
+  });
+};
+
+// Obtener diseños en stock (tabla)
 export const getDesigns = async () => {
   const { data, error } = await supabase
     .from("disenos")
-    .select("*");
-  if (error) throw error;
-  return data;
-};
-
-export const getAvailableDesigns = async () => {
-  const { data, error } = await supabase
-    .from("disenos")
     .select("*")
-    .gt("stock", 0);   // solo diseños con stock > 0
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return data;
 };
 
-export async function addDesign(file: File) {
+// Agregar imagen a Storage
+export const uploadToStorage = async (file: File) => {
   const fileName = `${Date.now()}_${file.name}`;
+  const { error } = await supabase.storage.from("designs").upload(fileName, file);
+  if (error) throw error;
 
-  // 1. Subir a Storage
-  const { error: storageError } = await supabase.storage
-    .from("designs")
-    .upload(fileName, file);
-  if (storageError) throw storageError;
+  const { data: publicUrlData } = supabase.storage.from("designs").getPublicUrl(fileName);
+  return { fileName, url: publicUrlData.publicUrl };
+};
 
-  // 2. Obtener URL pública
-  const { data: publicUrlData } = supabase.storage
-    .from("designs")
-    .getPublicUrl(fileName);
-
-  // 3. Insertar en la tabla
+// Insertar en tabla disenos
+export const addToStock = async (fileName: string, url: string) => {
   const { data, error } = await supabase
     .from("disenos")
-    .insert([
-      {
-        nombre: file.name,
-        imagen_url: publicUrlData.publicUrl,
-        stock: 0,
-      },
-    ])
+    .insert([{ nombre: fileName, imagen_url: url, stock: 0 }])
     .select()
     .single();
-
   if (error) throw error;
   return data;
-}
+};
 
-// Eliminar diseño
-export const deleteDesign = async (id: string, filePath: string) => {
-  // 1. Borrar de tabla
-  const { error: dbError } = await supabase.from("disenos").delete().eq("id", id);
-  if (dbError) throw dbError;
+// Actualizar stock o nombre
+export const updateDesign = async (id: string, updates: Partial<{ nombre: string; stock: number }>) => {
+  const { error } = await supabase.from("disenos").update(updates).eq("id", id);
+  if (error) throw error;
+  return true;
+};
 
-  // 2. Borrar de storage
-  const { error: storageError } = await supabase.storage.from("designs").remove([filePath]);
-  if (storageError) throw storageError;
-
+// Quitar solo de tabla
+export const removeFromStock = async (id: string) => {
+  const { error } = await supabase.from("disenos").delete().eq("id", id);
+  if (error) throw error;
   return true;
 };

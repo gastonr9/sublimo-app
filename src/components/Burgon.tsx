@@ -7,7 +7,7 @@ import remera from '/public/images/remera.png';
 import remeracolor from '/public/images/remeracolor.png';
 import remerahigh from '/public/images/remerahighlight.png';
 import remerablack from '/public/images/remerablack.png';
-import { getAvailableDesigns } from "../services/designs";
+import { getDesigns } from "../services/designs";
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -135,7 +135,7 @@ const [designs, setDesigns] = useState<any[]>([]);
   useEffect(() => {
     const cargarDesigns = async () => {
       try {
-        const data = await getAvailableDesigns();
+        const data = await getDesigns();
         setDesigns(data);
       } catch (err) {
         console.error("Error trayendo diseños:", err);
