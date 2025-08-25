@@ -1,177 +1,168 @@
 import React, { useEffect, useState } from "react";
-import {
-  getStorageDesigns,
-  getDesigns,
-  uploadToStorage,
-  addToStock,
-  updateDesign,
-  removeFromStock,
-} from "../services/designs";
-import { supabase } from "../lib/supabaseClient";
+import { listDesignsFromStorage, uploadDesign } from "../services/storage";
+import { getDesigns, addDesignMeta, updateDesign } from "../services/designs";
 
-interface Design {
+interface StorageDesign {
+  name: string;
+  url: string;
+}
+
+interface DesignRow {
   id: string;
   nombre: string;
   imagen_url: string;
   stock: number;
+  selected: boolean;
 }
-const { data, error } = await supabase.storage.from("designs").list();
-console.log("Storage files:", data);
+
 const Designs: React.FC = () => {
-  const [storageFiles, setStorageFiles] = useState<any[]>([]);
-  const [designs, setDesigns] = useState<Design[]>([]);
+  const [storageDesigns, setStorageDesigns] = useState<StorageDesign[]>([]);
+  const [designsTable, setDesignsTable] = useState<DesignRow[]>([]);
+  const [selectedDesigns, setSelectedDesigns] = useState<DesignRow[]>([]);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    fetchStorage();
-    fetchDesigns();
+    fetchAll();
   }, []);
 
-  const fetchStorage = async () => {
+  const fetchAll = async () => {
     try {
-      const data = await getStorageDesigns();
-      setStorageFiles(data);
+      const [storage, table] = await Promise.all([listDesignsFromStorage(), getDesigns()]);
+      setStorageDesigns(storage);
+      setDesignsTable(table);
+      // Sincronizar selectedDesigns con los que tienen selected = true
+      const initiallySelected = table.filter((design) => design.selected);
+      setSelectedDesigns(initiallySelected);
     } catch (err) {
-      console.error("Error trayendo storage:", err);
+      console.error("Error al traer diseños:", err);
     }
   };
 
-  const fetchDesigns = async () => {
-    try {
-      const data = await getDesigns();
-      setDesigns(data);
-    } catch (err) {
-      console.error("Error trayendo diseños:", err);
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      if (!event.target.files || event.target.files.length === 0) return;
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
       setUploading(true);
-      const file = event.target.files[0];
-      await uploadToStorage(file);
-      await fetchStorage();
-    } catch (err) {
-      console.error("Error subiendo archivo:", err);
-    } finally {
-      setUploading(false);
-      event.target.value = "";
-    }
-  };
-
-  // Al clickear un archivo del storage
-  const handleToggleStock = async (file: any) => {
-    try {
-      const { data: publicUrlData } = supabase.storage
-        .from("designs")
-        .getPublicUrl(file.name);
-
-      // Ver si ya está en stock
-      const enStock = designs.find((d) => d.nombre === file.name);
-
-      if (enStock) {
-        // Si está en stock -> quitarlo
-        await removeFromStock(enStock.id);
-      } else {
-        // Si no está -> agregarlo
-        await addToStock(file.name, publicUrlData.publicUrl);
+      try {
+        const file = files[0];
+        const newDesign = await uploadDesign(file);
+        setDesignsTable((prev) => [...prev, newDesign]);
+        setStorageDesigns((prev) => [
+          ...prev,
+          { name: newDesign.nombre, url: newDesign.imagen_url },
+        ]);
+      } catch (err) {
+        console.error("Error al subir diseño:", err);
+      } finally {
+        setUploading(false);
+        event.target.value = ""; // Reset input
       }
-
-      await fetchDesigns();
-    } catch (err) {
-      console.error("Error alternando stock:", err);
     }
   };
 
-  const handleUpdateStock = async (id: string, stock: number) => {
+  const toggleSelectDesign = async (storageDesign: StorageDesign) => {
+    const designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
+    if (!designRow) return;
+
+    const newSelected = !designRow.selected;
+    const updatedDesign = await updateDesign(designRow.id, { selected: newSelected });
+    setDesignsTable((prev) =>
+      prev.map((d) => (d.id === designRow.id ? updatedDesign : d))
+    );
+    setSelectedDesigns((prev) =>
+      newSelected
+        ? [...prev, updatedDesign]
+        : prev.filter((d) => d.id !== designRow.id)
+    );
+  };
+
+  const handleUpdate = async (id: string, field: "nombre" | "stock", value: string | number) => {
     try {
-      await updateDesign(id, { stock });
-      await fetchDesigns();
+      const updated = await updateDesign(id, { [field]: value });
+      setDesignsTable((prev) => prev.map((d) => (d.id === id ? updated : d)));
+      setSelectedDesigns((prev) => prev.map((d) => (d.id === id ? updated : d)));
     } catch (err) {
-      console.error("Error actualizando stock:", err);
+      console.error("Error actualizando diseño:", err);
     }
   };
-
-  const handleUpdateName = async (id: string, nombre: string) => {
-    try {
-      await updateDesign(id, { nombre });
-      await fetchDesigns();
-    } catch (err) {
-      console.error("Error actualizando nombre:", err);
-    }
-  };
-
 
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Diseños</h2>
 
-      {/* Contenedor superior (storage) */}
-      <div className="flex flex-wrap gap-4 p-4 border rounded-lg mb-6">
-        {storageFiles.map((file) => {
-          const enStock = designs.some((d) => d.nombre === file.name);
-          return (
-            <div
-              key={file.id || file.name}
-              onClick={() => handleToggleStock(file)}
-              className={`relative w-24 h-24 border rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500 ${
-                enStock ? "border-2 border-blue-500" : ""
-              }`}
-            >
-           <img
-  src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/designs/${file.name}`}
-  alt={file.name}
-  className="w-full h-full object-contain p-1"
-/>
-
-            </div>
-          );
-        })}
-
-        {/* Botón de subir imagen */}
-        <label className="w-24 h-24 border-2 border-dashed flex items-center justify-center text-xl text-gray-500 rounded-lg cursor-pointer">
-          {uploading ? "..." : "+"}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </label>
+      {/* Contenedor superior → Imágenes de Storage con botón de carga */}
+      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold text-gray-700">Imágenes Disponibles en Storage</h3>
+          <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+            {uploading ? "Subiendo..." : "Cargar Imagen"}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleUpload}
+              className="hidden"
+              disabled={uploading}
+            />
+          </label>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {storageDesigns.length > 0 ? (
+            storageDesigns.map((design) => {
+              const designRow = designsTable.find((d) => d.imagen_url === design.url);
+              const isSelected = designRow?.selected || false;
+              return (
+                <div
+                  key={design.name}
+                  className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
+                    isSelected ? "border-4 border-blue-500" : "border-gray-300 hover:border-gray-400"
+                  }`}
+                  onClick={() => designRow && toggleSelectDesign(design)}
+                >
+                  <img
+                    src={design.url}
+                    alt={design.name}
+                    className="w-full h-full object-contain p-1"
+                  />
+                  {isSelected && (
+                    <span className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                      Seleccionado
+                    </span>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-gray-600 col-span-full text-center">No hay diseños disponibles en storage</p>
+          )}
+        </div>
       </div>
 
-      {/* Lista de diseños (stock en tabla) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {designs.map((design) => (
-          <div key={design.id} className="bg-white shadow-md rounded-lg p-4">
-            <img
-              src={design.imagen_url}
-              alt={design.nombre}
-              className="w-full h-40 object-contain"
-            />
-            <input
-              type="text"
-              value={design.nombre}
-              onChange={(e) => handleUpdateName(design.id, e.target.value)}
-              className="border rounded-lg p-1 w-full mt-2"
-            />
-            <input
-              type="number"
-              value={design.stock}
-              onChange={(e) =>
-                handleUpdateStock(design.id, parseInt(e.target.value) || 0)
-              }
-              className="border rounded-lg p-1 w-20 mt-2"
-            />
-            <button
-              onClick={() => handleToggleStock({ name: design.nombre })}
-              className="mt-2 bg-red-600 text-white px-4 py-1 rounded-lg"
-            >
-              Quitar
-            </button>
-          </div>
-        ))}
+      {/* Contenedor inferior → Diseños seleccionados de la tabla */}
+      <div className="bg-white shadow-md rounded-lg p-6">
+        <h3 className="text-xl font-semibold mb-4 text-gray-700">Diseños Seleccionados</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {selectedDesigns.length > 0 ? (
+            selectedDesigns.map((design) => (
+              <div key={design.id} className="bg-white shadow-md rounded-lg p-4">
+                <img src={design.imagen_url} alt={design.nombre} className="w-full h-40 object-contain" />
+                <input
+                  type="text"
+                  value={design.nombre}
+                  onChange={(e) => handleUpdate(design.id, "nombre", e.target.value)}
+                  className="mt-2 border rounded-lg p-1 w-full"
+                />
+                <input
+                  type="number"
+                  value={design.stock}
+                  onChange={(e) => handleUpdate(design.id, "stock", parseInt(e.target.value) || 0)}
+                  className="mt-2 border rounded-lg p-1 w-24"
+                  min="0"
+                />
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-600 col-span-full text-center">No hay diseños seleccionados</p>
+          )}
+        </div>
       </div>
     </div>
   );

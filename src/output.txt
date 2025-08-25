@@ -9,14 +9,14 @@ import remera from '/public/images/remera.png';
 import remeracolor from '/public/images/remeracolor.png';
 import remerahigh from '/public/images/remerahighlight.png';
 import remerablack from '/public/images/remerablack.png';
-
+import { getDesigns } from "../services/designs";
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [selectedProductoId, setSelectedProductoId] = useState(order.productoId || '');
   const [talles, setTalles] = useState<string[]>([]);
   const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
-
+const [designs, setDesigns] = useState<any[]>([]);
   useEffect(() => {
     const cargarProductos = async () => {
       const productosData = await getProductos();
@@ -117,6 +117,37 @@ const Burgon: React.FC = () => {
     return coloresConocidos[nombre] || '#000000';
   };
 
+  // cargar productos
+  useEffect(() => {
+    const cargarProductos = async () => {
+      const productosData = await getProductos();
+      setProductos(productosData);
+
+      if (productosData.length > 0 && !selectedProductoId) {
+        const firstProductId = productosData[0].id;
+        setSelectedProductoId(firstProductId);
+        const producto = await getProductoPorId(firstProductId);
+        if (producto) setSelectedProduct(producto);
+      }
+    };
+    cargarProductos();
+  }, []);
+
+  // cargar diseños disponibles
+  useEffect(() => {
+    const cargarDesigns = async () => {
+      try {
+        const data = await getDesigns();
+        setDesigns(data);
+      } catch (err) {
+        console.error("Error trayendo diseños:", err);
+      }
+    };
+    cargarDesigns();
+  }, []);
+
+
+
   return (
     <section className="bg-white py-10 px-4 w-full max-w-screen-xl mx-auto">
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
@@ -191,44 +222,72 @@ const Burgon: React.FC = () => {
       </div>
 
       {/* Imagen con color aplicado */}
-      <div className="relative w-full flex justify-center">
-        <div className="relative w-64 h-64">
-          <div
-            className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
-            style={{
-              backgroundColor: order.color || '#ffffff',
-              maskImage: `url(${remeracolor})`,
-            }}
-          ></div>
-          
-          <img
-            src={remera}
-            alt="Remera"
-            className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-          <img
-            src={remerahigh}
-            alt="Remera"
-            className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-          <img
-            src={remera}
-            alt="Remera"
-            className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-          <img
-            src={remerablack}
-            alt="Remera"
-            className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-          <img
-            src={diseño}
-            alt="diseño"
-            className="opacity-100 mix-blend-normal absolute inset-0 z-20 w-full h-[50%] top-[20%] object-contain pointer-events-none"
-          />
+<div className="relative w-full flex justify-center">
+  <div className="relative w-64 h-64">
+    <div
+      className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
+      style={{
+        backgroundColor: order.color || '#ffffff',
+        maskImage: `url(${remeracolor})`,
+      }}
+    ></div>
+
+    <img
+      src={remera}
+      alt="Remera"
+      className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+    />
+    <img
+      src={remerahigh}
+      alt="Remera"
+      className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+    />
+    <img
+      src={remera}
+      alt="Remera"
+      className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+    />
+    <img
+      src={remerablack}
+      alt="Remera"
+      className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+    />
+
+    {/* 👇 Diseño seleccionado dinámico */}
+    {order.disenoUrl && (
+      <img
+        src={order.disenoUrl}
+        alt="diseño"
+        className="opacity-100 mix-blend-normal absolute inset-0 z-30 w-full h-[50%] top-[20%]  object-contain pointer-events-none"
+      />
+    )}
+  </div>
+</div>
+ {/* NUEVO: Contenedor de diseños */}
+      <div className="mt-8">
+        <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">Elegí un diseño</h3>
+        <div className="flex flex-wrap gap-4 justify-center">
+          {designs.length > 0 ? (
+            designs.map((design) => (
+              <button
+                key={design.id}
+                className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
+                  order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
+                }`}
+                onClick={() => setOrder({ ...order, disenoId: design.id, disenoUrl: design.imagen_url, })}
+              >
+                <img
+                  src={design.imagen_url}
+                  alt={design.nombre}
+                  className="w-full h-full object-contain p-1"
+                />
+              </button>
+            ))
+          ) : (
+            <p className="text-gray-600">No hay diseños disponibles</p>
+          )}
         </div>
       </div>
-
       {/* Nombre y precio sincronizados */}
     <div className="text-center mb-4">
   <h3 className="text-lg font-semibold text-gray-800">
@@ -262,9 +321,15 @@ export default Burgon;
 // Contenido de: components/Designs.tsx
 
 import React, { useEffect, useState } from "react";
-import { getDesigns, addDesign } from "../services/designs";
+import { listDesignsFromStorage } from "../services/storage";
+import { getDesigns, addDesignMeta, updateDesign } from "../services/designs";
 
-interface Design {
+interface StorageDesign {
+  name: string;
+  url: string;
+}
+
+interface DesignRow {
   id: string;
   nombre: string;
   imagen_url: string;
@@ -272,34 +337,51 @@ interface Design {
 }
 
 const Designs: React.FC = () => {
-  const [designs, setDesigns] = useState<Design[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [storageDesigns, setStorageDesigns] = useState<StorageDesign[]>([]);
+  const [designsTable, setDesignsTable] = useState<DesignRow[]>([]);
+  const [selectedDesigns, setSelectedDesigns] = useState<DesignRow[]>([]);
 
   useEffect(() => {
-    fetchDesigns();
+    fetchAll();
   }, []);
 
-  const fetchDesigns = async () => {
+  const fetchAll = async () => {
     try {
-      const data = await getDesigns();
-      setDesigns(data);
+      const [storage, table] = await Promise.all([listDesignsFromStorage(), getDesigns()]);
+      setStorageDesigns(storage);
+      setDesignsTable(table);
     } catch (err) {
       console.error("Error al traer diseños:", err);
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const toggleSelectDesign = async (storageDesign: StorageDesign) => {
+    // Ver si ya está seleccionado
+    const alreadySelected = selectedDesigns.find((d) => d.imagen_url === storageDesign.url);
+    if (alreadySelected) {
+      // Deseleccionar
+      setSelectedDesigns(selectedDesigns.filter((d) => d.id !== alreadySelected.id));
+      return;
+    }
+
+    // Buscar si ya existe en la tabla
+    let designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
+    if (!designRow) {
+      // Insertar en la tabla
+      designRow = await addDesignMeta(storageDesign.name, storageDesign.url);
+      setDesignsTable((prev) => [...prev, designRow]);
+    }
+
+    setSelectedDesigns((prev) => [...prev, designRow]);
+  };
+
+  const handleUpdate = async (id: string, field: "nombre" | "stock", value: string | number) => {
     try {
-      if (!event.target.files || event.target.files.length === 0) return;
-      setUploading(true);
-      const file = event.target.files[0];
-      await addDesign(file);
-      await fetchDesigns(); // refrescar después de subir
+      const updated = await updateDesign(id, { [field]: value });
+      setDesignsTable((prev) => prev.map((d) => (d.id === id ? updated : d)));
+      setSelectedDesigns((prev) => prev.map((d) => (d.id === id ? updated : d)));
     } catch (err) {
-      console.error("Error subiendo diseño:", err);
-    } finally {
-      setUploading(false);
-      event.target.value = ""; // reset input
+      console.error("Error actualizando diseño:", err);
     }
   };
 
@@ -307,32 +389,61 @@ const Designs: React.FC = () => {
     <div className="p-6">
       <h2 className="text-2xl font-bold mb-4">Diseños</h2>
 
-      {/* Contenedor superior */}
+      {/* Contenedor superior → Storage */}
       <div className="flex flex-wrap gap-4 p-4 border rounded-lg mb-6">
-        {designs.map((design) => (
-          <div
-            key={design.id}
-            className="relative w-24 h-24 border rounded-lg overflow-hidden"
-          >
-            <img
-              src={design.imagen_url}
-              alt={design.nombre}
-              className="w-full h-full object-contain p-1"
-            />
-          </div>
-        ))}
-
-        {/* Botón de subir imagen */}
-        <label className="w-24 h-24 border-2 border-dashed flex items-center justify-center text-xl text-gray-500 rounded-lg cursor-pointer">
-          {uploading ? "..." : "+"}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-        </label>
+        {storageDesigns.map((design) => {
+          const isSelected = selectedDesigns.some((d) => d.imagen_url === design.url);
+          return (
+            <div
+              key={design.name}
+              className={`relative w-24 h-24 border rounded-lg overflow-hidden cursor-pointer ${
+                isSelected ? "border-4 border-blue-500" : "border-gray-300"
+              }`}
+              onClick={() => toggleSelectDesign(design)}
+            >
+              <img
+                src={design.url}
+                alt={design.name}
+                className="w-full h-full object-contain p-1"
+              />
+            </div>
+          );
+        })}
       </div>
+
+      {/* Contenedor inferior → Tabla de seleccionados */}
+      {selectedDesigns.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {selectedDesigns.map((design) => (
+            <div key={design.id} className="bg-white shadow-md rounded-lg p-4">
+              <img src={design.imagen_url} alt={design.nombre} className="w-full h-40 object-contain" />
+
+              <input
+                type="text"
+                value={design.nombre}
+                onChange={(e) => handleUpdate(design.id, "nombre", e.target.value)}
+                className="mt-2 border rounded-lg p-1 w-full"
+              />
+
+              <input
+                type="number"
+                value={design.stock}
+                onChange={(e) => handleUpdate(design.id, "stock", parseInt(e.target.value) || 0)}
+                className="mt-2 border rounded-lg p-1 w-24"
+              />
+
+              <button
+                onClick={() =>
+                  setSelectedDesigns(selectedDesigns.filter((d) => d.id !== design.id))
+                }
+                className="mt-3 bg-red-600 text-white px-4 py-1 rounded-lg"
+              >
+                Quitar de la lista
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
@@ -344,46 +455,43 @@ export default Designs;
 
 import { supabase } from "../lib/supabaseClient";
 
+// Traer diseños de la tabla con sus metadatos
 export const getDesigns = async () => {
   const { data, error } = await supabase
     .from("disenos")
     .select("*")
-    .order("created_at", { ascending: false }); // si tenés created_at
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return data;
 };
 
-export async function addDesign(file: File) {
-  const fileName = `${Date.now()}_${file.name}`;
-  
-  // 1. Subir a Storage
-  const { data: storageData, error: storageError } = await supabase.storage
-    .from("designs")
-    .upload(fileName, file);
-
-  if (storageError) throw storageError;
-
-  // 2. Obtener URL pública
-  const { data: publicUrlData } = supabase.storage
-    .from("designs")
-    .getPublicUrl(fileName);
-
-  // 3. Insertar en la tabla
+// Insertar diseño si no existe
+export const addDesignMeta = async (nombre: string, imagenUrl: string) => {
   const { data, error } = await supabase
     .from("disenos")
     .insert([
       {
-        nombre: file.name,
-        imagen_url: publicUrlData.publicUrl,
+        nombre,
+        imagen_url: imagenUrl,
         stock: 0,
       },
     ])
     .select()
     .single();
-
   if (error) throw error;
-
   return data;
-}
+};
+
+// Actualizar nombre o stock
+export const updateDesign = async (id: string, fields: Partial<{ nombre: string; stock: number }>) => {
+  const { data, error } = await supabase
+    .from("disenos")
+    .update(fields)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+};
 
 

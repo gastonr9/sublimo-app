@@ -1,28 +1,7 @@
+// designs.ts
 import { supabase } from "../lib/supabaseClient";
 
-// Obtener imágenes cargadas en storage (contenedor)
-export const getStorageDesigns = async () => {
-  const { data, error } = await supabase.storage.from("designs").list("", {
-    limit: 100,
-    offset: 0,
-  });
-
-  if (error) throw error;
-
-  // Normalizamos cada archivo con su URL pública
-  return data.map((file) => {
-    const { data: publicUrlData } = supabase.storage
-      .from("designs")
-      .getPublicUrl(file.name);
-
-    return {
-      name: file.name,
-      url: publicUrlData.publicUrl,
-    };
-  });
-};
-
-// Obtener diseños en stock (tabla)
+// Traer diseños de la tabla con sus metadatos
 export const getDesigns = async () => {
   const { data, error } = await supabase
     .from("disenos")
@@ -32,37 +11,25 @@ export const getDesigns = async () => {
   return data;
 };
 
-// Agregar imagen a Storage
-export const uploadToStorage = async (file: File) => {
-  const fileName = `${Date.now()}_${file.name}`;
-  const { error } = await supabase.storage.from("designs").upload(fileName, file);
-  if (error) throw error;
-
-  const { data: publicUrlData } = supabase.storage.from("designs").getPublicUrl(fileName);
-  return { fileName, url: publicUrlData.publicUrl };
-};
-
-// Insertar en tabla disenos
-export const addToStock = async (fileName: string, url: string) => {
+// Insertar diseño si no existe
+export const addDesignMeta = async (nombre: string, imagenUrl: string) => {
   const { data, error } = await supabase
     .from("disenos")
-    .insert([{ nombre: fileName, imagen_url: url, stock: 0 }])
+    .insert([{ nombre, imagen_url: imagenUrl, stock: 0, selected: false }])
     .select()
     .single();
   if (error) throw error;
   return data;
 };
 
-// Actualizar stock o nombre
-export const updateDesign = async (id: string, updates: Partial<{ nombre: string; stock: number }>) => {
-  const { error } = await supabase.from("disenos").update(updates).eq("id", id);
+// Actualizar nombre, stock o selected
+export const updateDesign = async (id: string, fields: Partial<{ nombre: string; stock: number; selected: boolean }>) => {
+  const { data, error } = await supabase
+    .from("disenos")
+    .update(fields)
+    .eq("id", id)
+    .select()
+    .single();
   if (error) throw error;
-  return true;
-};
-
-// Quitar solo de tabla
-export const removeFromStock = async (id: string) => {
-  const { error } = await supabase.from("disenos").delete().eq("id", id);
-  if (error) throw error;
-  return true;
+  return data;
 };
