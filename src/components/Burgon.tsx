@@ -137,6 +137,12 @@ const Burgon: React.FC = () => {
     if (colorNombre) setOrder({ ...order, color: colorHex });
   };
 
+  const handleDesignSelect = (disenoId: string, disenoUrl: string) => {
+    if (order.talle && order.color) {
+      setOrder({ ...order, disenoId, disenoUrl });
+    }
+  };
+
   const getDefaultHex = (nombre: string): string => {
     const coloresConocidos = {
       Blanco: '#ffffff',
@@ -279,8 +285,9 @@ const Burgon: React.FC = () => {
                 <button
                   className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
                     order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
-                  }`}
-                  onClick={() => setOrder({ ...order, disenoId: design.id, disenoUrl: design.imagen_url })}
+                  } ${!order.talle || !order.color ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => handleDesignSelect(design.id, design.imagen_url)}
+                  disabled={!order.talle || !order.color}
                 >
                   <img
                     src={design.imagen_url}
@@ -288,7 +295,7 @@ const Burgon: React.FC = () => {
                     className="w-full h-full object-contain p-1"
                   />
                 </button>
-                <p className="text-center text-xs font-medium text-gray-700 mt-1 uppercase ">
+                <p className="text-center text-xs font-medium text-gray-700 mt-1 uppercase">
                   {design.nombre}
                 </p>
               </div>
