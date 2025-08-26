@@ -22,7 +22,10 @@ export const listDesignsFromStorage = async () => {
 
 // Subir imagen y crear registro en la tabla disenos
 export const uploadDesign = async (file: File) => {
-  const fileName = `${Date.now()}-${file.name}`; // Nombre único con timestamp
+  // Extraer el nombre base sin extensión
+  const nameWithoutExt = file.name.replace(/\.[^/.]+$/, ""); // Elimina la extensión (e.g., .png, .jpg)
+  const fileName = `${Date.now()}-${nameWithoutExt}`; // Nombre único sin extensión
+
   const { error: uploadError } = await supabase.storage
     .from("designs")
     .upload(fileName, file, {
@@ -37,7 +40,7 @@ export const uploadDesign = async (file: File) => {
   const imagenUrl = `${supabaseUrl}/storage/v1/object/public/designs/${fileName}`;
   const { data, error: insertError } = await supabase
     .from("disenos")
-    .insert([{ nombre: file.name, imagen_url: imagenUrl, stock: 0 }])
+    .insert([{ nombre: nameWithoutExt, imagen_url: imagenUrl, stock: 0 }])
     .select()
     .single();
 

@@ -110,11 +110,12 @@ const Burgon: React.FC = () => {
           top = '25%'; // Ajuste hacia arriba para diseños horizontales
         } else if (aspectRatio < 0.67) { // Diseño vertical (e.g., 2:3 o menos)
           maxWidth = '80%';
-          maxHeight = '50%';top = '25%'; 
+          maxHeight = '50%';
+          top = '25%';
         } else { // Diseño cuadrado o casi cuadrado (0.67 a 1.5)
           maxWidth = '70%';
           maxHeight = '50%';
-          top = '25%'; 
+          top = '25%';
         }
 
         setDesignStyle({ maxWidth, maxHeight, top });
@@ -257,7 +258,7 @@ const Burgon: React.FC = () => {
             <img
               src={order.disenoUrl}
               alt="diseño"
-              className="absolute z-30 w-full  object-contain pointer-events-none"
+              className="absolute z-30 w-full object-contain pointer-events-none"
               style={{
                 ...designStyle,
                 left: '51%',
@@ -274,19 +275,23 @@ const Burgon: React.FC = () => {
         <div className="flex flex-wrap gap-4 justify-center">
           {designs.length > 0 ? (
             designs.map((design) => (
-              <button
-                key={design.id}
-                className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
-                  order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
-                }`}
-                onClick={() => setOrder({ ...order, disenoId: design.id, disenoUrl: design.imagen_url })}
-              >
-                <img
-                  src={design.imagen_url}
-                  alt={design.nombre}
-                  className="w-full h-full object-contain p-1"
-                />
-              </button>
+              <div key={design.id} className="flex flex-col items-center">
+                <button
+                  className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
+                    order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
+                  }`}
+                  onClick={() => setOrder({ ...order, disenoId: design.id, disenoUrl: design.imagen_url })}
+                >
+                  <img
+                    src={design.imagen_url}
+                    alt={design.nombre}
+                    className="w-full h-full object-contain p-1"
+                  />
+                </button>
+                <p className="text-center text-xs font-medium text-gray-700 mt-1 uppercase ">
+                  {design.nombre}
+                </p>
+              </div>
             ))
           ) : (
             <p className="text-gray-600">No hay diseños disponibles</p>
