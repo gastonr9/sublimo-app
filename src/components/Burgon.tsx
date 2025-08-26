@@ -7,6 +7,7 @@ import remeracolor from '/public/images/remeracolor.png';
 import remerahigh from '/public/images/remerahighlight.png';
 import remerablack from '/public/images/remerablack.png';
 import { getDesigns } from "../services/designs";
+import { supabase } from '../lib/supabaseClient'; // Asegúrate de importar supabase
 
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
@@ -15,7 +16,11 @@ const Burgon: React.FC = () => {
   const [talles, setTalles] = useState<string[]>([]);
   const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
   const [designs, setDesigns] = useState<any[]>([]);
-  const [designStyle, setDesignStyle] = useState({ maxWidth: '70%', maxHeight: '80%', top: '20%' }); // Estado inicial con top
+  const [designStyle, setDesignStyle] = useState({ maxWidth: '70%', maxHeight: '80%', top: '20%' });
+  const [showModal, setShowModal] = useState(false);
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     const cargarProductos = async () => {
@@ -103,21 +108,20 @@ const Burgon: React.FC = () => {
         const aspectRatio = img.width / img.height;
         let maxWidth = '70%';
         let maxHeight = '80%';
-        let top = '20%'; // Valor por defecto para top
-        if (aspectRatio > 1) { // Diseño horizontal (e.g., ancho mayor que alto)
+        let top = '20%';
+        if (aspectRatio > 1) {
           maxWidth = '40%';
           maxHeight = '80%';
-          top = '25%'; // Ajuste hacia arriba para diseños horizontales
-        } else if (aspectRatio < 0.67) { // Diseño vertical (e.g., 2:3 o menos)
+          top = '25%';
+        } else if (aspectRatio < 0.67) {
           maxWidth = '80%';
           maxHeight = '50%';
           top = '25%';
-        } else { // Diseño cuadrado o casi cuadrado (0.67 a 1.5)
+        } else {
           maxWidth = '70%';
           maxHeight = '50%';
           top = '25%';
         }
-
         setDesignStyle({ maxWidth, maxHeight, top });
       };
     }
@@ -140,6 +144,41 @@ const Burgon: React.FC = () => {
   const handleDesignSelect = (disenoId: string, disenoUrl: string) => {
     if (order.talle && order.color) {
       setOrder({ ...order, disenoId, disenoUrl });
+    }
+  };
+
+  const handleNext = () => {
+    if (order.talle && order.color && order.disenoId) {
+      setShowModal(true);
+    }
+  };
+
+  const handleSaveDetails = () => {
+    if (nombre && apellido) {
+      setShowSummary(true);
+    }
+  };
+
+  const handleFinalize = async () => {
+    if (nombre && apellido && order.talle && order.color && order.disenoId && order.productoId) {
+      const { error } = await supabase.from('pedidos').insert({
+        nombre,
+        apellido,
+        talle: order.talle,
+        color: order.color,
+        diseno_id: order.disenoId,
+        producto_id: order.productoId,
+      });
+      if (error) {
+        console.error('Error al guardar el pedido:', error);
+      } else {
+        setShowModal(false);
+        setShowSummary(false);
+        setNombre('');
+        setApellido('');
+        setOrder({ ...order, talle: '', color: '', disenoId: '', disenoUrl: '' }); // Resetear selección
+        alert('Pedido registrado con éxito');
+      }
     }
   };
 
@@ -269,7 +308,7 @@ const Burgon: React.FC = () => {
                 ...designStyle,
                 left: '51%',
                 transform: 'translateX(-50%)',
-                top: designStyle.top, // Aplicar el top dinámico
+                top: designStyle.top,
               }}
             />
           )}
@@ -320,14 +359,76 @@ const Burgon: React.FC = () => {
       <div className="flex justify-center mt-6">
         <button
           className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-          onClick={() => {
-            console.log('Siguiente');
-          }}
-          disabled={!selectedProduct || !order.talle || !order.color}
+          onClick={handleNext}
+          disabled={!selectedProduct || !order.talle || !order.color || !order.disenoId}
         >
           Siguiente
         </button>
       </div>
+
+      {/* Modal para ingresar nombre y apellido */}
+      {showModal && !showSummary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h3 className="text-lg font-semibold mb-4">Ingresa tus datos</h3>
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              className="border rounded-lg p-2 mb-4 w-full"
+            />
+            <input
+              type="text"
+              placeholder="Apellido"
+              value={apellido}
+              onChange={(e) => setApellido(e.target.value)}
+              className="border rounded-lg p-2 mb-4 w-full"
+            />
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              onClick={handleSaveDetails}
+              disabled={!nombre || !apellido}
+            >
+              Siguiente
+            </button>
+            <button
+              className="ml-4 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowModal(false)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para resumen del pedido */}
+      {showModal && showSummary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h3 className="text-lg font-semibold mb-4">Resumen del pedido</h3>
+            <p>Producto: {selectedProduct?.nombre}</p>
+            <p>Talle: {order.talle}</p>
+            <p>Color: {coloresDisponibles.find(c => c.hex === order.color)?.nombre || order.color}</p>
+            <p>Diseño: {designs.find(d => d.id === order.disenoId)?.nombre || 'Sin diseño'}</p>
+            <p>Nombre: {nombre}</p>
+            <p>Apellido: {apellido}</p>
+            <p>Precio: ${selectedProduct?.precio.toFixed(2) || '0.00'}</p>
+            <button
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition mt-4"
+              onClick={handleFinalize}
+            >
+              Finalizar
+            </button>
+            <button
+              className="ml-4 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowSummary(false)}
+            >
+              Volver
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

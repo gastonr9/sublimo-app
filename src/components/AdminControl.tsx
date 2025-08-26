@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import Inventario from "./Inventario";
 import Designs from "./Designs";
+import Pedidos from "./Pedidos";
+import Usuarios from "./Usuarios";
 // import Usuarios from "./Usuarios";
 
 const AdminControl: React.FC = () => {
@@ -10,9 +12,10 @@ const AdminControl: React.FC = () => {
     switch (activeTab) {
       case "inventario":
         return <Inventario />;
-
       case "designs":
         return <Designs />;
+      case "pedidos":
+        return <Pedidos />;
       case "usuarios":
         return <Usuarios />;
       default:
@@ -46,6 +49,16 @@ const AdminControl: React.FC = () => {
             }`}
           >
             Diseños
+          </button>
+          <button
+            onClick={() => setActiveTab("pedidos")}
+            className={`block w-full text-left px-4 py-2 rounded-lg transition ${
+              activeTab === "pedidos"
+                ? "bg-blue-100 text-blue-700 font-semibold"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+          >
+            Pedidos
           </button>
           <button
             onClick={() => setActiveTab("usuarios")}
