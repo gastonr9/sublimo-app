@@ -7,7 +7,7 @@ import remeracolor from '/public/images/remeracolor.png';
 import remerahigh from '/public/images/remerahighlight.png';
 import remerablack from '/public/images/remerablack.png';
 import { getDesigns } from "../services/designs";
-import { supabase } from '../lib/supabaseClient'; // Asegúrate de importar supabase
+import { supabase } from '../lib/supabaseClient';
 
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
@@ -148,8 +148,11 @@ const Burgon: React.FC = () => {
   };
 
   const handleNext = () => {
+    console.log('Handle Next clicked. Order:', order); // Depuración
     if (order.talle && order.color && order.disenoId) {
       setShowModal(true);
+    } else {
+      alert('Por favor, selecciona talle, color y diseño.');
     }
   };
 
@@ -165,7 +168,7 @@ const Burgon: React.FC = () => {
         nombre,
         apellido,
         talle: order.talle,
-        color: order.color,
+        color: order.color, // Guardamos el hex, pero lo mapearemos en Pedidos
         diseno_id: order.disenoId,
         producto_id: order.productoId,
       });
@@ -176,7 +179,7 @@ const Burgon: React.FC = () => {
         setShowSummary(false);
         setNombre('');
         setApellido('');
-        setOrder({ ...order, talle: '', color: '', disenoId: '', disenoUrl: '' }); // Resetear selección
+        setOrder({ ...order, talle: '', color: '', disenoId: '', disenoUrl: '' });
         alert('Pedido registrado con éxito');
       }
     }
