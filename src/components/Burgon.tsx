@@ -44,11 +44,14 @@ const Burgon: React.FC = () => {
           setSelectedProduct(producto);
           setOrder({ ...order, productoId: selectedProductoId });
 
-          const tallesUnicos = [...new Set(producto.inventario.map((i) => i.talla))].sort((a, b) => {
-            const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
-            return ordenTalles[a as keyof typeof ordenTalles] - ordenTalles[b as keyof typeof ordenTalles];
-          });
-          setTalles(tallesUnicos);
+          const tallesConStock = [
+  ...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.talla))
+].sort((a, b) => {
+  const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
+  return ordenTalles[a as keyof typeof ordenTalles] - ordenTalles[b as keyof typeof ordenTalles];
+});
+
+setTalles(tallesConStock);
 
           if (producto.inventario) {
             const todosLosColores = [...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
