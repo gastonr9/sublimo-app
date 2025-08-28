@@ -163,27 +163,33 @@ const Burgon: React.FC = () => {
   };
 
   const handleFinalize = async () => {
-    if (nombre && apellido && order.talle && order.color && order.disenoId && order.productoId) {
-      const { error } = await supabase.from('pedidos').insert({
-        nombre,
-        apellido,
-        talle: order.talle,
-        color: order.color, // Guardamos el hex, pero lo mapearemos en Pedidos
-        diseno_id: order.disenoId,
-        producto_id: order.productoId,
-      });
-      if (error) {
-        console.error('Error al guardar el pedido:', error);
-      } else {
-        setShowModal(false);
-        setShowSummary(false);
-        setNombre('');
-        setApellido('');
-        setOrder({ ...order, talle: '', color: '', disenoId: '', disenoUrl: '' });
-        alert('Pedido registrado con éxito');
-      }
+  if (nombre && apellido && order.talle && order.color && order.disenoId && order.productoId) {
+    // Buscar el nombre del color a partir del hex
+    const colorNombre = coloresDisponibles.find(c => c.hex === order.color)?.nombre || order.color;
+
+    const { error } = await supabase.from('pedidos').insert({
+      nombre,
+      apellido,
+      talle: order.talle,
+      color: colorNombre, // 👈 Guardamos el NOMBRE en vez del HEX
+      diseno_id: order.disenoId,
+      producto_id: order.productoId,
+    });
+
+    if (error) {
+      console.error('Error al guardar el pedido:', error);
+    } else {
+      setShowModal(false);
+      setShowSummary(false);
+      setNombre('');
+      setApellido('');
+      setOrder({ ...order, talle: '', color: '', disenoId: '', disenoUrl: '' });
+      alert('Pedido registrado con éxito');
     }
-  };
+  }
+};
+
+
 
   const getDefaultHex = (nombre: string): string => {
     const coloresConocidos = {
@@ -200,6 +206,69 @@ const Burgon: React.FC = () => {
     };
     return coloresConocidos[nombre] || '#000000';
   };
+
+const handleCreatePedido = async () => {
+  try {
+    if (!selectedProduct || !order.talle || !order.color || !order.disenoId) {
+      alert("Faltan datos para crear el pedido.");
+      return;
+    }
+
+    // Buscar inventario_id según producto/talle/color
+    const { data: inv, error: invError } = await supabase
+      .from("inventario")
+      .select("id, stock")
+      .eq("producto_id", selectedProduct.id)
+      .eq("talla", order.talle)
+      .eq("color", coloresDisponibles.find(c => c.hex === order.color)?.nombre)
+      .single();
+
+    if (invError || !inv) {
+      alert("No existe inventario para esa combinación de producto/talle/color.");
+      return;
+    }
+
+    if (inv.stock <= 0) {
+      alert("No hay stock disponible para este producto.");
+      return;
+    }
+
+    // Iniciar transacción manual: insertar pedido + descontar stock
+    const { error: pedidoError } = await supabase.from("pedidos").insert({
+      nombre,
+      apellido,
+      inventario_id: inv.id,
+      diseno_id: order.disenoId,
+      estado: "pendiente",
+    });
+
+    if (pedidoError) throw pedidoError;
+
+    // Actualizar stock (-1)
+    const { error: stockError } = await supabase
+      .from("inventario")
+      .update({ stock: inv.stock - 1 })
+      .eq("id", inv.id);
+
+    if (stockError) {
+      // ⚠️ Si falla el update, borramos el pedido recién creado
+      await supabase.from("pedidos").delete().eq("inventario_id", inv.id).eq("diseno_id", order.disenoId).eq("nombre", nombre).eq("apellido", apellido);
+      throw stockError;
+    }
+
+    alert("✅ Pedido creado y stock actualizado.");
+
+    // limpiar estado
+    setShowModal(false);
+    setShowSummary(false);
+    setNombre("");
+    setApellido("");
+    setOrder({ ...order, talle: "", color: "", disenoId: "", disenoUrl: "" });
+  } catch (err) {
+    console.error("Error creando pedido:", err);
+    alert("❌ No se pudo crear el pedido.");
+  }
+};
 
   return (
     <section className="bg-white py-10 px-4 w-full max-w-screen-xl mx-auto">
@@ -418,11 +487,11 @@ const Burgon: React.FC = () => {
             <p>Apellido: {apellido}</p>
             <p>Precio: ${selectedProduct?.precio.toFixed(2) || '0.00'}</p>
             <button
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition mt-4"
-              onClick={handleFinalize}
-            >
-              Finalizar
-            </button>
+  onClick={handleCreatePedido}
+  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+>
+  Guardar Pedido
+</button>
             <button
               className="ml-4 text-gray-500 hover:text-gray-700"
               onClick={() => setShowSummary(false)}

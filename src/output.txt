@@ -1,339 +1,260 @@
-// Contenido de: components/Designs.tsx
+// Contenido de: components/Pedidos.tsx
 
-import React, { useEffect, useState } from "react";
-import { listDesignsFromStorage, uploadDesign, removeDesignFromStorage } from "../services/storage";
-import { getDesigns, addDesignMeta, updateDesign, deleteDesign } from "../services/designs";
+// Pedidos.tsx
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabaseClient';
 
-interface StorageDesign {
-  name: string;
-  url: string;
-}
-
-interface DesignRow {
-  id: string;
-  nombre: string;
-  imagen_url: string;
-  stock: number;
-  selected: boolean;
-}
-
-const Designs: React.FC = () => {
-  const [storageDesigns, setStorageDesigns] = useState<StorageDesign[]>([]);
-  const [designsTable, setDesignsTable] = useState<DesignRow[]>([]);
-  const [selectedDesigns, setSelectedDesigns] = useState<DesignRow[]>([]);
-  const [uploading, setUploading] = useState(false);
+const Pedidos: React.FC = () => {
+  const [pedidos, setPedidos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [confirmedPedidos, setConfirmedPedidos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetchAll();
+    fetchPedidos();
   }, []);
 
-  const fetchAll = async () => {
+  const fetchPedidos = async () => {
+    setLoading(true);
     try {
-      const [storage, table] = await Promise.all([listDesignsFromStorage(), getDesigns()]);
-      setStorageDesigns(storage);
-      setDesignsTable(table);
-      // Sincronizar selectedDesigns con los que tienen selected = true
-      const initiallySelected = table.filter((design) => design.selected);
-      setSelectedDesigns(initiallySelected);
-    } catch (err) {
-      console.error("Error al traer diseños:", err);
-    }
-  };
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select(`
+          id,
+          nombre,
+          apellido,
+          talle,
+          color,
+          diseno_id,
+          producto_id,
+          fecha,
+          estado,
+          disenos (nombre),
+          productos (nombre)
+        `)
+        .order('fecha', { ascending: false });
 
-  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      setUploading(true);
-      try {
-        const file = files[0];
-        const newDesign = await uploadDesign(file);
-        setDesignsTable((prev) => [...prev, newDesign]);
-        setStorageDesigns((prev) => [
-          ...prev,
-          { name: newDesign.nombre, url: newDesign.imagen_url },
-        ]);
-      } catch (err) {
-        console.error("Error al subir diseño:", err);
-      } finally {
-        setUploading(false);
-        event.target.value = ""; // Reset input
+      if (error) {
+        console.error('Error fetching pedidos:', error.message);
+        alert(`Error al cargar pedidos: ${error.message}`);
+      } else {
+        setPedidos(data || []);
+        const confirmedIds = new Set(data?.filter(p => p.estado === 'confirmado').map(p => p.id) || []);
+        setConfirmedPedidos(confirmedIds);
       }
-    }
-  };
-
-  const toggleSelectDesign = async (storageDesign: StorageDesign) => {
-    const designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
-    if (!designRow) return;
-
-    const newSelected = !designRow.selected;
-    const updatedDesign = await updateDesign(designRow.id, { selected: newSelected });
-    setDesignsTable((prev) =>
-      prev.map((d) => (d.id === designRow.id ? updatedDesign : d))
-    );
-    setSelectedDesigns((prev) =>
-      newSelected
-        ? [...prev, updatedDesign]
-        : prev.filter((d) => d.id !== designRow.id)
-    );
-  };
-
-  const handleUpdate = async (id: string, field: "nombre" | "stock", value: string | number) => {
-    try {
-      let updatedValue = value;
-      if (field === "nombre") {
-        // Extraer solo el nombre base sin extensión
-        const nameWithoutExt = value.toString().replace(/\.[^/.]+$/, ""); // Elimina la extensión
-        updatedValue = nameWithoutExt || "Sin nombre"; // Evita que quede vacío
-      }
-      const updated = await updateDesign(id, { [field]: updatedValue });
-      setDesignsTable((prev) => prev.map((d) => (d.id === id ? updated : d)));
-      setSelectedDesigns((prev) => prev.map((d) => (d.id === id ? updated : d)));
     } catch (err) {
-      console.error("Error actualizando diseño:", err);
+      console.error('Unexpected error fetching pedidos:', err);
+      alert('Error inesperado al cargar pedidos.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRemove = async (id: string) => {
-    try {
-      const updatedDesign = await updateDesign(id, { selected: false });
-      setDesignsTable((prev) =>
-        prev.map((d) => (d.id === id ? updatedDesign : d))
-      );
-      setSelectedDesigns((prev) => prev.filter((d) => d.id !== id));
-    } catch (err) {
-      console.error("Error al quitar diseño:", err);
-    }
-  };
-
-  const handleDeleteDesign = async (storageDesign: StorageDesign) => {
-    if (!window.confirm("¿Estás seguro de que deseas eliminar esta imagen y su registro? Esta acción no se puede deshacer.")) {
+  const handleToggleConfirm = async (id: string) => {
+    const pedido = pedidos.find(p => p.id === id);
+    if (!pedido) {
+      console.error('Pedido no encontrado:', id);
+      alert('Pedido no encontrado.');
       return;
     }
 
+    const isConfirming = pedido.estado === 'pendiente';
+    const newEstado = isConfirming ? 'confirmado' : 'pendiente';
+
+    setLoading(true);
     try {
-      const designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
-      if (designRow) {
-        // Eliminar de Storage
-        await removeDesignFromStorage(storageDesign.name);
-        // Eliminar de la tabla disenos
-        await deleteDesign(designRow.id);
-        // Actualizar estados
-        setStorageDesigns((prev) => prev.filter((d) => d.name !== storageDesign.name));
-        setDesignsTable((prev) => prev.filter((d) => d.id !== designRow.id));
-        setSelectedDesigns((prev) => prev.filter((d) => d.id !== designRow.id));
+      // Update order status
+      const { error: updateError } = await supabase
+        .from('pedidos')
+        .update({ estado: newEstado })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+
+      // Adjust inventory based on action
+      const stockUpdate = isConfirming
+        ? { stock: supabase.sql`stock - 1` }
+        : { stock: supabase.sql`stock + 1` };
+
+      const { error: stockError, data } = await supabase
+        .from('inventario')
+        .update(stockUpdate)
+        .eq('producto_id', pedido.producto_id)
+        .eq('talla', pedido.talle)
+        .eq('color', pedido.color)
+        .gte('stock', isConfirming ? 1 : 0) // Ensure stock >= 1 when confirming
+        .select('*');
+
+      console.log('Stock update result:', { error: stockError, data });
+      if (stockError) {
+        // Revert order status on stock error
+        await supabase.from('pedidos').update({ estado: pedido.estado }).eq('id', id);
+        console.error('Error updating stock:', stockError.message);
+        alert(`Error al actualizar stock: ${stockError.message}`);
+        return;
       }
+
+      // Update local confirmedPedidos state
+      const newConfirmed = new Set(confirmedPedidos);
+      if (isConfirming) {
+        newConfirmed.add(id);
+      } else {
+        newConfirmed.delete(id);
+      }
+      setConfirmedPedidos(newConfirmed);
+      await fetchPedidos(); // Refresh data
+      alert(`Pedido ${isConfirming ? 'confirmado' : 'desconfirmado'} con éxito.`);
     } catch (err) {
-      console.error("Error al eliminar diseño:", err);
+      console.error('Error in handleToggleConfirm:', err);
+      alert('Error al actualizar el estado del pedido.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Diseños</h2>
+  const handleDeletePedido = async (id: string) => {
+    const pedido = pedidos.find(p => p.id === id);
+    if (!pedido) {
+      console.error('Pedido no encontrado:', id);
+      alert('Pedido no encontrado.');
+      return;
+    }
 
-      {/* Contenedor superior → Imágenes de Storage con botón de carga y eliminación */}
-      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-700">Imágenes Disponibles en Storage</h3>
-          <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
-            {uploading ? "Subiendo..." : "Cargar Imagen"}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleUpload}
-              className="hidden"
-              disabled={uploading}
-            />
-          </label>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {storageDesigns.length > 0 ? (
-            storageDesigns
-              .map((design) => {
-                const designRow = designsTable.find((d) => d.imagen_url === design.url);
-                return { ...design, ...designRow }; // Combinar storageDesign con designRow para tener stock y selected
-              })
-              .sort((a, b) => {
-                // Ordenar primero por selected (true antes que false) y luego por stock (descendente)
-                if (a.selected !== b.selected) {
-                  return a.selected ? -1 : 1; // true (seleccionados) primero
-                }
-                return b.stock - a.stock; // Dentro de cada grupo, ordenar por stock descendente
-              })
-              .map((design) => {
-                const isSelected = design.selected || false;
-                return (
-                  <div
-                    key={design.name}
-                    className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
-                      isSelected ? "border-4 border-blue-500" : "border-gray-300 hover:border-gray-400"
-                    }`}
-                  >
-                    <img
-                      src={design.url}
-                      alt={design.name}
-                      className="w-full h-full object-contain p-1"
-                    />
-                    {isSelected && (
-                      <span className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                        Seleccionado
-                      </span>
-                    )}
+    // Show confirmation dialog
+    const confirmDelete = window.confirm(`¿Estás seguro de que deseas eliminar el pedido de ${pedido.nombre} ${pedido.apellido}?`);
+    if (!confirmDelete) return;
+
+    setLoading(true);
+    try {
+      // If the order is confirmed, restore stock before deletion
+      if (pedido.estado === 'confirmado') {
+        const { error: stockError, data } = await supabase
+          .from('inventario')
+          .update({ stock: supabase.sql`stock + 1` })
+          .eq('producto_id', pedido.producto_id)
+          .eq('talla', pedido.talle)
+          .eq('color', pedido.color)
+          .select('*');
+
+        console.log('Stock restore result:', { error: stockError, data });
+        if (stockError) {
+          console.error('Error restoring stock:', stockError.message);
+          alert(`Error al restaurar stock: ${stockError.message}`);
+          return;
+        }
+      }
+
+      // Delete the order
+      const { error: deleteError } = await supabase
+        .from('pedidos')
+        .delete()
+        .eq('id', id);
+
+      if (deleteError) throw deleteError;
+
+      // Update local state
+      const newConfirmed = new Set(confirmedPedidos);
+      newConfirmed.delete(id);
+      setConfirmedPedidos(newConfirmed);
+      await fetchPedidos(); // Refresh data
+      alert('Pedido eliminado con éxito.');
+    } catch (err) {
+      console.error('Error in handleDeletePedido:', err);
+      alert('Error al eliminar el pedido.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getColorName = (hex: string): string => {
+    const colorMap = {
+      '#ffffff': 'Blanco',
+      '#000000': 'Negro',
+      '#ff0000': 'Rojo',
+      '#0000ff': 'Azul',
+      '#008000': 'Verde',
+      '#ffff00': 'Amarillo',
+      '#808080': 'Gris',
+      '#ff69b4': 'Rosa',
+      '#ffa500': 'Naranja',
+      '#800080': 'Morado',
+    };
+    return colorMap[hex] || hex;
+  };
+
+  if (loading) {
+    return <div className="text-center text-gray-600">Cargando pedidos...</div>;
+  }
+
+  return (
+    <div className="bg-gray-50 py-10 px-4 w-full max-w-screen-xl mx-auto">
+      <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">Panel de Pedidos</h2>
+      {pedidos.length > 0 ? (
+        <div className="overflow-x-auto shadow-md rounded-lg">
+          <table className="min-w-full bg-white border border-gray-200">
+            <thead>
+              <tr className="bg-blue-600 text-white">
+                <th className="py-3 px-4 border-b text-left">ID</th>
+                <th className="py-3 px-4 border-b text-left">Nombre</th>
+                <th className="py-3 px-4 border-b text-left">Apellido</th>
+                <th className="py-3 px-4 border-b text-left">Talle</th>
+                <th className="py-3 px-4 border-b text-left">Color</th>
+                <th className="py-3 px-4 border-b text-left">Diseño</th>
+                <th className="py-3 px-4 border-b text-left">Producto</th>
+                <th className="py-3 px-4 border-b text-left">Fecha</th>
+                <th className="py-3 px-4 border-b text-left">Estado</th>
+                <th className="py-3 px-4 border-b text-left">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pedidos.map((pedido) => (
+                <tr key={pedido.id} className="hover:bg-gray-100 transition-colors">
+                  <td className="py-3 px-4 border-b text-gray-700">{pedido.id.slice(0, 8)}</td>
+                  <td className="py-3 px-4 border-b text-gray-700">{pedido.nombre}</td>
+                  <td className="py-3 px-4 border-b text-gray-700">{pedido.apellido}</td>
+                  <td className="py-3 px-4 border-b text-gray-700">{pedido.talle}</td>
+                  <td className="py-3 px-4 border-b text-gray-700">{getColorName(pedido.color)}</td>
+                  <td className="py-3 px-4 border-b text-gray-700">{pedido.disenos?.nombre || 'Sin diseño'}</td>
+                  <td className="py-3 px-4 border-b text-gray-700">{pedido.productos?.nombre || 'Sin producto'}</td>
+                  <td className="py-3 px-4 border-b text-gray-700">{new Date(pedido.fecha).toLocaleString()}</td>
+                  <td className="py-3 px-4 border-b text-gray-700">
+                    <span className={`px-2 py-1 rounded-full text-sm ${
+                      pedido.estado === 'pendiente' ? 'bg-yellow-200 text-yellow-800'
+                      : 'bg-green-200 text-green-800'
+                    }`}>
+                      {pedido.estado}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 border-b">
                     <button
-                      onClick={() => handleDeleteDesign(design)}
-                      className="absolute top-1 left-1 bg-red-600 text-white text-xs px-2 py-1 rounded-lg hover:bg-red-700 transition"
+                      className={`px-3 py-1 rounded ${
+                        pedido.estado === 'confirmado'
+                          ? 'bg-green-600 text-white hover:bg-green-700'
+                          : 'bg-blue-500 text-white hover:bg-blue-600'
+                      } disabled:bg-gray-400 disabled:cursor-not-allowed`}
+                      onClick={() => handleToggleConfirm(pedido.id)}
+                      disabled={loading}
+                    >
+                      {pedido.estado === 'confirmado' ? 'Desconfirmar' : 'Confirmar'}
+                    </button>
+                    <button
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 ml-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      onClick={() => handleDeletePedido(pedido.id)}
+                      disabled={loading}
                     >
                       Eliminar
                     </button>
-                  </div>
-                );
-              })
-          ) : (
-            <p className="text-gray-600 col-span-full text-center">No hay diseños disponibles en storage</p>
-          )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
-
-      {/* Contenedor inferior → Diseños seleccionados de la tabla */}
-      <div className="bg-white shadow-md rounded-lg p-6">
-        <h3 className="text-xl font-semibold mb-4 text-gray-700">Diseños Seleccionados</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {selectedDesigns.length > 0 ? (
-            selectedDesigns.map((design) => (
-              <div key={design.id} className="bg-white shadow-md rounded-lg p-4 relative">
-                <img src={design.imagen_url} alt={design.nombre} className="w-full h-40 object-contain" />
-                <input
-                  type="text"
-                  value={design.nombre.replace(/\.[^/.]+$/, "")} // Mostrar solo nombre base
-                  onChange={(e) => handleUpdate(design.id, "nombre", e.target.value)}
-                  className="mt-2 border rounded-lg p-1 w-full"
-                  placeholder="Nombre (sin extensión)"
-                />
-                <input
-                  type="number"
-                  value={design.stock}
-                  onChange={(e) => handleUpdate(design.id, "stock", parseInt(e.target.value) || 0)}
-                  className="mt-2 border rounded-lg p-1 w-24"
-                  min="0"
-                />
-                <button
-                  onClick={() => handleRemove(design.id)}
-                  className="mt-2 bg-red-600 text-white px-4 py-1 rounded-lg hover:bg-red-700 transition"
-                >
-                  Quitar
-                </button>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-600 col-span-full text-center">No hay diseños seleccionados</p>
-          )}
-        </div>
-      </div>
+      ) : (
+        <p className="text-center text-gray-600">No hay pedidos registrados.</p>
+      )}
     </div>
   );
 };
 
-export default Designs;
-
-// Contenido de: services/designs.ts
-
-// designs.ts
-import { supabase } from "../lib/supabaseClient";
-
-// Traer diseños de la tabla con sus metadatos
-export const getDesigns = async () => {
-  const { data, error } = await supabase
-    .from("disenos")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data;
-};
-
-// Insertar diseño si no existe
-export const addDesignMeta = async (nombre: string, imagenUrl: string) => {
-  const { data, error } = await supabase
-    .from("disenos")
-    .insert([{ nombre, imagen_url: imagenUrl, stock: 0, selected: false }])
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
-
-// Actualizar nombre, stock o selected
-export const updateDesign = async (id: string, fields: Partial<{ nombre: string; stock: number; selected: boolean }>) => {
-  const { data, error } = await supabase
-    .from("disenos")
-    .update(fields)
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
-};
-export const deleteDesign = async (id: string) => {
-  const { error } = await supabase
-    .from("disenos")
-    .delete()
-    .eq("id", id);
-  if (error) throw error;
-};
-
-// Contenido de: services/storage.ts
-
-// storage.ts
-import { supabase } from "../lib/supabaseClient";
-
-// Listar imágenes desde el bucket "designs"
-export const listDesignsFromStorage = async () => {
-  const { data, error } = await supabase.storage
-    .from("designs")
-    .list("", { limit: 100, sortBy: { column: "created_at", order: "desc" } });
-
-  if (error) throw error;
-
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  if (!supabaseUrl) {
-    throw new Error("VITE_SUPABASE_URL no está definido en el entorno");
-  }
-
-  return data.map((file) => ({
-    name: file.name,
-    url: `${supabaseUrl}/storage/v1/object/public/designs/${file.name}`,
-  }));
-};
-
-// Subir imagen y crear registro en la tabla disenos
-export const uploadDesign = async (file: File) => {
-  const fileName = `${Date.now()}-${file.name}`; // Nombre único con timestamp
-  const { error: uploadError } = await supabase.storage
-    .from("designs")
-    .upload(fileName, file, {
-      cacheControl: "3600",
-      upsert: false,
-    });
-
-  if (uploadError) throw uploadError;
-
-  // Crear registro en la tabla disenos
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const imagenUrl = `${supabaseUrl}/storage/v1/object/public/designs/${fileName}`;
-  const { data, error: insertError } = await supabase
-    .from("disenos")
-    .insert([{ nombre: file.name, imagen_url: imagenUrl, stock: 0 }])
-    .select()
-    .single();
-
-  if (insertError) throw insertError;
-
-  return data;
-};
-
-export const removeDesignFromStorage = async (fileName: string) => {
-  const { error } = await supabase.storage
-    .from("designs")
-    .remove([fileName]);
-  if (error) throw error;
-};
+export default Pedidos;
 
