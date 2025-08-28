@@ -162,32 +162,6 @@ const Burgon: React.FC = () => {
     }
   };
 
-  const handleFinalize = async () => {
-  if (nombre && apellido && order.talle && order.color && order.disenoId && order.productoId) {
-    // Buscar el nombre del color a partir del hex
-    const colorNombre = coloresDisponibles.find(c => c.hex === order.color)?.nombre || order.color;
-
-    const { error } = await supabase.from('pedidos').insert({
-      nombre,
-      apellido,
-      talle: order.talle,
-      color: colorNombre, // 👈 Guardamos el NOMBRE en vez del HEX
-      diseno_id: order.disenoId,
-      producto_id: order.productoId,
-    });
-
-    if (error) {
-      console.error('Error al guardar el pedido:', error);
-    } else {
-      setShowModal(false);
-      setShowSummary(false);
-      setNombre('');
-      setApellido('');
-      setOrder({ ...order, talle: '', color: '', disenoId: '', disenoUrl: '' });
-      alert('Pedido registrado con éxito');
-    }
-  }
-};
 
 
 

@@ -9,6 +9,20 @@ const Pedidos: React.FC = () => {
 
   useEffect(() => {
     fetchPedidos();
+
+    // Set up real-time subscription
+    const subscription = supabase
+      .channel('pedidos-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pedidos' },
+        () => fetchPedidos()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   const fetchPedidos = async () => {
@@ -27,6 +41,7 @@ const Pedidos: React.FC = () => {
             id,
             talla,
             color,
+            stock,
             productos (id, nombre, precio)
           )
         `)
@@ -36,9 +51,7 @@ const Pedidos: React.FC = () => {
 
       setPedidos(data || []);
       const confirmedIds = new Set(
-        (data || [])
-          .filter((p) => p.estado === "confirmado")
-          .map((p) => p.id)
+        (data || []).filter((p) => p.estado === "confirmado").map((p) => p.id)
       );
       setConfirmedPedidos(confirmedIds);
     } catch (err: any) {
@@ -53,9 +66,20 @@ const Pedidos: React.FC = () => {
     const isConfirming = pedido.estado === "pendiente";
     const newEstado = isConfirming ? "confirmado" : "pendiente";
 
+    // Optimistic update
+    const originalPedidos = pedidos;
+    const updatedPedidos = pedidos.map((p) =>
+      p.id === pedido.id ? { ...p, estado: newEstado } : p
+    );
+    setPedidos(updatedPedidos);
+    const newConfirmed = new Set(confirmedPedidos);
+    if (isConfirming) newConfirmed.add(pedido.id);
+    else newConfirmed.delete(pedido.id);
+    setConfirmedPedidos(newConfirmed);
+
     setLoading(true);
     try {
-      // update estado pedido
+      // Update pedido estado
       const { error: updateError } = await supabase
         .from("pedidos")
         .update({ estado: newEstado })
@@ -63,37 +87,46 @@ const Pedidos: React.FC = () => {
 
       if (updateError) throw updateError;
 
-      // update stock en inventario
-      const stockUpdate = isConfirming
-        ? { stock: supabase.sql`stock - 1` }
-        : { stock: supabase.sql`stock + 1` };
+      // Fetch current stock
+      const { data: inventario, error: fetchStockError } = await supabase
+        .from("inventario")
+        .select("id, stock")
+        .eq("id", pedido.inventario.id)
+        .single();
 
+      if (fetchStockError || !inventario) {
+        throw new Error(fetchStockError?.message || "Inventario no encontrado");
+      }
+
+      // Validate stock for confirming
+      if (isConfirming && inventario.stock < 1) {
+        throw new Error("Stock insuficiente para confirmar el pedido");
+      }
+
+      // Update stock
+      const newStock = isConfirming ? inventario.stock - 1 : inventario.stock + 1;
       const { error: stockError } = await supabase
         .from("inventario")
-        .update(stockUpdate)
-        .eq("id", pedido.inventario.id)
-        .gte("stock", isConfirming ? 1 : 0);
+        .update({ stock: newStock })
+        .eq("id", inventario.id);
 
       if (stockError) {
-        // revertir estado si falla
+        // Revert pedido estado
         await supabase
           .from("pedidos")
           .update({ estado: pedido.estado })
           .eq("id", pedido.id);
-
         throw stockError;
       }
 
-      const newConfirmed = new Set(confirmedPedidos);
-      if (isConfirming) newConfirmed.add(pedido.id);
-      else newConfirmed.delete(pedido.id);
-
-      setConfirmedPedidos(newConfirmed);
       await fetchPedidos();
       alert(`Pedido ${isConfirming ? "confirmado" : "desconfirmado"} con éxito.`);
     } catch (err: any) {
       console.error("Error en handleToggleConfirm:", err.message);
-      alert("Error al actualizar estado del pedido.");
+      // Revert optimistic update
+      setPedidos(originalPedidos);
+      setConfirmedPedidos(confirmedPedidos);
+      alert(`Error al actualizar estado del pedido: ${err.message || "Error desconocido"}`);
     } finally {
       setLoading(false);
     }
@@ -105,19 +138,37 @@ const Pedidos: React.FC = () => {
     );
     if (!confirmDelete) return;
 
+    // Optimistic update
+    const originalPedidos = pedidos;
+    const updatedPedidos = pedidos.filter((p) => p.id !== pedido.id);
+    setPedidos(updatedPedidos);
+    const newConfirmed = new Set(confirmedPedidos);
+    newConfirmed.delete(pedido.id);
+    setConfirmedPedidos(newConfirmed);
+
     setLoading(true);
     try {
-      // Si estaba confirmado, restaurar stock
+      // Restore stock if confirmed
       if (pedido.estado === "confirmado") {
+        const { data: inventario, error: fetchStockError } = await supabase
+          .from("inventario")
+          .select("id, stock")
+          .eq("id", pedido.inventario.id)
+          .single();
+
+        if (fetchStockError || !inventario) {
+          throw new Error(fetchStockError?.message || "Inventario no encontrado");
+        }
+
         const { error: stockError } = await supabase
           .from("inventario")
-          .update({ stock: supabase.sql`stock + 1` })
-          .eq("id", pedido.inventario.id);
+          .update({ stock: inventario.stock + 1 })
+          .eq("id", inventario.id);
 
         if (stockError) throw stockError;
       }
 
-      // eliminar pedido
+      // Delete pedido
       const { error: deleteError } = await supabase
         .from("pedidos")
         .delete()
@@ -125,18 +176,33 @@ const Pedidos: React.FC = () => {
 
       if (deleteError) throw deleteError;
 
-      const newConfirmed = new Set(confirmedPedidos);
-      newConfirmed.delete(pedido.id);
-      setConfirmedPedidos(newConfirmed);
       await fetchPedidos();
-
       alert("Pedido eliminado con éxito.");
     } catch (err: any) {
       console.error("Error en handleDeletePedido:", err.message);
-      alert("Error al eliminar pedido.");
+      // Revert optimistic update
+      setPedidos(originalPedidos);
+      setConfirmedPedidos(confirmedPedidos);
+      alert(`Error al eliminar pedido: ${err.message || "Error desconocido"}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getColorName = (hex: string): string => {
+    const colorMap: { [key: string]: string } = {
+      '#ffffff': 'Blanco',
+      '#000000': 'Negro',
+      '#ff0000': 'Rojo',
+      '#0000ff': 'Azul',
+      '#008000': 'Verde',
+      '#ffff00': 'Amarillo',
+      '#808080': 'Gris',
+      '#ff69b4': 'Rosa',
+      '#ffa500': 'Naranja',
+      '#800080': 'Morado',
+    };
+    return colorMap[hex] || hex;
   };
 
   if (loading) {
@@ -185,7 +251,7 @@ const Pedidos: React.FC = () => {
                     {pedido.inventario?.talla || "—"}
                   </td>
                   <td className="py-3 px-4 border-b text-gray-700">
-                    {pedido.inventario?.color || "—"}
+                    {getColorName(pedido.inventario?.color || "—")}
                   </td>
                   <td className="py-3 px-4 border-b text-gray-700">
                     {pedido.disenos?.nombre || "Sin diseño"}
