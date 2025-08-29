@@ -126,7 +126,7 @@ const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
           className={`px-2 py-1 rounded text-white ${
             pedido.estado === "pendiente"
               ? "bg-yellow-500"
-              : pedido.estado === "confirmado"
+              : pedido.estado === "realizado"
               ? "bg-green-600"
               : "bg-red-600"
           }`}
@@ -138,23 +138,32 @@ const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
       {/* BOTONES SEGÚN ESTADO */}
       <div className="mt-4 flex gap-2">
         {pedido.estado === "pendiente" && (
-          <>
-            <button
-              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-              onClick={() => handleChangeEstado(pedido.id, "confirmado")}
-            >
-              Confirmar
-            </button>
-            <button
-              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-              onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-            >
-              Cancelar
-            </button>
-          </>
-        )}
+  <>
+    <button
+      onClick={() => handleChangeEstado(pedido.id, "realizado")}
+      className="bg-green-600 text-white px-3 py-1 rounded mr-2"
+    >
+      Confirmar
+    </button>
+    <button
+      onClick={() => handleChangeEstado(pedido.id, "cancelado")}
+      className="bg-red-600 text-white px-3 py-1 rounded"
+    >
+      Cancelar
+    </button>
+  </>
+)}
 
-        {pedido.estado === "confirmado" && (
+{/* {pedido.estado === "realizado" && (
+  <span className="text-green-600 font-bold">✔ Realizado</span>
+)}
+
+{pedido.estado === "cancelado" && (
+  <span className="text-red-600 font-bold">❌ Cancelado</span>
+)} */}
+
+
+        {pedido.estado === "realizado" && (
           <>
             <button
               className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
