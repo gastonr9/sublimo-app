@@ -151,7 +151,7 @@ setTalles(tallesConStock);
   };
 
   const handleNext = () => {
-    console.log('Handle Next clicked. Order:', order); // Depuración
+    // console.log('Handle Next clicked. Order:', order); // Depuración
     if (order.talle && order.color && order.disenoId) {
       setShowModal(true);
     } else {
