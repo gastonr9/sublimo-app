@@ -1,8 +1,496 @@
+// Contenido de: components/Burgon.tsx
+
+import React, { useState, useEffect } from 'react';
+import { useOrder } from '../context/OrderContext';
+import { getProductos, getProductoPorId } from '../services/inventario';
+import { Producto, Color } from '../types/types';
+import remera from '/public/images/remera.png';
+import remeracolor from '/public/images/remeracolor.png';
+import remerahigh from '/public/images/remerahighlight.png';
+import remerablack from '/public/images/remerablack.png';
+import { getDesigns } from "../services/designs";
+import { supabase } from '../lib/supabaseClient';
+
+const Burgon: React.FC = () => {
+  const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [selectedProductoId, setSelectedProductoId] = useState(order.productoId || '');
+  const [talles, setTalles] = useState<string[]>([]);
+  const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
+  const [designs, setDesigns] = useState<any[]>([]);
+  const [designStyle, setDesignStyle] = useState({ maxWidth: '70%', maxHeight: '80%', top: '20%' });
+  const [showModal, setShowModal] = useState(false);
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [showSummary, setShowSummary] = useState(false);
+
+  useEffect(() => {
+    const cargarProductos = async () => {
+      const productosData = await getProductos();
+      setProductos(productosData);
+      if (productosData.length > 0 && !selectedProductoId) {
+        const firstProductId = productosData[0].id;
+        setSelectedProductoId(firstProductId);
+        const producto = await getProductoPorId(firstProductId);
+        if (producto) setSelectedProduct(producto);
+      }
+    };
+    cargarProductos();
+  }, []);
+
+  useEffect(() => {
+    const cargarProductoSeleccionado = async () => {
+      if (selectedProductoId) {
+        const producto = await getProductoPorId(selectedProductoId);
+        if (producto) {
+          setSelectedProduct(producto);
+          setOrder({ ...order, productoId: selectedProductoId });
+
+          const tallesConStock = [
+  ...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.talla))
+].sort((a, b) => {
+  const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
+  return ordenTalles[a as keyof typeof ordenTalles] - ordenTalles[b as keyof typeof ordenTalles];
+});
+
+setTalles(tallesConStock);
+
+          if (producto.inventario) {
+            const todosLosColores = [...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
+              .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
+              .sort((a, b) => a.nombre.localeCompare(b.nombre));
+            setColoresDisponibles(todosLosColores);
+          } else {
+            setColoresDisponibles([]);
+          }
+        } else {
+          setSelectedProduct(null);
+          setTalles([]);
+          setColoresDisponibles([]);
+        }
+      } else {
+        setSelectedProduct(null);
+        setTalles([]);
+        setColoresDisponibles([]);
+      }
+    };
+    cargarProductoSeleccionado();
+  }, [selectedProductoId]);
+
+  useEffect(() => {
+    if (selectedProduct && order.talle && selectedProduct.inventario) {
+      const coloresPorTalle = selectedProduct.inventario
+        .filter((i) => i.talla === order.talle && i.stock > 0)
+        .map((i) => ({ nombre: i.color, hex: getDefaultHex(i.color) }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      setColoresDisponibles(coloresPorTalle);
+    } else if (selectedProduct && selectedProduct.inventario) {
+      const todosLosColores = [...new Set(selectedProduct.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
+        .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      setColoresDisponibles(todosLosColores);
+    }
+  }, [order.talle, selectedProduct]);
+
+  useEffect(() => {
+    const cargarDesigns = async () => {
+      try {
+        const data = await getDesigns();
+        const filteredDesigns = data.filter((design) => design.stock > 0 && design.selected);
+        setDesigns(filteredDesigns);
+      } catch (err) {
+        console.error("Error trayendo diseños:", err);
+      }
+    };
+    cargarDesigns();
+  }, []);
+
+  useEffect(() => {
+    if (order.disenoUrl) {
+      const img = new Image();
+      img.src = order.disenoUrl;
+      img.onload = () => {
+        const aspectRatio = img.width / img.height;
+        let maxWidth = '70%';
+        let maxHeight = '80%';
+        let top = '20%';
+        if (aspectRatio > 1) {
+          maxWidth = '40%';
+          maxHeight = '80%';
+          top = '25%';
+        } else if (aspectRatio < 0.67) {
+          maxWidth = '80%';
+          maxHeight = '50%';
+          top = '25%';
+        } else {
+          maxWidth = '70%';
+          maxHeight = '50%';
+          top = '25%';
+        }
+        setDesignStyle({ maxWidth, maxHeight, top });
+      };
+    }
+  }, [order.disenoUrl]);
+
+  const handleProductoSelect = (id: string) => {
+    setSelectedProductoId(id);
+    setOrder({ ...order, talle: '', color: '', productoId: id });
+  };
+
+  const handleTalleSelect = (talle: string) => {
+    setOrder({ ...order, talle });
+  };
+
+  const handleColorSelect = (colorHex: string) => {
+    const colorNombre = coloresDisponibles.find((c) => c.hex === colorHex)?.nombre;
+    if (colorNombre) setOrder({ ...order, color: colorHex });
+  };
+
+  const handleDesignSelect = (disenoId: string, disenoUrl: string) => {
+    if (order.talle && order.color) {
+      setOrder({ ...order, disenoId, disenoUrl });
+    }
+  };
+
+  const handleNext = () => {
+    console.log('Handle Next clicked. Order:', order); // Depuración
+    if (order.talle && order.color && order.disenoId) {
+      setShowModal(true);
+    } else {
+      alert('Por favor, selecciona talle, color y diseño.');
+    }
+  };
+
+  const handleSaveDetails = () => {
+    if (nombre && apellido) {
+      setShowSummary(true);
+    }
+  };
+
+
+
+
+  const getDefaultHex = (nombre: string): string => {
+    const coloresConocidos = {
+      Blanco: '#ffffff',
+      Negro: '#000000',
+      Rojo: '#ff0000',
+      Azul: '#0000ff',
+      Verde: '#008000',
+      Amarillo: '#ffff00',
+      Gris: '#808080',
+      Rosa: '#ff69b4',
+      Naranja: '#ffa500',
+      Morado: '#800080',
+    };
+    return coloresConocidos[nombre] || '#000000';
+  };
+
+const handleCreatePedido = async () => {
+  try {
+    if (!selectedProduct || !order.talle || !order.color || !order.disenoId) {
+      alert("Faltan datos para crear el pedido.");
+      return;
+    }
+
+    // Buscar inventario_id según producto/talle/color
+    const { data: inv, error: invError } = await supabase
+      .from("inventario")
+      .select("id, stock")
+      .eq("producto_id", selectedProduct.id)
+      .eq("talla", order.talle)
+      .eq("color", coloresDisponibles.find(c => c.hex === order.color)?.nombre)
+      .single();
+
+    if (invError || !inv) {
+      alert("No existe inventario para esa combinación de producto/talle/color.");
+      return;
+    }
+
+    if (inv.stock <= 0) {
+      alert("No hay stock disponible para este producto.");
+      return;
+    }
+
+    // Iniciar transacción manual: insertar pedido + descontar stock
+    const { error: pedidoError } = await supabase.from("pedidos").insert({
+      nombre,
+      apellido,
+      inventario_id: inv.id,
+      diseno_id: order.disenoId,
+      estado: "pendiente",
+    });
+
+    if (pedidoError) throw pedidoError;
+
+    // Actualizar stock (-1)
+    const { error: stockError } = await supabase
+      .from("inventario")
+      .update({ stock: inv.stock - 1 })
+      .eq("id", inv.id);
+
+    if (stockError) {
+      // ⚠️ Si falla el update, borramos el pedido recién creado
+      await supabase.from("pedidos").delete().eq("inventario_id", inv.id).eq("diseno_id", order.disenoId).eq("nombre", nombre).eq("apellido", apellido);
+      throw stockError;
+    }
+
+    alert("✅ Pedido creado y stock actualizado.");
+
+    // limpiar estado
+    setShowModal(false);
+    setShowSummary(false);
+    setNombre("");
+    setApellido("");
+    setOrder({ ...order, talle: "", color: "", disenoId: "", disenoUrl: "" });
+  } catch (err) {
+    console.error("Error creando pedido:", err);
+    alert("❌ No se pudo crear el pedido.");
+  }
+};
+
+  return (
+    <section className="bg-white py-10 px-4 w-full max-w-screen-xl mx-auto">
+      <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
+        Elegí la prenda y el talle
+      </h2>
+
+      <div className="flex justify-center mb-6">
+        <select
+          value={selectedProductoId}
+          onChange={(e) => handleProductoSelect(e.target.value)}
+          className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {productos.map((producto) => (
+            <option key={producto.id} value={producto.id}>
+              {producto.nombre} - ${producto.precio.toFixed(2)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex justify-center gap-4 mb-6 flex-wrap">
+        {talles.length > 0 ? (
+          talles.map((talle) => (
+            <button
+              key={talle}
+              className={`px-4 py-2 rounded-lg border transition ${
+                order.talle === talle
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+              }`}
+              onClick={() => handleTalleSelect(talle)}
+              disabled={!selectedProduct}
+            >
+              {talle}
+            </button>
+          ))
+        ) : selectedProduct ? (
+          <p className="text-gray-600">No hay talles disponibles para este producto</p>
+        ) : (
+          <p className="text-gray-600">Selecciona un producto para ver talles</p>
+        )}
+      </div>
+
+      <div className="flex justify-center gap-4 mb-4 flex-wrap">
+        {coloresDisponibles.length > 0 ? (
+          coloresDisponibles.map((color) => (
+            <button
+              key={color.hex}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${
+                order.color === color.hex
+                  ? 'bg-blue-100 border-blue-600'
+                  : 'bg-white border-gray-300 hover:bg-gray-100'
+              } ${!order.talle ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={() => (order.talle ? handleColorSelect(color.hex) : null)}
+              disabled={!order.talle || !selectedProduct}
+            >
+              <span className="text-gray-800">{color.nombre}</span>
+              <div
+                className="w-6 h-6 rounded-full border"
+                style={{ backgroundColor: color.hex }}
+              />
+            </button>
+          ))
+        ) : selectedProduct && order.talle ? (
+          <p className="text-gray-600">No hay colores disponibles para este talle</p>
+        ) : (
+          <p className="text-gray-600">Selecciona un talle para habilitar colores</p>
+        )}
+      </div>
+
+      <div className="relative w-full flex justify-center">
+        <div className="relative w-64 h-64">
+          <div
+            className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
+            style={{
+              backgroundColor: order.color || '#ffffff',
+              maskImage: `url(${remeracolor})`,
+            }}
+          ></div>
+
+          <img
+            src={remera}
+            alt="Remera"
+            className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={remerahigh}
+            alt="Remera"
+            className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={remera}
+            alt="Remera"
+            className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+          <img
+            src={remerablack}
+            alt="Remera"
+            className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
+          />
+
+          {order.disenoUrl && (
+            <img
+              src={order.disenoUrl}
+              alt="diseño"
+              className="absolute z-30 w-full object-contain pointer-events-none"
+              style={{
+                ...designStyle,
+                left: '51%',
+                transform: 'translateX(-50%)',
+                top: designStyle.top,
+              }}
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">Elegí un diseño</h3>
+        <div className="flex flex-wrap gap-4 justify-center">
+          {designs.length > 0 ? (
+            designs.map((design) => (
+              <div key={design.id} className="flex flex-col items-center">
+                <button
+                  className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
+                    order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
+                  } ${!order.talle || !order.color ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => handleDesignSelect(design.id, design.imagen_url)}
+                  disabled={!order.talle || !order.color}
+                >
+                  <img
+                    src={design.imagen_url}
+                    alt={design.nombre}
+                    className="w-full h-full object-contain p-1"
+                  />
+                </button>
+                <p className="text-center text-xs font-medium text-gray-700 mt-1 uppercase">
+                  {design.nombre}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-600">No hay diseños disponibles</p>
+          )}
+        </div>
+      </div>
+
+      <div className="text-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-800">
+          {selectedProduct?.nombre || ''}
+        </h3>
+        {selectedProduct?.precio ? (
+          <p className="text-xl font-bold text-gray-800">
+            ${selectedProduct.precio.toFixed(2)}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex justify-center mt-6">
+        <button
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+          onClick={handleNext}
+          disabled={!selectedProduct || !order.talle || !order.color || !order.disenoId}
+        >
+          Siguiente
+        </button>
+      </div>
+
+      {/* Modal para ingresar nombre y apellido */}
+      {showModal && !showSummary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h3 className="text-lg font-semibold mb-4">Ingresa tus datos</h3>
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              className="border rounded-lg p-2 mb-4 w-full"
+            />
+            <input
+              type="text"
+              placeholder="Apellido"
+              value={apellido}
+              onChange={(e) => setApellido(e.target.value)}
+              className="border rounded-lg p-2 mb-4 w-full"
+            />
+            <button
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              onClick={handleSaveDetails}
+              disabled={!nombre || !apellido}
+            >
+              Siguiente
+            </button>
+            <button
+              className="ml-4 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowModal(false)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para resumen del pedido */}
+      {showModal && showSummary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h3 className="text-lg font-semibold mb-4">Resumen del pedido</h3>
+            <p>Producto: {selectedProduct?.nombre}</p>
+            <p>Talle: {order.talle}</p>
+            <p>Color: {coloresDisponibles.find(c => c.hex === order.color)?.nombre || order.color}</p>
+            <p>Diseño: {designs.find(d => d.id === order.disenoId)?.nombre || 'Sin diseño'}</p>
+            <p>Nombre: {nombre}</p>
+            <p>Apellido: {apellido}</p>
+            <p>Precio: ${selectedProduct?.precio.toFixed(2) || '0.00'}</p>
+            <button
+  onClick={handleCreatePedido}
+  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+>
+  Guardar Pedido
+</button>
+            <button
+              className="ml-4 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowSummary(false)}
+            >
+              Volver
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};
+
+export default Burgon;
+
 // Contenido de: components/Pedidos.tsx
 
-// Pedidos.tsx
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabaseClient';
+// src/pages/Pedidos.tsx
+import React, { useState, useEffect } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 const Pedidos: React.FC = () => {
   const [pedidos, setPedidos] = useState<any[]>([]);
@@ -11,162 +499,188 @@ const Pedidos: React.FC = () => {
 
   useEffect(() => {
     fetchPedidos();
+
+    // Set up real-time subscription
+    const subscription = supabase
+      .channel('pedidos-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pedidos' },
+        () => fetchPedidos()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   const fetchPedidos = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('pedidos')
+        .from("pedidos")
         .select(`
           id,
           nombre,
           apellido,
-          talle,
-          color,
-          diseno_id,
-          producto_id,
           fecha,
           estado,
-          disenos (nombre),
-          productos (nombre)
+          disenos (id, nombre, imagen_url),
+          inventario (
+            id,
+            talla,
+            color,
+            stock,
+            productos (id, nombre, precio)
+          )
         `)
-        .order('fecha', { ascending: false });
+        .order("fecha", { ascending: false });
 
-      if (error) {
-        console.error('Error fetching pedidos:', error.message);
-        alert(`Error al cargar pedidos: ${error.message}`);
-      } else {
-        setPedidos(data || []);
-        const confirmedIds = new Set(data?.filter(p => p.estado === 'confirmado').map(p => p.id) || []);
-        setConfirmedPedidos(confirmedIds);
-      }
-    } catch (err) {
-      console.error('Unexpected error fetching pedidos:', err);
-      alert('Error inesperado al cargar pedidos.');
+      if (error) throw error;
+
+      setPedidos(data || []);
+      const confirmedIds = new Set(
+        (data || []).filter((p) => p.estado === "realizado").map((p) => p.id)
+      );
+      setConfirmedPedidos(confirmedIds);
+    } catch (err: any) {
+      console.error("Error fetching pedidos:", err.message);
+      alert("Error al cargar pedidos.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleConfirm = async (id: string) => {
-    const pedido = pedidos.find(p => p.id === id);
-    if (!pedido) {
-      console.error('Pedido no encontrado:', id);
-      alert('Pedido no encontrado.');
-      return;
-    }
+  const handleToggleConfirm = async (pedido: any) => {
+    const isConfirming = pedido.estado === "pendiente";
+    const newEstado = isConfirming ? "realizado" : "pendiente";
 
-    const isConfirming = pedido.estado === 'pendiente';
-    const newEstado = isConfirming ? 'confirmado' : 'pendiente';
+    // Optimistic update
+    const originalPedidos = pedidos;
+    const updatedPedidos = pedidos.map((p) =>
+      p.id === pedido.id ? { ...p, estado: newEstado } : p
+    );
+    setPedidos(updatedPedidos);
+    const newConfirmed = new Set(confirmedPedidos);
+    if (isConfirming) newConfirmed.add(pedido.id);
+    else newConfirmed.delete(pedido.id);
+    setConfirmedPedidos(newConfirmed);
 
     setLoading(true);
     try {
-      // Update order status
+      // Update pedido estado
       const { error: updateError } = await supabase
-        .from('pedidos')
+        .from("pedidos")
         .update({ estado: newEstado })
-        .eq('id', id);
+        .eq("id", pedido.id);
 
       if (updateError) throw updateError;
 
-      // Adjust inventory based on action
-      const stockUpdate = isConfirming
-        ? { stock: supabase.sql`stock - 1` }
-        : { stock: supabase.sql`stock + 1` };
+      // Fetch current stock
+      const { data: inventario, error: fetchStockError } = await supabase
+        .from("inventario")
+        .select("id, stock")
+        .eq("id", pedido.inventario.id)
+        .single();
 
-      const { error: stockError, data } = await supabase
-        .from('inventario')
-        .update(stockUpdate)
-        .eq('producto_id', pedido.producto_id)
-        .eq('talla', pedido.talle)
-        .eq('color', pedido.color)
-        .gte('stock', isConfirming ? 1 : 0) // Ensure stock >= 1 when confirming
-        .select('*');
+      if (fetchStockError || !inventario) {
+        throw new Error(fetchStockError?.message || "Inventario no encontrado");
+      }
 
-      console.log('Stock update result:', { error: stockError, data });
+      // Validate stock for confirming
+      if (isConfirming && inventario.stock < 1) {
+        throw new Error("Stock insuficiente para confirmar el pedido");
+      }
+
+      // Update stock
+      const newStock = isConfirming ? inventario.stock - 1 : inventario.stock + 1;
+      const { error: stockError } = await supabase
+        .from("inventario")
+        .update({ stock: newStock })
+        .eq("id", inventario.id);
+
       if (stockError) {
-        // Revert order status on stock error
-        await supabase.from('pedidos').update({ estado: pedido.estado }).eq('id', id);
-        console.error('Error updating stock:', stockError.message);
-        alert(`Error al actualizar stock: ${stockError.message}`);
-        return;
+        // Revert pedido estado
+        await supabase
+          .from("pedidos")
+          .update({ estado: pedido.estado })
+          .eq("id", pedido.id);
+        throw stockError;
       }
 
-      // Update local confirmedPedidos state
-      const newConfirmed = new Set(confirmedPedidos);
-      if (isConfirming) {
-        newConfirmed.add(id);
-      } else {
-        newConfirmed.delete(id);
-      }
-      setConfirmedPedidos(newConfirmed);
-      await fetchPedidos(); // Refresh data
-      alert(`Pedido ${isConfirming ? 'confirmado' : 'desconfirmado'} con éxito.`);
-    } catch (err) {
-      console.error('Error in handleToggleConfirm:', err);
-      alert('Error al actualizar el estado del pedido.');
+      await fetchPedidos();
+      alert(`Pedido ${isConfirming ? "realizado" : "desconfirmado"} con éxito.`);
+    } catch (err: any) {
+      console.error("Error en handleToggleConfirm:", err.message);
+      // Revert optimistic update
+      setPedidos(originalPedidos);
+      setConfirmedPedidos(confirmedPedidos);
+      alert(`Error al actualizar estado del pedido: ${err.message || "Error desconocido"}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeletePedido = async (id: string) => {
-    const pedido = pedidos.find(p => p.id === id);
-    if (!pedido) {
-      console.error('Pedido no encontrado:', id);
-      alert('Pedido no encontrado.');
-      return;
-    }
-
-    // Show confirmation dialog
-    const confirmDelete = window.confirm(`¿Estás seguro de que deseas eliminar el pedido de ${pedido.nombre} ${pedido.apellido}?`);
+  const handleDeletePedido = async (pedido: any) => {
+    const confirmDelete = window.confirm(
+      `¿Eliminar el pedido de ${pedido.nombre} ${pedido.apellido}?`
+    );
     if (!confirmDelete) return;
+
+    // Optimistic update
+    const originalPedidos = pedidos;
+    const updatedPedidos = pedidos.filter((p) => p.id !== pedido.id);
+    setPedidos(updatedPedidos);
+    const newConfirmed = new Set(confirmedPedidos);
+    newConfirmed.delete(pedido.id);
+    setConfirmedPedidos(newConfirmed);
 
     setLoading(true);
     try {
-      // If the order is confirmed, restore stock before deletion
-      if (pedido.estado === 'confirmado') {
-        const { error: stockError, data } = await supabase
-          .from('inventario')
-          .update({ stock: supabase.sql`stock + 1` })
-          .eq('producto_id', pedido.producto_id)
-          .eq('talla', pedido.talle)
-          .eq('color', pedido.color)
-          .select('*');
+      // Restore stock if confirmed
+      if (pedido.estado === "realizado") {
+        const { data: inventario, error: fetchStockError } = await supabase
+          .from("inventario")
+          .select("id, stock")
+          .eq("id", pedido.inventario.id)
+          .single();
 
-        console.log('Stock restore result:', { error: stockError, data });
-        if (stockError) {
-          console.error('Error restoring stock:', stockError.message);
-          alert(`Error al restaurar stock: ${stockError.message}`);
-          return;
+        if (fetchStockError || !inventario) {
+          throw new Error(fetchStockError?.message || "Inventario no encontrado");
         }
+
+        const { error: stockError } = await supabase
+          .from("inventario")
+          .update({ stock: inventario.stock + 1 })
+          .eq("id", inventario.id);
+
+        if (stockError) throw stockError;
       }
 
-      // Delete the order
+      // Delete pedido
       const { error: deleteError } = await supabase
-        .from('pedidos')
+        .from("pedidos")
         .delete()
-        .eq('id', id);
+        .eq("id", pedido.id);
 
       if (deleteError) throw deleteError;
 
-      // Update local state
-      const newConfirmed = new Set(confirmedPedidos);
-      newConfirmed.delete(id);
-      setConfirmedPedidos(newConfirmed);
-      await fetchPedidos(); // Refresh data
-      alert('Pedido eliminado con éxito.');
-    } catch (err) {
-      console.error('Error in handleDeletePedido:', err);
-      alert('Error al eliminar el pedido.');
+      await fetchPedidos();
+      alert("Pedido eliminado con éxito.");
+    } catch (err: any) {
+      console.error("Error en handleDeletePedido:", err.message);
+      // Revert optimistic update
+      setPedidos(originalPedidos);
+      setConfirmedPedidos(confirmedPedidos);
+      alert(`Error al eliminar pedido: ${err.message || "Error desconocido"}`);
     } finally {
       setLoading(false);
     }
   };
 
   const getColorName = (hex: string): string => {
-    const colorMap = {
+    const colorMap: { [key: string]: string } = {
       '#ffffff': 'Blanco',
       '#000000': 'Negro',
       '#ff0000': 'Rojo',
@@ -187,7 +701,10 @@ const Pedidos: React.FC = () => {
 
   return (
     <div className="bg-gray-50 py-10 px-4 w-full max-w-screen-xl mx-auto">
-      <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">Panel de Pedidos</h2>
+      <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
+        Panel de Pedidos
+      </h2>
+
       {pedidos.length > 0 ? (
         <div className="overflow-x-auto shadow-md rounded-lg">
           <table className="min-w-full bg-white border border-gray-200">
@@ -207,38 +724,62 @@ const Pedidos: React.FC = () => {
             </thead>
             <tbody>
               {pedidos.map((pedido) => (
-                <tr key={pedido.id} className="hover:bg-gray-100 transition-colors">
-                  <td className="py-3 px-4 border-b text-gray-700">{pedido.id.slice(0, 8)}</td>
-                  <td className="py-3 px-4 border-b text-gray-700">{pedido.nombre}</td>
-                  <td className="py-3 px-4 border-b text-gray-700">{pedido.apellido}</td>
-                  <td className="py-3 px-4 border-b text-gray-700">{pedido.talle}</td>
-                  <td className="py-3 px-4 border-b text-gray-700">{getColorName(pedido.color)}</td>
-                  <td className="py-3 px-4 border-b text-gray-700">{pedido.disenos?.nombre || 'Sin diseño'}</td>
-                  <td className="py-3 px-4 border-b text-gray-700">{pedido.productos?.nombre || 'Sin producto'}</td>
-                  <td className="py-3 px-4 border-b text-gray-700">{new Date(pedido.fecha).toLocaleString()}</td>
+                <tr
+                  key={pedido.id}
+                  className="hover:bg-gray-100 transition-colors"
+                >
                   <td className="py-3 px-4 border-b text-gray-700">
-                    <span className={`px-2 py-1 rounded-full text-sm ${
-                      pedido.estado === 'pendiente' ? 'bg-yellow-200 text-yellow-800'
-                      : 'bg-green-200 text-green-800'
-                    }`}>
+                    {pedido.id.slice(0, 8)}
+                  </td>
+                  <td className="py-3 px-4 border-b text-gray-700">
+                    {pedido.nombre}
+                  </td>
+                  <td className="py-3 px-4 border-b text-gray-700">
+                    {pedido.apellido}
+                  </td>
+                  <td className="py-3 px-4 border-b text-gray-700">
+                    {pedido.inventario?.talla || "—"}
+                  </td>
+                  <td className="py-3 px-4 border-b text-gray-700">
+                    {getColorName(pedido.inventario?.color || "—")}
+                  </td>
+                  <td className="py-3 px-4 border-b text-gray-700">
+                    {pedido.disenos?.nombre || "Sin diseño"}
+                  </td>
+                  <td className="py-3 px-4 border-b text-gray-700">
+                    {pedido.inventario?.productos?.nombre || "Sin producto"}
+                  </td>
+                  <td className="py-3 px-4 border-b text-gray-700">
+                    {new Date(pedido.fecha).toLocaleString()}
+                  </td>
+                  <td className="py-3 px-4 border-b text-gray-700">
+                    <span
+                      className={`px-2 py-1 rounded-full text-sm ${
+                        pedido.estado === "pendiente"
+                          ? "bg-yellow-200 text-yellow-800"
+                          : "bg-green-200 text-green-800"
+                      }`}
+                    >
                       {pedido.estado}
                     </span>
                   </td>
                   <td className="py-3 px-4 border-b">
                     <button
                       className={`px-3 py-1 rounded ${
-                        pedido.estado === 'confirmado'
-                          ? 'bg-green-600 text-white hover:bg-green-700'
-                          : 'bg-blue-500 text-white hover:bg-blue-600'
+                        pedido.estado === "realizado"
+                          ? "bg-green-600 text-white hover:bg-green-700"
+                          : "bg-blue-500 text-white hover:bg-blue-600"
                       } disabled:bg-gray-400 disabled:cursor-not-allowed`}
-                      onClick={() => handleToggleConfirm(pedido.id)}
+                      onClick={() => handleToggleConfirm(pedido)}
                       disabled={loading}
                     >
-                      {pedido.estado === 'confirmado' ? 'Desconfirmar' : 'Confirmar'}
+                      {pedido.estado === "realizdo"
+                        ? "Desconfirmar"
+                        : "Realizdo"}
                     </button>
                     <button
                       className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 ml-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                      onClick={() => handleDeletePedido(pedido.id)}
+                      onClick={() => handleDeletePedido(pedido)}
                       disabled={loading}
                     >
                       Eliminar
@@ -257,4 +798,191 @@ const Pedidos: React.FC = () => {
 };
 
 export default Pedidos;
+
+// Error al leer: components/Inventario.ts
+// ENOENT: no such file or directory, open 'E:\Escritorio\sublimo-app\src\components\Inventario.ts'
+
+// Contenido de: services/inventario.ts
+
+// src/services/inventario.ts
+import { supabase } from "../lib/supabaseClient";
+
+import { Producto, Inventario, Color } from '../types/types';
+// =========================
+// Productos
+// =========================
+export const getProductos = async (): Promise<Producto[]> => {
+  const { data, error } = await supabase
+    .from('productos')
+    .select('*, inventario(*)')
+    .order('fecha_actualizacion', { ascending: false });
+
+  if (error) throw error;
+
+  return data as Producto[];
+};
+
+export const getProductoPorId = async (id: string): Promise<Producto | null> => {
+  const { data, error } = await supabase
+    .from('productos')
+    .select('*, inventario(*)')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error(error);
+    return null;
+  }
+  return data as Producto;
+};
+
+export const addProducto = async (producto: Omit<Producto, 'id' | 'fechaActualizacion' | 'inventario'>) => {
+  const { data, error } = await supabase
+    .from('productos')
+    .insert([producto])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data.id;
+};
+
+export const uploadProducto = async (id: string, producto: Partial<Producto>) => {
+  const { error } = await supabase
+    .from('productos')
+    .update({
+      ...producto,
+      fecha_actualizacion: new Date(),
+    })
+    .eq('id', id);
+
+  if (error) throw error;
+};
+
+export const deleteProducto = async (id: string) => {
+  const { error } = await supabase.from('productos').delete().eq('id', id);
+  if (error) throw error;
+};
+
+// =========================
+// Inventario (talle + color)
+// =========================
+export const uploadStock = async (
+  productoId: string,
+  talla: string,
+  color: string,
+  cantidad: number
+) => {
+  // Buscar si ya existe esa combinación
+  const { data: existente, error: fetchError } = await supabase
+    .from('inventario')
+    .select('*')
+    .eq('producto_id', productoId)
+    .eq('talla', talla)
+    .eq('color', color)
+    .maybeSingle();
+
+  if (fetchError) throw fetchError;
+
+  if (!existente) {
+    // Insertar nuevo registro
+    const { error } = await supabase.from('inventario').insert([
+      {
+        producto_id: productoId,
+        talla,
+        color,
+        stock: cantidad >= 0 ? cantidad : 0,
+      },
+    ]);
+    if (error) throw error;
+  } else {
+    // Actualizar stock existente
+    const nuevoStock = existente.stock + cantidad;
+    if (nuevoStock < 0) throw new Error('Stock insuficiente');
+    const { error } = await supabase
+      .from('inventario')
+      .update({ stock: nuevoStock })
+      .eq('id', existente.id);
+    if (error) throw error;
+  }
+};
+
+export const deleteCombinacion = async (
+  productoId: string,
+  talla: string,
+  color: string
+) => {
+  const { error } = await supabase
+    .from('inventario')
+    .delete()
+    .eq('producto_id', productoId)
+    .eq('talla', talla)
+    .eq('color', color);
+
+  if (error) throw error;
+};
+
+// =========================
+// Colores
+// =========================
+export const getColoresDisponibles = async (): Promise<Color[]> => {
+  const { data, error } = await supabase.from('colores_fijos').select('*');
+  if (error) throw error;
+  return data as Color[];
+};
+
+// Obtener colores válidos para un talle específico
+export const getColoresPorTalle = async (
+  productoId: string,
+  talla: string
+): Promise<Color[]> => {
+  const { data, error } = await supabase
+    .from('inventario')
+    .select('color')
+    .eq('producto_id', productoId)
+    .eq('talla', talla)
+    .gt('stock', 0);
+
+  if (error) throw error;
+
+  const coloresUnicos = Array.from(new Set(data.map((i) => i.color)));
+
+  const { data: coloresFijos } = await supabase
+    .from('colores_fijos')
+    .select('*')
+    .in('nombre', coloresUnicos);
+
+  return coloresFijos || [];
+};
+
+// =========================
+// Talles
+// =========================
+export const getTallesDisponibles = async (
+  productoId: string
+): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('inventario')
+    .select('talla')
+    .eq('producto_id', productoId)
+    .gt('stock', 0);
+
+  if (error) throw error;
+
+  return Array.from(new Set(data.map((i) => i.talla))).sort();
+};
+
+export const getColoresFijos = async (): Promise<Color[]> => {
+  const { data, error } = await supabase
+    .from("colores_fijos")
+    .select("nombre, hex");
+
+  if (error) {
+    console.error("Error obteniendo colores fijos:", error.message);
+    return [];
+  }
+
+  return data as Color[];
+};
+
 

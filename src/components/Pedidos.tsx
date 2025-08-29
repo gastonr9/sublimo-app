@@ -51,7 +51,7 @@ const Pedidos: React.FC = () => {
 
       setPedidos(data || []);
       const confirmedIds = new Set(
-        (data || []).filter((p) => p.estado === "confirmado").map((p) => p.id)
+        (data || []).filter((p) => p.estado === "realizado").map((p) => p.id)
       );
       setConfirmedPedidos(confirmedIds);
     } catch (err: any) {
@@ -64,7 +64,7 @@ const Pedidos: React.FC = () => {
 
   const handleToggleConfirm = async (pedido: any) => {
     const isConfirming = pedido.estado === "pendiente";
-    const newEstado = isConfirming ? "confirmado" : "pendiente";
+    const newEstado = isConfirming ? "realizado" : "pendiente";
 
     // Optimistic update
     const originalPedidos = pedidos;
@@ -120,7 +120,7 @@ const Pedidos: React.FC = () => {
       }
 
       await fetchPedidos();
-      alert(`Pedido ${isConfirming ? "confirmado" : "desconfirmado"} con éxito.`);
+      alert(`Pedido ${isConfirming ? "realizado" : "desconfirmado"} con éxito.`);
     } catch (err: any) {
       console.error("Error en handleToggleConfirm:", err.message);
       // Revert optimistic update
@@ -149,7 +149,7 @@ const Pedidos: React.FC = () => {
     setLoading(true);
     try {
       // Restore stock if confirmed
-      if (pedido.estado === "confirmado") {
+      if (pedido.estado === "realizado") {
         const { data: inventario, error: fetchStockError } = await supabase
           .from("inventario")
           .select("id, stock")
@@ -276,16 +276,16 @@ const Pedidos: React.FC = () => {
                   <td className="py-3 px-4 border-b">
                     <button
                       className={`px-3 py-1 rounded ${
-                        pedido.estado === "confirmado"
+                        pedido.estado === "realizado"
                           ? "bg-green-600 text-white hover:bg-green-700"
                           : "bg-blue-500 text-white hover:bg-blue-600"
                       } disabled:bg-gray-400 disabled:cursor-not-allowed`}
                       onClick={() => handleToggleConfirm(pedido)}
                       disabled={loading}
                     >
-                      {pedido.estado === "confirmado"
+                      {pedido.estado === "realizdo"
                         ? "Desconfirmar"
-                        : "Confirmar"}
+                        : "Realizdo"}
                     </button>
                     <button
                       className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 ml-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
