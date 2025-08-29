@@ -77,22 +77,30 @@ const Pedidos: React.FC = () => {
     }
   };
 
-  const handleChangeEstado = async (id: string, newEstado: string) => {
-    try {
-      const { error } = await supabase.rpc("alterar_estado_pedido", {
-        p_id: id,
-        p_new_estado: newEstado,
-      });
 
-      if (error) throw error;
 
-      await fetchPedidos();
-      alert(`Pedido actualizado a ${newEstado}`);
-    } catch (err) {
-      console.error("Error:", err);
-      alert("❌ No se pudo actualizar el pedido.");
-    }
-  };
+// Cambiar estado del pedido usando RPC
+const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
+  try {
+    // mapear "confirmado" → "realizado"
+    const estadoValido = nuevoEstado === "confirmado" ? "realizado" : nuevoEstado;
+
+    const { error } = await supabase.rpc("alterar_estado_pedido", {
+      p_id: pedidoId,
+      p_new_estado: estadoValido,
+    });
+
+    if (error) throw error;
+
+    alert(`✅ Estado cambiado a ${estadoValido}`);
+    fetchPedidos(); // refresca la lista
+  } catch (err) {
+    console.error("Error cambiando estado:", err);
+    alert("❌ No se pudo cambiar el estado del pedido");
+  }
+};
+
+
 
   return (
     <div className="p-6">
@@ -104,79 +112,78 @@ const Pedidos: React.FC = () => {
         <p>No hay pedidos registrados.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {pedidos.map((pedido) => (
-            <div
-              key={pedido.id}
-              className="bg-white border rounded-lg shadow-md p-4 flex flex-col"
+          {
+  pedidos.map((pedido) => (
+    <div key={pedido.id} className="bg-white shadow-md rounded-lg p-4">
+      <p><strong>Producto:</strong> {pedido.producto_nombre}</p>
+      <p><strong>Talle:</strong> {pedido.talla}</p>
+      <p><strong>Color:</strong> {pedido.color}</p>
+      <p><strong>Diseño:</strong> {pedido.diseno_nombre}</p>
+      <p><strong>Cliente:</strong> {pedido.nombre} {pedido.apellido}</p>
+      <p>
+        <strong>Estado:</strong>{" "}
+        <span
+          className={`px-2 py-1 rounded text-white ${
+            pedido.estado === "pendiente"
+              ? "bg-yellow-500"
+              : pedido.estado === "confirmado"
+              ? "bg-green-600"
+              : "bg-red-600"
+          }`}
+        >
+          {pedido.estado}
+        </span>
+      </p>
+
+      {/* BOTONES SEGÚN ESTADO */}
+      <div className="mt-4 flex gap-2">
+        {pedido.estado === "pendiente" && (
+          <>
+            <button
+              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+              onClick={() => handleChangeEstado(pedido.id, "confirmado")}
             >
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-semibold text-lg">
-                  {pedido.nombre} {pedido.apellido}
-                </h3>
-                <span
-                  className={`px-2 py-1 text-xs rounded ${
-                    pedido.estado === "pendiente"
-                      ? "bg-yellow-200 text-yellow-800"
-                      : pedido.estado === "realizado"
-                      ? "bg-green-200 text-green-800"
-                      : "bg-red-200 text-red-800"
-                  }`}
-                >
-                  {pedido.estado}
-                </span>
-              </div>
+              Confirmar
+            </button>
+            <button
+              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+              onClick={() => handleChangeEstado(pedido.id, "cancelado")}
+            >
+              Cancelar
+            </button>
+          </>
+        )}
 
-              <p className="text-sm text-gray-600 mb-1">
-                Producto: {pedido.producto_nombre}
-              </p>
-              <p className="text-sm text-gray-600 mb-1">Talle: {pedido.talla}</p>
-              <p className="text-sm text-gray-600 mb-1">Color: {pedido.color}</p>
-              <p className="text-sm text-gray-600 mb-1">
-                Diseño: {pedido.diseno_nombre}
-              </p>
+        {pedido.estado === "confirmado" && (
+          <>
+            <button
+              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+              onClick={() => handleChangeEstado(pedido.id, "cancelado")}
+            >
+              Cancelar
+            </button>
+            <button
+              className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+              onClick={() => handleChangeEstado(pedido.id, "eliminar")}
+            >
+              Eliminar
+            </button>
+          </>
+        )}
 
-              {pedido.diseno_url && (
-                <img
-                  src={pedido.diseno_url}
-                  alt={pedido.diseno_nombre}
-                  className="w-24 h-24 object-contain mx-auto my-2"
-                />
-              )}
+        {pedido.estado === "cancelado" && (
+          <button
+            className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+            onClick={() => handleChangeEstado(pedido.id, "eliminar")}
+          >
+            Eliminar
+          </button>
+        )}
+      </div>
+    </div>
+  ))
+}
 
-              <div className="flex flex-wrap gap-2 mt-2">
-                {pedido.estado !== "realizado" && (
-                  <button
-                    onClick={() => handleChangeEstado(pedido.id, "realizado")}
-                    className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700"
-                  >
-                    Realizado
-                  </button>
-                )}
-                {pedido.estado !== "pendiente" && (
-                  <button
-                    onClick={() => handleChangeEstado(pedido.id, "pendiente")}
-                    className="bg-yellow-500 text-white px-2 py-1 rounded text-xs hover:bg-yellow-600"
-                  >
-                    Pendiente
-                  </button>
-                )}
-                {pedido.estado !== "cancelado" && (
-                  <button
-                    onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-                    className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700"
-                  >
-                    Cancelar
-                  </button>
-                )}
-                <button
-                  onClick={() => handleChangeEstado(pedido.id, "eliminar")}
-                  className="bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          ))}
         </div>
       )}
     </div>
