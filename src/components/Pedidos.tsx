@@ -100,6 +100,22 @@ const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
   }
 };
 
+const handleDeletePedido = async (pedidoId: string) => {
+  try {
+    const { error } = await supabase
+      .from("pedidos")
+      .delete()
+      .eq("id", pedidoId);
+
+    if (error) throw error;
+
+    alert("🗑️ Pedido eliminado correctamente");
+    fetchPedidos();
+  } catch (err) {
+    console.error("Error eliminando pedido:", err);
+    alert("❌ No se pudo eliminar el pedido");
+  }
+};
 
 
   return (
@@ -172,21 +188,21 @@ const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
               Cancelar
             </button>
             <button
-              className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
-              onClick={() => handleChangeEstado(pedido.id, "eliminar")}
-            >
-              Eliminar
-            </button>
+  className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+  onClick={() => handleDeletePedido(pedido.id)}
+>
+  Eliminar
+</button>
           </>
         )}
 
         {pedido.estado === "cancelado" && (
           <button
-            className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
-            onClick={() => handleChangeEstado(pedido.id, "eliminar")}
-          >
-            Eliminar
-          </button>
+  className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+  onClick={() => handleDeletePedido(pedido.id)}
+>
+  Eliminar
+</button>
         )}
       </div>
     </div>
