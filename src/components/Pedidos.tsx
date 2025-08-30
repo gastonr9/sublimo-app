@@ -151,60 +151,52 @@ const handleDeletePedido = async (pedidoId: string) => {
         </span>
       </p>
 
-      {/* BOTONES SEGÚN ESTADO */}
-      <div className="mt-4 flex gap-2">
-        {pedido.estado === "pendiente" && (
-  <>
+    {/* BOTONES SEGÚN ESTADO */}
+<div className="mt-4 flex gap-2">
+  {pedido.estado === "pendiente" && (
+    <>
+      <button
+        onClick={() => handleChangeEstado(pedido.id, "realizado")}
+        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+      >
+        Confirmar
+      </button>
+      <button
+        onClick={() => handleChangeEstado(pedido.id, "cancelado")}
+        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+      >
+        Cancelar
+      </button>
+    </>
+  )}
+
+  {pedido.estado === "realizado" && (
+    <>
+      <button
+        onClick={() => handleChangeEstado(pedido.id, "cancelado")}
+        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+      >
+        Cancelar
+      </button>
+      <button
+        onClick={() => handleDeletePedido(pedido.id)}
+        className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+      >
+        Eliminar
+      </button>
+    </>
+  )}
+
+  {pedido.estado === "cancelado" && (
     <button
-      onClick={() => handleChangeEstado(pedido.id, "realizado")}
-      className="bg-green-600 text-white px-3 py-1 rounded mr-2"
+      onClick={() => handleDeletePedido(pedido.id)}
+      className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
     >
-      Confirmar
+      Eliminar
     </button>
-    <button
-      onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-      className="bg-red-600 text-white px-3 py-1 rounded"
-    >
-      Cancelar
-    </button>
-  </>
-)}
+  )}
+</div>
 
-{/* {pedido.estado === "realizado" && (
-  <span className="text-green-600 font-bold">✔ Realizado</span>
-)}
-
-{pedido.estado === "cancelado" && (
-  <span className="text-red-600 font-bold">❌ Cancelado</span>
-)} */}
-
-
-        {pedido.estado === "realizado" && (
-          <>
-            <button
-              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-              onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-            >
-              Cancelar
-            </button>
-            <button
-  className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
-  onClick={() => handleDeletePedido(pedido.id)}
->
-  Eliminar
-</button>
-          </>
-        )}
-
-        {pedido.estado === "cancelado" && (
-          <button
-  className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
-  onClick={() => handleDeletePedido(pedido.id)}
->
-  Eliminar
-</button>
-        )}
-      </div>
     </div>
   ))
 }

@@ -318,7 +318,7 @@ const handleCreatePedido = async () => {
       </div>
 
       <div className="relative w-full flex justify-center">
-        <div className="relative w-64 h-64">
+        <div id='remera' className="relative w-64 h-64">
           <div
             className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
             style={{
