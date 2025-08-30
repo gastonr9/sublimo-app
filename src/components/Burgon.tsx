@@ -1,25 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { useOrder } from '../context/OrderContext';
-import { getProductos, getProductoPorId } from '../services/inventario';
-import { Producto, Color } from '../types/types';
-import remera from '/public/images/remera.png';
-import remeracolor from '/public/images/remeracolor.png';
-import remerahigh from '/public/images/remerahighlight.png';
-import remerablack from '/public/images/remerablack.png';
+import React, { useState, useEffect } from "react";
+import { useOrder } from "../context/OrderContext";
+import { getProductos, getProductoPorId } from "../services/inventario";
+import { Producto, Color } from "../types/types";
+import remera from "/public/images/remera.png";
+import remeracolor from "/public/images/remeracolor.png";
+import remerahigh from "/public/images/remerahighlight.png";
+import remerablack from "/public/images/remerablack.png";
 import { getDesigns } from "../services/designs";
-import { supabase } from '../lib/supabaseClient';
-
+import { supabase } from "../lib/supabaseClient";
+import RemeraPreview from "./RemeraPreview";
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
   const [productos, setProductos] = useState<Producto[]>([]);
-  const [selectedProductoId, setSelectedProductoId] = useState(order.productoId || '');
+  const [selectedProductoId, setSelectedProductoId] = useState(
+    order.productoId || ""
+  );
   const [talles, setTalles] = useState<string[]>([]);
   const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
   const [designs, setDesigns] = useState<any[]>([]);
-  const [designStyle, setDesignStyle] = useState({ maxWidth: '70%', maxHeight: '80%', top: '20%' });
+  const [designStyle, setDesignStyle] = useState({
+    maxWidth: "70%",
+    maxHeight: "80%",
+    top: "20%",
+  });
   const [showModal, setShowModal] = useState(false);
-  const [nombre, setNombre] = useState('');
-  const [apellido, setApellido] = useState('');
+  const [nombre, setNombre] = useState("");
+  const [apellido, setApellido] = useState("");
   const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
@@ -45,16 +51,27 @@ const Burgon: React.FC = () => {
           setOrder({ ...order, productoId: selectedProductoId });
 
           const tallesConStock = [
-  ...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.talla))
-].sort((a, b) => {
-  const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
-  return ordenTalles[a as keyof typeof ordenTalles] - ordenTalles[b as keyof typeof ordenTalles];
-});
+            ...new Set(
+              producto.inventario.filter((i) => i.stock > 0).map((i) => i.talla)
+            ),
+          ].sort((a, b) => {
+            const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
+            return (
+              ordenTalles[a as keyof typeof ordenTalles] -
+              ordenTalles[b as keyof typeof ordenTalles]
+            );
+          });
 
-setTalles(tallesConStock);
+          setTalles(tallesConStock);
 
           if (producto.inventario) {
-            const todosLosColores = [...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
+            const todosLosColores = [
+              ...new Set(
+                producto.inventario
+                  .filter((i) => i.stock > 0)
+                  .map((i) => i.color)
+              ),
+            ]
               .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
               .sort((a, b) => a.nombre.localeCompare(b.nombre));
             setColoresDisponibles(todosLosColores);
@@ -83,7 +100,13 @@ setTalles(tallesConStock);
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
       setColoresDisponibles(coloresPorTalle);
     } else if (selectedProduct && selectedProduct.inventario) {
-      const todosLosColores = [...new Set(selectedProduct.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
+      const todosLosColores = [
+        ...new Set(
+          selectedProduct.inventario
+            .filter((i) => i.stock > 0)
+            .map((i) => i.color)
+        ),
+      ]
         .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
       setColoresDisponibles(todosLosColores);
@@ -94,7 +117,9 @@ setTalles(tallesConStock);
     const cargarDesigns = async () => {
       try {
         const data = await getDesigns();
-        const filteredDesigns = data.filter((design) => design.stock > 0 && design.selected);
+        const filteredDesigns = data.filter(
+          (design) => design.stock > 0 && design.selected
+        );
         setDesigns(filteredDesigns);
       } catch (err) {
         console.error("Error trayendo diseños:", err);
@@ -109,21 +134,21 @@ setTalles(tallesConStock);
       img.src = order.disenoUrl;
       img.onload = () => {
         const aspectRatio = img.width / img.height;
-        let maxWidth = '70%';
-        let maxHeight = '80%';
-        let top = '20%';
+        let maxWidth = "70%";
+        let maxHeight = "80%";
+        let top = "20%";
         if (aspectRatio > 1) {
-          maxWidth = '40%';
-          maxHeight = '80%';
-          top = '25%';
+          maxWidth = "40%";
+          maxHeight = "80%";
+          top = "25%";
         } else if (aspectRatio < 0.67) {
-          maxWidth = '80%';
-          maxHeight = '50%';
-          top = '25%';
+          maxWidth = "80%";
+          maxHeight = "50%";
+          top = "25%";
         } else {
-          maxWidth = '70%';
-          maxHeight = '50%';
-          top = '25%';
+          maxWidth = "70%";
+          maxHeight = "50%";
+          top = "25%";
         }
         setDesignStyle({ maxWidth, maxHeight, top });
       };
@@ -132,7 +157,7 @@ setTalles(tallesConStock);
 
   const handleProductoSelect = (id: string) => {
     setSelectedProductoId(id);
-    setOrder({ ...order, talle: '', color: '', productoId: id });
+    setOrder({ ...order, talle: "", color: "", productoId: id });
   };
 
   const handleTalleSelect = (talle: string) => {
@@ -140,7 +165,9 @@ setTalles(tallesConStock);
   };
 
   const handleColorSelect = (colorHex: string) => {
-    const colorNombre = coloresDisponibles.find((c) => c.hex === colorHex)?.nombre;
+    const colorNombre = coloresDisponibles.find(
+      (c) => c.hex === colorHex
+    )?.nombre;
     if (colorNombre) setOrder({ ...order, color: colorHex });
   };
 
@@ -155,7 +182,7 @@ setTalles(tallesConStock);
     if (order.talle && order.color && order.disenoId) {
       setShowModal(true);
     } else {
-      alert('Por favor, selecciona talle, color y diseño.');
+      alert("Por favor, selecciona talle, color y diseño.");
     }
   };
 
@@ -165,87 +192,95 @@ setTalles(tallesConStock);
     }
   };
 
-
-
-
   const getDefaultHex = (nombre: string): string => {
     const coloresConocidos = {
-      Blanco: '#ffffff',
-      Negro: '#000000',
-      Rojo: '#ff0000',
-      Azul: '#0000ff',
-      Verde: '#008000',
-      Amarillo: '#ffff00',
-      Gris: '#808080',
-      Rosa: '#ff69b4',
-      Naranja: '#ffa500',
-      Morado: '#800080',
+      Blanco: "#ffffff",
+      Negro: "#000000",
+      Rojo: "#ff0000",
+      Azul: "#0000ff",
+      Verde: "#008000",
+      Amarillo: "#ffff00",
+      Gris: "#808080",
+      Rosa: "#ff69b4",
+      Naranja: "#ffa500",
+      Morado: "#800080",
     };
-    return coloresConocidos[nombre] || '#000000';
+    return coloresConocidos[nombre] || "#000000";
   };
 
-const handleCreatePedido = async () => {
-  try {
-    if (!selectedProduct || !order.talle || !order.color || !order.disenoId) {
-      alert("Faltan datos para crear el pedido.");
-      return;
+  const handleCreatePedido = async () => {
+    try {
+      if (!selectedProduct || !order.talle || !order.color || !order.disenoId) {
+        alert("Faltan datos para crear el pedido.");
+        return;
+      }
+
+      // Buscar inventario_id según producto/talle/color
+      const { data: inv, error: invError } = await supabase
+        .from("inventario")
+        .select("id, stock")
+        .eq("producto_id", selectedProduct.id)
+        .eq("talla", order.talle)
+        .eq(
+          "color",
+          coloresDisponibles.find((c) => c.hex === order.color)?.nombre
+        )
+        .single();
+
+      if (invError || !inv) {
+        alert(
+          "No existe inventario para esa combinación de producto/talle/color."
+        );
+        return;
+      }
+
+      if (inv.stock <= 0) {
+        alert("No hay stock disponible para este producto.");
+        return;
+      }
+
+      // Iniciar transacción manual: insertar pedido + descontar stock
+      const { error: pedidoError } = await supabase.from("pedidos").insert({
+        nombre,
+        apellido,
+        inventario_id: inv.id,
+        diseno_id: order.disenoId,
+        estado: "pendiente",
+      });
+
+      if (pedidoError) throw pedidoError;
+
+      // Actualizar stock (-1)
+      const { error: stockError } = await supabase
+        .from("inventario")
+        .update({ stock: inv.stock - 1 })
+        .eq("id", inv.id);
+
+      if (stockError) {
+        // ⚠️ Si falla el update, borramos el pedido recién creado
+        await supabase
+          .from("pedidos")
+          .delete()
+          .eq("inventario_id", inv.id)
+          .eq("diseno_id", order.disenoId)
+          .eq("nombre", nombre)
+          .eq("apellido", apellido);
+        throw stockError;
+      }
+
+      alert("✅ Pedido creado y stock actualizado.");
+
+      // limpiar estado
+      setShowModal(false);
+      setShowSummary(false);
+      setNombre("");
+      setApellido("");
+      setOrder({ ...order, talle: "", color: "", disenoId: "", disenoUrl: "" });
+    } catch (err) {
+      console.error("Error creando pedido:", err);
+      alert("❌ No se pudo crear el pedido.");
     }
-
-    // Buscar inventario_id según producto/talle/color
-    const { data: inv, error: invError } = await supabase
-      .from("inventario")
-      .select("id, stock")
-      .eq("producto_id", selectedProduct.id)
-      .eq("talla", order.talle)
-      .eq("color", coloresDisponibles.find(c => c.hex === order.color)?.nombre)
-      .single();
-
-    if (invError || !inv) {
-      alert("No existe inventario para esa combinación de producto/talle/color.");
-      return;
-    }
-
-    if (inv.stock <= 0) {
-      alert("No hay stock disponible para este producto.");
-      return;
-    }
-
-    // Iniciar transacción manual: insertar pedido + descontar stock
-    const { error: pedidoError } = await supabase.from("pedidos").insert({
-      nombre,
-      apellido,
-      inventario_id: inv.id,
-      diseno_id: order.disenoId,
-      estado: "pendiente",
-    });
-
-    if (pedidoError) throw pedidoError;
-
-    // Actualizar stock (-1)
-    const { error: stockError } = await supabase
-      .from("inventario")
-      .update({ stock: inv.stock - 1 })
-      .eq("id", inv.id);
-
-    if (stockError) {
-      // ⚠️ Si falla el update, borramos el pedido recién creado
-      await supabase.from("pedidos").delete().eq("inventario_id", inv.id).eq("diseno_id", order.disenoId).eq("nombre", nombre).eq("apellido", apellido);
-      throw stockError;
-    }
-
-    alert("✅ Pedido creado y stock actualizado.");
-
-    // limpiar estado
-    setShowModal(false);
-    setShowSummary(false);
-    setNombre("");
-    setApellido("");
-    setOrder({ ...order, talle: "", color: "", disenoId: "", disenoUrl: "" });
-  } catch (err) {
-    console.error("Error creando pedido:", err);
-    alert("❌ No se pudo crear el pedido.");
-  }
-};
+  };
 
   return (
     <section className="bg-white py-10 px-4 w-full max-w-screen-xl mx-auto">
@@ -274,8 +309,8 @@ const handleCreatePedido = async () => {
               key={talle}
               className={`px-4 py-2 rounded-lg border transition ${
                 order.talle === talle
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100"
               }`}
               onClick={() => handleTalleSelect(talle)}
               disabled={!selectedProduct}
@@ -284,9 +319,13 @@ const handleCreatePedido = async () => {
             </button>
           ))
         ) : selectedProduct ? (
-          <p className="text-gray-600">No hay talles disponibles para este producto</p>
+          <p className="text-gray-600">
+            No hay talles disponibles para este producto
+          </p>
         ) : (
-          <p className="text-gray-600">Selecciona un producto para ver talles</p>
+          <p className="text-gray-600">
+            Selecciona un producto para ver talles
+          </p>
         )}
       </div>
 
@@ -297,10 +336,12 @@ const handleCreatePedido = async () => {
               key={color.hex}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${
                 order.color === color.hex
-                  ? 'bg-blue-100 border-blue-600'
-                  : 'bg-white border-gray-300 hover:bg-gray-100'
-              } ${!order.talle ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => (order.talle ? handleColorSelect(color.hex) : null)}
+                  ? "bg-blue-100 border-blue-600"
+                  : "bg-white border-gray-300 hover:bg-gray-100"
+              } ${!order.talle ? "opacity-50 cursor-not-allowed" : ""}`}
+              onClick={() =>
+                order.talle ? handleColorSelect(color.hex) : null
+              }
               disabled={!order.talle || !selectedProduct}
             >
               <span className="text-gray-800">{color.nombre}</span>
@@ -311,61 +352,27 @@ const handleCreatePedido = async () => {
             </button>
           ))
         ) : selectedProduct && order.talle ? (
-          <p className="text-gray-600">No hay colores disponibles para este talle</p>
+          <p className="text-gray-600">
+            No hay colores disponibles para este talle
+          </p>
         ) : (
-          <p className="text-gray-600">Selecciona un talle para habilitar colores</p>
+          <p className="text-gray-600">
+            Selecciona un talle para habilitar colores
+          </p>
         )}
       </div>
 
       <div className="relative w-full flex justify-center">
-        <div id='remera' className="relative w-64 h-64">
-          <div
-            className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
-            style={{
-              backgroundColor: order.color || '#ffffff',
-              maskImage: `url(${remeracolor})`,
-            }}
-          ></div>
-
-          <img
-            src={remera}
-            alt="Remera"
-            className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-          <img
-            src={remerahigh}
-            alt="Remera"
-            className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-          <img
-            src={remera}
-            alt="Remera"
-            className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-          <img
-            src={remerablack}
-            alt="Remera"
-            className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-
-          {order.disenoUrl && (
-            <img
-              src={order.disenoUrl}
-              alt="diseño"
-              className="absolute z-30 w-full object-contain pointer-events-none"
-              style={{
-                ...designStyle,
-                left: '51%',
-                transform: 'translateX(-50%)',
-                top: designStyle.top,
-              }}
-            />
-          )}
-        </div>
+        <RemeraPreview
+          color={order.color || "#ffffff"}
+          disenoUrl={order.disenoUrl}
+        />
       </div>
 
       <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">Elegí un diseño</h3>
+        <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">
+          Elegí un diseño
+        </h3>
         <div className="flex flex-wrap gap-4 justify-center">
           {designs.length > 0 ? (
             designs.map((design) => (
@@ -373,8 +380,14 @@ const handleCreatePedido = async () => {
                 <button
                   className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
                     order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
-                  } ${!order.talle || !order.color ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={() => handleDesignSelect(design.id, design.imagen_url)}
+                  } ${
+                    !order.talle || !order.color
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                  onClick={() =>
+                    handleDesignSelect(design.id, design.imagen_url)
+                  }
                   disabled={!order.talle || !order.color}
                 >
                   <img
@@ -396,7 +409,7 @@ const handleCreatePedido = async () => {
 
       <div className="text-center mb-4">
         <h3 className="text-lg font-semibold text-gray-800">
-          {selectedProduct?.nombre || ''}
+          {selectedProduct?.nombre || ""}
         </h3>
         {selectedProduct?.precio ? (
           <p className="text-xl font-bold text-gray-800">
@@ -409,7 +422,9 @@ const handleCreatePedido = async () => {
         <button
           className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
           onClick={handleNext}
-          disabled={!selectedProduct || !order.talle || !order.color || !order.disenoId}
+          disabled={
+            !selectedProduct || !order.talle || !order.color || !order.disenoId
+          }
         >
           Siguiente
         </button>
@@ -458,17 +473,25 @@ const handleCreatePedido = async () => {
             <h3 className="text-lg font-semibold mb-4">Resumen del pedido</h3>
             <p>Producto: {selectedProduct?.nombre}</p>
             <p>Talle: {order.talle}</p>
-            <p>Color: {coloresDisponibles.find(c => c.hex === order.color)?.nombre || order.color}</p>
-            <p>Diseño: {designs.find(d => d.id === order.disenoId)?.nombre || 'Sin diseño'}</p>
+            <p>
+              Color:{" "}
+              {coloresDisponibles.find((c) => c.hex === order.color)?.nombre ||
+                order.color}
+            </p>
+            <p>
+              Diseño:{" "}
+              {designs.find((d) => d.id === order.disenoId)?.nombre ||
+                "Sin diseño"}
+            </p>
             <p>Nombre: {nombre}</p>
             <p>Apellido: {apellido}</p>
-            <p>Precio: ${selectedProduct?.precio.toFixed(2) || '0.00'}</p>
+            <p>Precio: ${selectedProduct?.precio.toFixed(2) || "0.00"}</p>
             <button
-  onClick={handleCreatePedido}
-  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
->
-  Guardar Pedido
-</button>
+              onClick={handleCreatePedido}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Guardar Pedido
+            </button>
             <button
               className="ml-4 text-gray-500 hover:text-gray-700"
               onClick={() => setShowSummary(false)}
