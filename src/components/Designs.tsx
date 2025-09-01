@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { listDesignsFromStorage, uploadDesign, removeDesignFromStorage } from "../services/storage";
-import { getDesigns, addDesignMeta, updateDesign, deleteDesign } from "../services/designs";
+import {
+  listDesignsFromStorage,
+  uploadDesign,
+  removeDesignFromStorage,
+} from "../services/storage";
+import {
+  getDesigns,
+  addDesignMeta,
+  updateDesign,
+  deleteDesign,
+} from "../services/designs";
 
 interface StorageDesign {
   name: string;
@@ -27,7 +36,10 @@ const Designs: React.FC = () => {
 
   const fetchAll = async () => {
     try {
-      const [storage, table] = await Promise.all([listDesignsFromStorage(), getDesigns()]);
+      const [storage, table] = await Promise.all([
+        listDesignsFromStorage(),
+        getDesigns(),
+      ]);
       setStorageDesigns(storage);
       setDesignsTable(table);
       const initiallySelected = table.filter((design) => design.selected);
@@ -59,16 +71,23 @@ const Designs: React.FC = () => {
   };
 
   const toggleSelectDesign = async (storageDesign: StorageDesign) => {
-    const designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
+    const designRow = designsTable.find(
+      (d) => d.imagen_url === storageDesign.url
+    );
     if (!designRow) {
-      const newDesign = await addDesignMeta(storageDesign.name, storageDesign.url);
+      const newDesign = await addDesignMeta(
+        storageDesign.name,
+        storageDesign.url
+      );
       setDesignsTable((prev) => [...prev, newDesign]);
       setSelectedDesigns((prev) => [...prev, newDesign]);
       return;
     }
 
     const newSelected = !designRow.selected;
-    const updatedDesign = await updateDesign(designRow.id, { selected: newSelected });
+    const updatedDesign = await updateDesign(designRow.id, {
+      selected: newSelected,
+    });
     setDesignsTable((prev) =>
       prev.map((d) => (d.id === designRow.id ? updatedDesign : d))
     );
@@ -79,7 +98,11 @@ const Designs: React.FC = () => {
     );
   };
 
-  const handleUpdate = async (id: string, field: "nombre" | "stock", value: string | number) => {
+  const handleUpdate = async (
+    id: string,
+    field: "nombre" | "stock",
+    value: string | number
+  ) => {
     try {
       let updatedValue = value;
       if (field === "nombre") {
@@ -88,7 +111,9 @@ const Designs: React.FC = () => {
       }
       const updated = await updateDesign(id, { [field]: updatedValue });
       setDesignsTable((prev) => prev.map((d) => (d.id === id ? updated : d)));
-      setSelectedDesigns((prev) => prev.map((d) => (d.id === id ? updated : d)));
+      setSelectedDesigns((prev) =>
+        prev.map((d) => (d.id === id ? updated : d))
+      );
     } catch (err) {
       console.error("Error actualizando diseño:", err);
     }
@@ -107,16 +132,24 @@ const Designs: React.FC = () => {
   };
 
   const handleDeleteDesign = async (storageDesign: StorageDesign) => {
-    if (!window.confirm("¿Estás seguro de que deseas eliminar esta imagen y su registro? Esta acción no se puede deshacer.")) {
+    if (
+      !window.confirm(
+        "¿Estás seguro de que deseas eliminar esta imagen y su registro? Esta acción no se puede deshacer."
+      )
+    ) {
       return;
     }
 
     try {
-      const designRow = designsTable.find((d) => d.imagen_url === storageDesign.url);
+      const designRow = designsTable.find(
+        (d) => d.imagen_url === storageDesign.url
+      );
       if (designRow) {
         await removeDesignFromStorage(storageDesign.name);
         await deleteDesign(designRow.id);
-        setStorageDesigns((prev) => prev.filter((d) => d.name !== storageDesign.name));
+        setStorageDesigns((prev) =>
+          prev.filter((d) => d.name !== storageDesign.name)
+        );
         setDesignsTable((prev) => prev.filter((d) => d.id !== designRow.id));
         setSelectedDesigns((prev) => prev.filter((d) => d.id !== designRow.id));
       }
@@ -132,7 +165,9 @@ const Designs: React.FC = () => {
       {/* Contenedor superior → Imágenes de Storage con botón de carga y eliminación */}
       <div className="bg-white shadow-md rounded-lg p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-700">Imágenes Disponibles en Storage</h3>
+          <h3 className="text-xl font-semibold text-gray-700">
+            Imágenes Disponibles en Storage
+          </h3>
           <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
             {uploading ? "Subiendo..." : "Cargar Imagen"}
             <input
@@ -148,7 +183,9 @@ const Designs: React.FC = () => {
           {storageDesigns.length > 0 ? (
             storageDesigns
               .map((design) => {
-                const designRow = designsTable.find((d) => d.imagen_url === design.url);
+                const designRow = designsTable.find(
+                  (d) => d.imagen_url === design.url
+                );
                 return { ...design, ...designRow }; // Combinar storageDesign con designRow
               })
               .sort((a, b) => {
@@ -162,7 +199,9 @@ const Designs: React.FC = () => {
                   <div
                     key={design.name}
                     className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
-                      isSelected ? "border-4 border-blue-500" : "border-gray-300 hover:border-gray-400"
+                      isSelected
+                        ? "border-4 border-blue-500"
+                        : "border-gray-300 hover:border-gray-400"
                     }`}
                     onClick={() => toggleSelectDesign(design)}
                   >
@@ -189,30 +228,61 @@ const Designs: React.FC = () => {
                 );
               })
           ) : (
-            <p className="text-gray-600 col-span-full text-center">No hay diseños disponibles en storage</p>
+            <p className="text-gray-600 col-span-full text-center">
+              No hay diseños disponibles en storage
+            </p>
           )}
         </div>
       </div>
 
       {/* Contenedor inferior → Diseños seleccionados de la tabla */}
       <div className="bg-white shadow-md rounded-lg p-6">
-        <h3 className="text-xl font-semibold mb-4 text-gray-700">Diseños Seleccionados</h3>
+        <h3 className="text-xl font-semibold mb-4 text-gray-700">
+          Diseños Seleccionados
+        </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {selectedDesigns.length > 0 ? (
             selectedDesigns.map((design) => (
-              <div key={design.id} className="bg-white shadow-md rounded-lg p-4 relative">
-                <img src={design.imagen_url} alt={design.nombre} className="w-full h-40 object-contain" />
+              <div
+                key={design.id}
+                className="bg-white shadow-md rounded-lg p-4 relative"
+              >
+                <img
+                  src={design.imagen_url}
+                  alt={design.nombre}
+                  className="w-full h-40 object-contain"
+                />
                 <input
                   type="text"
                   value={design.nombre.replace(/\.[^/.]+$/, "")}
-                  onChange={(e) => handleUpdate(design.id, "nombre", e.target.value)}
+                  onChange={(e) =>
+                    handleUpdate(design.id, "nombre", e.target.value)
+                  }
                   className="mt-2 border rounded-lg p-1 w-full"
                   placeholder="Nombre (sin extensión)"
                 />
                 <input
                   type="number"
                   value={design.stock}
-                  onChange={(e) => handleUpdate(design.id, "stock", parseInt(e.target.value) || 0)}
+                  onKeyDown={(e) => {
+                    if (
+                      !/[0-9]/.test(e.key) &&
+                      e.key !== "Backspace" &&
+                      e.key !== "Delete" &&
+                      e.key !== "ArrowLeft" &&
+                      e.key !== "ArrowRight" &&
+                      e.key !== "Tab"
+                    ) {
+                      e.preventDefault(); // ❌ ignora la tecla
+                    }
+                  }}
+                  onChange={(e) =>
+                    handleUpdate(
+                      design.id,
+                      "stock",
+                      parseInt(e.target.value) || 0
+                    )
+                  }
                   className="mt-2 border rounded-lg p-1 w-24"
                   min="0"
                 />
@@ -225,7 +295,9 @@ const Designs: React.FC = () => {
               </div>
             ))
           ) : (
-            <p className="text-gray-600 col-span-full text-center">No hay diseños seleccionados</p>
+            <p className="text-gray-600 col-span-full text-center">
+              No hay diseños seleccionados
+            </p>
           )}
         </div>
       </div>

@@ -1,496 +1,8 @@
-// Contenido de: components/Burgon.tsx
-
-import React, { useState, useEffect } from 'react';
-import { useOrder } from '../context/OrderContext';
-import { getProductos, getProductoPorId } from '../services/inventario';
-import { Producto, Color } from '../types/types';
-import remera from '/public/images/remera.png';
-import remeracolor from '/public/images/remeracolor.png';
-import remerahigh from '/public/images/remerahighlight.png';
-import remerablack from '/public/images/remerablack.png';
-import { getDesigns } from "../services/designs";
-import { supabase } from '../lib/supabaseClient';
-
-const Burgon: React.FC = () => {
-  const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [selectedProductoId, setSelectedProductoId] = useState(order.productoId || '');
-  const [talles, setTalles] = useState<string[]>([]);
-  const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
-  const [designs, setDesigns] = useState<any[]>([]);
-  const [designStyle, setDesignStyle] = useState({ maxWidth: '70%', maxHeight: '80%', top: '20%' });
-  const [showModal, setShowModal] = useState(false);
-  const [nombre, setNombre] = useState('');
-  const [apellido, setApellido] = useState('');
-  const [showSummary, setShowSummary] = useState(false);
-
-  useEffect(() => {
-    const cargarProductos = async () => {
-      const productosData = await getProductos();
-      setProductos(productosData);
-      if (productosData.length > 0 && !selectedProductoId) {
-        const firstProductId = productosData[0].id;
-        setSelectedProductoId(firstProductId);
-        const producto = await getProductoPorId(firstProductId);
-        if (producto) setSelectedProduct(producto);
-      }
-    };
-    cargarProductos();
-  }, []);
-
-  useEffect(() => {
-    const cargarProductoSeleccionado = async () => {
-      if (selectedProductoId) {
-        const producto = await getProductoPorId(selectedProductoId);
-        if (producto) {
-          setSelectedProduct(producto);
-          setOrder({ ...order, productoId: selectedProductoId });
-
-          const tallesConStock = [
-  ...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.talla))
-].sort((a, b) => {
-  const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
-  return ordenTalles[a as keyof typeof ordenTalles] - ordenTalles[b as keyof typeof ordenTalles];
-});
-
-setTalles(tallesConStock);
-
-          if (producto.inventario) {
-            const todosLosColores = [...new Set(producto.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
-              .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
-              .sort((a, b) => a.nombre.localeCompare(b.nombre));
-            setColoresDisponibles(todosLosColores);
-          } else {
-            setColoresDisponibles([]);
-          }
-        } else {
-          setSelectedProduct(null);
-          setTalles([]);
-          setColoresDisponibles([]);
-        }
-      } else {
-        setSelectedProduct(null);
-        setTalles([]);
-        setColoresDisponibles([]);
-      }
-    };
-    cargarProductoSeleccionado();
-  }, [selectedProductoId]);
-
-  useEffect(() => {
-    if (selectedProduct && order.talle && selectedProduct.inventario) {
-      const coloresPorTalle = selectedProduct.inventario
-        .filter((i) => i.talla === order.talle && i.stock > 0)
-        .map((i) => ({ nombre: i.color, hex: getDefaultHex(i.color) }))
-        .sort((a, b) => a.nombre.localeCompare(b.nombre));
-      setColoresDisponibles(coloresPorTalle);
-    } else if (selectedProduct && selectedProduct.inventario) {
-      const todosLosColores = [...new Set(selectedProduct.inventario.filter((i) => i.stock > 0).map((i) => i.color))]
-        .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
-        .sort((a, b) => a.nombre.localeCompare(b.nombre));
-      setColoresDisponibles(todosLosColores);
-    }
-  }, [order.talle, selectedProduct]);
-
-  useEffect(() => {
-    const cargarDesigns = async () => {
-      try {
-        const data = await getDesigns();
-        const filteredDesigns = data.filter((design) => design.stock > 0 && design.selected);
-        setDesigns(filteredDesigns);
-      } catch (err) {
-        console.error("Error trayendo diseños:", err);
-      }
-    };
-    cargarDesigns();
-  }, []);
-
-  useEffect(() => {
-    if (order.disenoUrl) {
-      const img = new Image();
-      img.src = order.disenoUrl;
-      img.onload = () => {
-        const aspectRatio = img.width / img.height;
-        let maxWidth = '70%';
-        let maxHeight = '80%';
-        let top = '20%';
-        if (aspectRatio > 1) {
-          maxWidth = '40%';
-          maxHeight = '80%';
-          top = '25%';
-        } else if (aspectRatio < 0.67) {
-          maxWidth = '80%';
-          maxHeight = '50%';
-          top = '25%';
-        } else {
-          maxWidth = '70%';
-          maxHeight = '50%';
-          top = '25%';
-        }
-        setDesignStyle({ maxWidth, maxHeight, top });
-      };
-    }
-  }, [order.disenoUrl]);
-
-  const handleProductoSelect = (id: string) => {
-    setSelectedProductoId(id);
-    setOrder({ ...order, talle: '', color: '', productoId: id });
-  };
-
-  const handleTalleSelect = (talle: string) => {
-    setOrder({ ...order, talle });
-  };
-
-  const handleColorSelect = (colorHex: string) => {
-    const colorNombre = coloresDisponibles.find((c) => c.hex === colorHex)?.nombre;
-    if (colorNombre) setOrder({ ...order, color: colorHex });
-  };
-
-  const handleDesignSelect = (disenoId: string, disenoUrl: string) => {
-    if (order.talle && order.color) {
-      setOrder({ ...order, disenoId, disenoUrl });
-    }
-  };
-
-  const handleNext = () => {
-    // console.log('Handle Next clicked. Order:', order); // Depuración
-    if (order.talle && order.color && order.disenoId) {
-      setShowModal(true);
-    } else {
-      alert('Por favor, selecciona talle, color y diseño.');
-    }
-  };
-
-  const handleSaveDetails = () => {
-    if (nombre && apellido) {
-      setShowSummary(true);
-    }
-  };
-
-
-
-
-  const getDefaultHex = (nombre: string): string => {
-    const coloresConocidos = {
-      Blanco: '#ffffff',
-      Negro: '#000000',
-      Rojo: '#ff0000',
-      Azul: '#0000ff',
-      Verde: '#008000',
-      Amarillo: '#ffff00',
-      Gris: '#808080',
-      Rosa: '#ff69b4',
-      Naranja: '#ffa500',
-      Morado: '#800080',
-    };
-    return coloresConocidos[nombre] || '#000000';
-  };
-
-const handleCreatePedido = async () => {
-  try {
-    if (!selectedProduct || !order.talle || !order.color || !order.disenoId) {
-      alert("Faltan datos para crear el pedido.");
-      return;
-    }
-
-    // Buscar inventario_id según producto/talle/color
-    const { data: inv, error: invError } = await supabase
-      .from("inventario")
-      .select("id, stock")
-      .eq("producto_id", selectedProduct.id)
-      .eq("talla", order.talle)
-      .eq("color", coloresDisponibles.find(c => c.hex === order.color)?.nombre)
-      .single();
-
-    if (invError || !inv) {
-      alert("No existe inventario para esa combinación de producto/talle/color.");
-      return;
-    }
-
-    if (inv.stock <= 0) {
-      alert("No hay stock disponible para este producto.");
-      return;
-    }
-
-    // Iniciar transacción manual: insertar pedido + descontar stock
-    const { error: pedidoError } = await supabase.from("pedidos").insert({
-      nombre,
-      apellido,
-      inventario_id: inv.id,
-      diseno_id: order.disenoId,
-      estado: "pendiente",
-    });
-
-    if (pedidoError) throw pedidoError;
-
-    // Actualizar stock (-1)
-    const { error: stockError } = await supabase
-      .from("inventario")
-      .update({ stock: inv.stock - 1 })
-      .eq("id", inv.id);
-
-    if (stockError) {
-      // ⚠️ Si falla el update, borramos el pedido recién creado
-      await supabase.from("pedidos").delete().eq("inventario_id", inv.id).eq("diseno_id", order.disenoId).eq("nombre", nombre).eq("apellido", apellido);
-      throw stockError;
-    }
-
-    alert("✅ Pedido creado y stock actualizado.");
-
-    // limpiar estado
-    setShowModal(false);
-    setShowSummary(false);
-    setNombre("");
-    setApellido("");
-    setOrder({ ...order, talle: "", color: "", disenoId: "", disenoUrl: "" });
-  } catch (err) {
-    console.error("Error creando pedido:", err);
-    alert("❌ No se pudo crear el pedido.");
-  }
-};
-
-  return (
-    <section className="bg-white py-10 px-4 w-full max-w-screen-xl mx-auto">
-      <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
-        Elegí la prenda y el talle
-      </h2>
-
-      <div className="flex justify-center mb-6">
-        <select
-          value={selectedProductoId}
-          onChange={(e) => handleProductoSelect(e.target.value)}
-          className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {productos.map((producto) => (
-            <option key={producto.id} value={producto.id}>
-              {producto.nombre} - ${producto.precio.toFixed(2)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex justify-center gap-4 mb-6 flex-wrap">
-        {talles.length > 0 ? (
-          talles.map((talle) => (
-            <button
-              key={talle}
-              className={`px-4 py-2 rounded-lg border transition ${
-                order.talle === talle
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
-              }`}
-              onClick={() => handleTalleSelect(talle)}
-              disabled={!selectedProduct}
-            >
-              {talle}
-            </button>
-          ))
-        ) : selectedProduct ? (
-          <p className="text-gray-600">No hay talles disponibles para este producto</p>
-        ) : (
-          <p className="text-gray-600">Selecciona un producto para ver talles</p>
-        )}
-      </div>
-
-      <div className="flex justify-center gap-4 mb-4 flex-wrap">
-        {coloresDisponibles.length > 0 ? (
-          coloresDisponibles.map((color) => (
-            <button
-              key={color.hex}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${
-                order.color === color.hex
-                  ? 'bg-blue-100 border-blue-600'
-                  : 'bg-white border-gray-300 hover:bg-gray-100'
-              } ${!order.talle ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => (order.talle ? handleColorSelect(color.hex) : null)}
-              disabled={!order.talle || !selectedProduct}
-            >
-              <span className="text-gray-800">{color.nombre}</span>
-              <div
-                className="w-6 h-6 rounded-full border"
-                style={{ backgroundColor: color.hex }}
-              />
-            </button>
-          ))
-        ) : selectedProduct && order.talle ? (
-          <p className="text-gray-600">No hay colores disponibles para este talle</p>
-        ) : (
-          <p className="text-gray-600">Selecciona un talle para habilitar colores</p>
-        )}
-      </div>
-
-      <div className="relative w-full flex justify-center">
-        <div id='remera' className="relative w-64 h-64">
-          <div
-            className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
-            style={{
-              backgroundColor: order.color || '#ffffff',
-              maskImage: `url(${remeracolor})`,
-            }}
-          ></div>
-
-          <img
-            src={remera}
-            alt="Remera"
-            className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-          <img
-            src={remerahigh}
-            alt="Remera"
-            className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-          <img
-            src={remera}
-            alt="Remera"
-            className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-          <img
-            src={remerablack}
-            alt="Remera"
-            className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-          />
-
-          {order.disenoUrl && (
-            <img
-              src={order.disenoUrl}
-              alt="diseño"
-              className="absolute z-30 w-full object-contain pointer-events-none"
-              style={{
-                ...designStyle,
-                left: '51%',
-                transform: 'translateX(-50%)',
-                top: designStyle.top,
-              }}
-            />
-          )}
-        </div>
-      </div>
-
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">Elegí un diseño</h3>
-        <div className="flex flex-wrap gap-4 justify-center">
-          {designs.length > 0 ? (
-            designs.map((design) => (
-              <div key={design.id} className="flex flex-col items-center">
-                <button
-                  className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
-                    order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
-                  } ${!order.talle || !order.color ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={() => handleDesignSelect(design.id, design.imagen_url)}
-                  disabled={!order.talle || !order.color}
-                >
-                  <img
-                    src={design.imagen_url}
-                    alt={design.nombre}
-                    className="w-full h-full object-contain p-1"
-                  />
-                </button>
-                <p className="text-center text-xs font-medium text-gray-700 mt-1 uppercase">
-                  {design.nombre}
-                </p>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-600">No hay diseños disponibles</p>
-          )}
-        </div>
-      </div>
-
-      <div className="text-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">
-          {selectedProduct?.nombre || ''}
-        </h3>
-        {selectedProduct?.precio ? (
-          <p className="text-xl font-bold text-gray-800">
-            ${selectedProduct.precio.toFixed(2)}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="flex justify-center mt-6">
-        <button
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
-          onClick={handleNext}
-          disabled={!selectedProduct || !order.talle || !order.color || !order.disenoId}
-        >
-          Siguiente
-        </button>
-      </div>
-
-      {/* Modal para ingresar nombre y apellido */}
-      {showModal && !showSummary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h3 className="text-lg font-semibold mb-4">Ingresa tus datos</h3>
-            <input
-              type="text"
-              placeholder="Nombre"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              className="border rounded-lg p-2 mb-4 w-full"
-            />
-            <input
-              type="text"
-              placeholder="Apellido"
-              value={apellido}
-              onChange={(e) => setApellido(e.target.value)}
-              className="border rounded-lg p-2 mb-4 w-full"
-            />
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-              onClick={handleSaveDetails}
-              disabled={!nombre || !apellido}
-            >
-              Siguiente
-            </button>
-            <button
-              className="ml-4 text-gray-500 hover:text-gray-700"
-              onClick={() => setShowModal(false)}
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Modal para resumen del pedido */}
-      {showModal && showSummary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h3 className="text-lg font-semibold mb-4">Resumen del pedido</h3>
-            <p>Producto: {selectedProduct?.nombre}</p>
-            <p>Talle: {order.talle}</p>
-            <p>Color: {coloresDisponibles.find(c => c.hex === order.color)?.nombre || order.color}</p>
-            <p>Diseño: {designs.find(d => d.id === order.disenoId)?.nombre || 'Sin diseño'}</p>
-            <p>Nombre: {nombre}</p>
-            <p>Apellido: {apellido}</p>
-            <p>Precio: ${selectedProduct?.precio.toFixed(2) || '0.00'}</p>
-            <button
-  onClick={handleCreatePedido}
-  className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
->
-  Guardar Pedido
-</button>
-            <button
-              className="ml-4 text-gray-500 hover:text-gray-700"
-              onClick={() => setShowSummary(false)}
-            >
-              Volver
-            </button>
-          </div>
-        </div>
-      )}
-    </section>
-  );
-};
-
-export default Burgon;
-
 // Contenido de: components/Pedidos.tsx
 
 import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
-
+import RemeraPreview from "./RemeraPreview";
 interface Pedido {
   id: string;
   nombre: string;
@@ -567,46 +79,44 @@ const Pedidos: React.FC = () => {
     }
   };
 
+  // Cambiar estado del pedido usando RPC
+  const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
+    try {
+      // mapear "confirmado" → "realizado"
+      const estadoValido =
+        nuevoEstado === "confirmado" ? "realizado" : nuevoEstado;
 
+      const { error } = await supabase.rpc("alterar_estado_pedido", {
+        p_id: pedidoId,
+        p_new_estado: estadoValido,
+      });
 
-// Cambiar estado del pedido usando RPC
-const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
-  try {
-    // mapear "confirmado" → "realizado"
-    const estadoValido = nuevoEstado === "confirmado" ? "realizado" : nuevoEstado;
+      if (error) throw error;
 
-    const { error } = await supabase.rpc("alterar_estado_pedido", {
-      p_id: pedidoId,
-      p_new_estado: estadoValido,
-    });
+      alert(`✅ Estado cambiado a ${estadoValido}`);
+      fetchPedidos(); // refresca la lista
+    } catch (err) {
+      console.error("Error cambiando estado:", err);
+      alert("❌ No se pudo cambiar el estado del pedido");
+    }
+  };
 
-    if (error) throw error;
+  const handleDeletePedido = async (pedidoId: string) => {
+    try {
+      const { error } = await supabase
+        .from("pedidos")
+        .delete()
+        .eq("id", pedidoId);
 
-    alert(`✅ Estado cambiado a ${estadoValido}`);
-    fetchPedidos(); // refresca la lista
-  } catch (err) {
-    console.error("Error cambiando estado:", err);
-    alert("❌ No se pudo cambiar el estado del pedido");
-  }
-};
+      if (error) throw error;
 
-const handleDeletePedido = async (pedidoId: string) => {
-  try {
-    const { error } = await supabase
-      .from("pedidos")
-      .delete()
-      .eq("id", pedidoId);
-
-    if (error) throw error;
-
-    alert("🗑️ Pedido eliminado correctamente");
-    fetchPedidos();
-  } catch (err) {
-    console.error("Error eliminando pedido:", err);
-    alert("❌ No se pudo eliminar el pedido");
-  }
-};
-
+      alert("🗑️ Pedido eliminado correctamente");
+      fetchPedidos();
+    } catch (err) {
+      console.error("Error eliminando pedido:", err);
+      alert("❌ No se pudo eliminar el pedido");
+    }
+  };
 
   return (
     <div className="p-6">
@@ -618,79 +128,89 @@ const handleDeletePedido = async (pedidoId: string) => {
         <p>No hay pedidos registrados.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {
-  pedidos.map((pedido) => (
-    <div key={pedido.id} className="bg-white shadow-md rounded-lg p-4">
-      <p><strong>Producto:</strong> {pedido.producto_nombre}</p>
-      <p><strong>Talle:</strong> {pedido.talla}</p>
-      <p><strong>Color:</strong> {pedido.color}</p>
-      <p><strong>Diseño:</strong> {pedido.diseno_nombre}</p>
-      <p><strong>Cliente:</strong> {pedido.nombre} {pedido.apellido}</p>
-      <p>
-        <strong>Estado:</strong>{" "}
-        <span
-          className={`px-2 py-1 rounded text-white ${
-            pedido.estado === "pendiente"
-              ? "bg-yellow-500"
-              : pedido.estado === "realizado"
-              ? "bg-green-600"
-              : "bg-red-600"
-          }`}
-        >
-          {pedido.estado}
-        </span>
-      </p>
+          {pedidos.map((pedido) => (
+            <div key={pedido.id} className="bg-white shadow-md rounded-lg p-4">
+              <RemeraPreview
+                color={pedido.color || "#ffffff"}
+                disenoUrl={pedido.diseno_url || ""}
+              />
+              <p>
+                <strong>Producto:</strong> {pedido.producto_nombre}
+              </p>
+              <p>
+                <strong>Talle:</strong> {pedido.talla}
+              </p>
+              <p>
+                <strong>Color:</strong> {pedido.color}
+              </p>
+              <p>
+                <strong>Diseño:</strong> {pedido.diseno_nombre}
+              </p>
+              <p>
+                <strong>Cliente:</strong> {pedido.nombre} {pedido.apellido}
+              </p>
+              <p>
+                <strong>Estado:</strong>{" "}
+                <span
+                  className={`px-2 py-1 rounded text-white ${
+                    pedido.estado === "pendiente"
+                      ? "bg-yellow-500"
+                      : pedido.estado === "realizado"
+                      ? "bg-green-600"
+                      : "bg-red-600"
+                  }`}
+                >
+                  {pedido.estado}
+                </span>
+              </p>
 
-    {/* BOTONES SEGÚN ESTADO */}
-<div className="mt-4 flex gap-2">
-  {pedido.estado === "pendiente" && (
-    <>
-      <button
-        onClick={() => handleChangeEstado(pedido.id, "realizado")}
-        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-      >
-        Confirmar
-      </button>
-      <button
-        onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-      >
-        Cancelar
-      </button>
-    </>
-  )}
+              {/* BOTONES SEGÚN ESTADO */}
+              <div className="mt-4 flex gap-2">
+                {pedido.estado === "pendiente" && (
+                  <>
+                    <button
+                      onClick={() => handleChangeEstado(pedido.id, "realizado")}
+                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                    >
+                      Confirmar
+                    </button>
+                    <button
+                      onClick={() => handleChangeEstado(pedido.id, "cancelado")}
+                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                )}
 
-  {pedido.estado === "realizado" && (
-    <>
-      <button
-        onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-      >
-        Cancelar
-      </button>
-      <button
-        onClick={() => handleDeletePedido(pedido.id)}
-        className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
-      >
-        Eliminar
-      </button>
-    </>
-  )}
+                {pedido.estado === "realizado" && (
+                  <>
+                    <button
+                      onClick={() => handleChangeEstado(pedido.id, "cancelado")}
+                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => handleDeletePedido(pedido.id)}
+                      className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+                    >
+                      Eliminar
+                    </button>
+                  </>
+                )}
 
-  {pedido.estado === "cancelado" && (
-    <button
-      onClick={() => handleDeletePedido(pedido.id)}
-      className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
-    >
-      Eliminar
-    </button>
-  )}
-</div>
-
-    </div>
-  ))
-}
-
+                {pedido.estado === "cancelado" && (
+                  <button
+                    onClick={() => handleDeletePedido(pedido.id)}
+                    className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+                  >
+                    Eliminar
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -700,8 +220,445 @@ const handleDeletePedido = async (pedidoId: string) => {
 export default Pedidos;
 
 
-// Error al leer: components/Inventario.ts
-// ENOENT: no such file or directory, open 'E:\Escritorio\sublimo-app\src\components\Inventario.ts'
+// Contenido de: components/Inventario.tsx
+
+//src/components/Inventario.tsx
+import React, { useEffect, useState } from "react";
+import {
+  getProductos,
+  addProducto,
+  uploadStock,
+  uploadProducto,
+  deleteProducto,
+  deleteCombinacion,
+  getColoresFijos,
+} from "../services/inventario";
+import { Producto, Color } from "../types/types";
+const Inventario: React.FC = () => {
+  const [precio, setPrecio] = useState("");
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [coloresFijos, setColoresFijos] = useState<Color[]>([]);
+  const [nuevoProducto, setNuevoProducto] = useState({
+    nombre: "",
+    precio: "",
+    descripcion: "",
+  });
+  const [nuevaCombinacion, setNuevaCombinacion] = useState({
+    idProducto: "",
+    talla: "S",
+    color: "",
+    stock: 0,
+  });
+  const [editando, setEditando] = useState<{ [key: string]: boolean }>({});
+  const [productoEditado, setProductoEditado] = useState<{
+    id: string;
+    nombre: string;
+    precio: number;
+    descripcion: string;
+  } | null>(null);
+
+  // === Cargar productos y colores ===
+  useEffect(() => {
+    const cargarDatos = async () => {
+      const productosData = await getProductos();
+      setProductos(productosData);
+
+      const coloresData = await getColoresFijos();
+      setColoresFijos(coloresData);
+
+      if (coloresData.length > 0) {
+        setNuevaCombinacion((prev) => ({
+          ...prev,
+          color: coloresData[0].nombre,
+        }));
+      }
+    };
+    cargarDatos();
+  }, []);
+
+  const handleAgregarProducto = async () => {
+    try {
+      await addProducto({
+        ...nuevoProducto,
+        precio: parseInt(nuevoProducto.precio, 10) || 0, // 🔥 siempre int
+      });
+      setProductos(await getProductos());
+      setNuevoProducto({ nombre: "", precio: "", descripcion: "" }); // 🔥 reseteamos como string
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  const handleActualizarStock = async (
+    idProducto: string,
+    talla: string,
+    color: string,
+    nuevoStock: number
+  ) => {
+    try {
+      const producto = productos.find((p) => p.id === idProducto);
+      const item = producto?.inventario.find(
+        (i) => i.talla === talla && i.color === color
+      );
+      if (!item) throw new Error("Combinación no encontrada");
+      const cantidad = nuevoStock - item.stock;
+      await uploadStock(idProducto, talla, color, cantidad);
+      setProductos(await getProductos());
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  const handleAgregarCombinacion = async () => {
+    try {
+      if (!nuevaCombinacion.idProducto)
+        throw new Error("Seleccione un producto");
+      if (!nuevaCombinacion.color) throw new Error("Seleccione un color");
+      await uploadStock(
+        nuevaCombinacion.idProducto,
+        nuevaCombinacion.talla,
+        nuevaCombinacion.color,
+        nuevaCombinacion.stock
+      );
+      setProductos(await getProductos());
+      setNuevaCombinacion({
+        idProducto: "",
+        talla: "S",
+        color: coloresFijos.length > 0 ? coloresFijos[0].nombre : "",
+        stock: 0,
+      });
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
+  const handleEditarProducto = (producto: Producto) => {
+    setEditando({ ...editando, [producto.id]: true });
+    setProductoEditado({
+      id: producto.id,
+      nombre: producto.nombre,
+      precio: producto.precio,
+      descripcion: producto.descripcion || "",
+    });
+  };
+
+  const handleGuardarEdicion = async () => {
+    if (productoEditado) {
+      try {
+        await uploadProducto(productoEditado.id, {
+          nombre: productoEditado.nombre,
+          precio: productoEditado.precio,
+          descripcion: productoEditado.descripcion,
+        });
+        setProductos(await getProductos());
+        setEditando({ ...editando, [productoEditado.id]: false });
+        setProductoEditado(null);
+      } catch (error: any) {
+        alert(error.message);
+      }
+    }
+  };
+
+  const handleCancelarEdicion = (id: string) => {
+    setEditando({ ...editando, [id]: false });
+    setProductoEditado(null);
+  };
+
+  const handleEliminarProducto = async (id: string) => {
+    if (window.confirm("¿Eliminar este producto?")) {
+      try {
+        await deleteProducto(id);
+        setProductos(await getProductos());
+      } catch (error: any) {
+        alert(error.message);
+      }
+    }
+  };
+
+  const handleEliminarCombinacion = async (
+    idProducto: string,
+    talla: string,
+    color: string
+  ) => {
+    if (
+      window.confirm(`¿Eliminar combinación Talla: ${talla}, Color: ${color}?`)
+    ) {
+      try {
+        await deleteCombinacion(idProducto, talla, color);
+        setProductos(await getProductos());
+      } catch (error: any) {
+        alert(error.message);
+      }
+    }
+  };
+
+  // Orden de tallas
+  const tallaOrden = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
+
+  // Validaciones
+  const isAgregarProductoDisabled =
+    !nuevoProducto.nombre.trim() ||
+    !nuevoProducto.precio.trim() || // ahora sí funciona porque es string
+    !nuevoProducto.descripcion.trim();
+
+  const isAgregarCombinacionDisabled =
+    nuevaCombinacion.stock <= 0 ||
+    !nuevaCombinacion.talla ||
+    !nuevaCombinacion.color ||
+    !nuevaCombinacion.idProducto;
+
+  return (
+    <div className="container mx-auto p-4 max-w-4xl">
+      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+        Inventario de Productos
+      </h1>
+
+      {/* Agregar producto */}
+      <div className="bg-white shadow-md rounded-lg p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4 text-gray-700">
+          Agregar Producto
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <input
+            type="text"
+            placeholder="Nombre"
+            value={nuevoProducto.nombre}
+            onChange={(e) =>
+              setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })
+            }
+            className="border rounded-lg p-2"
+          />
+          <input
+            type="number"
+            placeholder="Precio"
+            value={nuevoProducto.precio}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (/^\d*$/.test(value)) {
+                // solo dígitos
+                setNuevoProducto({ ...nuevoProducto, precio: value });
+              }
+            }}
+            className="border p-2 rounded w-full"
+          />
+          <input
+            type="text"
+            placeholder="Descripción"
+            value={nuevoProducto.descripcion}
+            onChange={(e) =>
+              setNuevoProducto({
+                ...nuevoProducto,
+                descripcion: e.target.value,
+              })
+            }
+            className="border rounded-lg p-2 sm:col-span-2"
+          />
+        </div>
+        <button
+          onClick={handleAgregarProducto}
+          className={`mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg ${
+            isAgregarProductoDisabled
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:bg-blue-700"
+          }`}
+          disabled={isAgregarProductoDisabled}
+        >
+          Agregar Producto
+        </button>
+      </div>
+
+      {/* Lista de productos */}
+      <div className="space-y-6">
+        {productos.map((producto) => (
+          <div key={producto.id} className="bg-white shadow-md rounded-lg p-6">
+            {editando[producto.id] ? (
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  value={productoEditado?.nombre || ""}
+                  onChange={(e) =>
+                    setProductoEditado({
+                      ...productoEditado!,
+                      nombre: e.target.value,
+                    })
+                  }
+                  className="border rounded-lg p-2"
+                />
+                <input
+                  type="number"
+                  placeholder="Precio"
+                  value={nuevoProducto.precio}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Solo permitir enteros positivos
+                    if (/^\d*$/.test(value)) {
+                      setNuevoProducto({ ...nuevoProducto, precio: value });
+                    }
+                  }}
+                  className="border p-2 rounded w-full"
+                />
+                <input
+                  type="text"
+                  value={productoEditado?.descripcion || ""}
+                  onChange={(e) =>
+                    setProductoEditado({
+                      ...productoEditado!,
+                      descripcion: e.target.value,
+                    })
+                  }
+                  className="border rounded-lg p-2"
+                />
+                <button
+                  onClick={handleGuardarEdicion}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg"
+                >
+                  Guardar
+                </button>
+                <button
+                  onClick={() => handleCancelarEdicion(producto.id)}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold">{producto.nombre}</h3>
+                <p>Precio: ${producto.precio.toFixed(2)}</p>
+                <p>{producto.descripcion}</p>
+                <button
+                  onClick={() => handleEditarProducto(producto)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+                >
+                  Editar
+                </button>
+                <button
+                  onClick={() => handleEliminarProducto(producto.id)}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg"
+                >
+                  Eliminar
+                </button>
+              </>
+            )}
+
+            {/* Inventario */}
+            <h4 className="mt-4 font-semibold">Inventario</h4>
+            <ul>
+              {[...producto.inventario]
+                .sort((a, b) => {
+                  const ordenA = tallaOrden[a.talla as keyof typeof tallaOrden];
+                  const ordenB = tallaOrden[b.talla as keyof typeof tallaOrden];
+                  if (ordenA !== ordenB) return ordenA - ordenB;
+                  return a.color.localeCompare(b.color);
+                })
+                .map((item, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <span>
+                      {item.talla} - {item.color}
+                    </span>
+                    <input
+                      type="number"
+                      value={item.stock}
+                      onFocus={(e) =>
+                        e.target.value === "0" && e.target.select()
+                      }
+                      onChange={(e) =>
+                        handleActualizarStock(
+                          producto.id,
+                          item.talla,
+                          item.color,
+                          parseInt(e.target.value) || 0
+                        )
+                      }
+                      min="0"
+                      className="border rounded-lg p-1 w-20"
+                    />
+                    <button
+                      onClick={() =>
+                        handleEliminarCombinacion(
+                          producto.id,
+                          item.talla,
+                          item.color
+                        )
+                      }
+                      className="bg-red-500 text-white px-2 py-1 rounded"
+                    >
+                      Eliminar
+                    </button>
+                  </li>
+                ))}
+            </ul>
+
+            {/* Agregar combinación */}
+            <div className="mt-4">
+              <h4 className="font-semibold">Agregar Combinación</h4>
+              <select
+                value={nuevaCombinacion.talla}
+                onChange={(e) =>
+                  setNuevaCombinacion({
+                    ...nuevaCombinacion,
+                    talla: e.target.value,
+                    idProducto: producto.id, // 🔥 aseguramos que siempre tenga producto
+                  })
+                }
+                className="border rounded-lg p-2"
+              >
+                {["S", "M", "L", "XL", "XXL"].map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
+              <select
+                value={nuevaCombinacion.color}
+                onChange={(e) =>
+                  setNuevaCombinacion({
+                    ...nuevaCombinacion,
+                    color: e.target.value,
+                    idProducto: producto.id, // 🔥
+                  })
+                }
+                className="border rounded-lg p-2 ml-2"
+              >
+                {coloresFijos.map((c) => (
+                  <option key={c.nombre}>{c.nombre}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                value={nuevaCombinacion.stock}
+                onFocus={(e) => e.target.value === "0" && e.target.select()}
+                onChange={(e) => {
+                  const newStock = Math.max(0, parseInt(e.target.value) || 0);
+                  console.log("Nuevo stock:", newStock);
+                  setNuevaCombinacion({
+                    ...nuevaCombinacion,
+                    stock: newStock,
+                    idProducto: producto.id, // 🔥
+                  });
+                }}
+                min="0"
+                className="border rounded-lg p-2 ml-2 w-20"
+              />
+              <button
+                onClick={handleAgregarCombinacion}
+                className={`ml-2 bg-green-600 text-white px-4 py-2 rounded-lg ${
+                  isAgregarCombinacionDisabled
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-green-700"
+                }`}
+                disabled={isAgregarCombinacionDisabled}
+              >
+                Añadir
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default Inventario;
+
 
 // Contenido de: services/inventario.ts
 

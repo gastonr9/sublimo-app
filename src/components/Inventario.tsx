@@ -208,15 +208,24 @@ const Inventario: React.FC = () => {
             type="number"
             placeholder="Precio"
             value={nuevoProducto.precio}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (/^\d*$/.test(value)) {
-                // solo dígitos
-                setNuevoProducto({ ...nuevoProducto, precio: value });
+            onKeyDown={(e) => {
+              if (
+                !/[0-9]/.test(e.key) &&
+                e.key !== "Backspace" &&
+                e.key !== "Delete" &&
+                e.key !== "ArrowLeft" &&
+                e.key !== "ArrowRight" &&
+                e.key !== "Tab"
+              ) {
+                e.preventDefault(); // ❌ ignora la tecla
               }
             }}
+            onChange={(e) =>
+              setNuevoProducto({ ...nuevoProducto, precio: e.target.value })
+            }
             className="border p-2 rounded w-full"
           />
+
           <input
             type="text"
             placeholder="Descripción"
@@ -264,6 +273,18 @@ const Inventario: React.FC = () => {
                   type="number"
                   placeholder="Precio"
                   value={nuevoProducto.precio}
+                  onKeyDown={(e) => {
+                    if (
+                      !/[0-9]/.test(e.key) &&
+                      e.key !== "Backspace" &&
+                      e.key !== "Delete" &&
+                      e.key !== "ArrowLeft" &&
+                      e.key !== "ArrowRight" &&
+                      e.key !== "Tab"
+                    ) {
+                      e.preventDefault(); // ❌ ignora la tecla
+                    }
+                  }}
                   onChange={(e) => {
                     const value = e.target.value;
                     // Solo permitir enteros positivos
@@ -338,6 +359,18 @@ const Inventario: React.FC = () => {
                       onFocus={(e) =>
                         e.target.value === "0" && e.target.select()
                       }
+                      onKeyDown={(e) => {
+                        if (
+                          !/[0-9]/.test(e.key) &&
+                          e.key !== "Backspace" &&
+                          e.key !== "Delete" &&
+                          e.key !== "ArrowLeft" &&
+                          e.key !== "ArrowRight" &&
+                          e.key !== "Tab"
+                        ) {
+                          e.preventDefault(); // ❌ ignora la tecla
+                        }
+                      }}
                       onChange={(e) =>
                         handleActualizarStock(
                           producto.id,
@@ -402,6 +435,18 @@ const Inventario: React.FC = () => {
                 type="number"
                 value={nuevaCombinacion.stock}
                 onFocus={(e) => e.target.value === "0" && e.target.select()}
+                onKeyDown={(e) => {
+                  if (
+                    !/[0-9]/.test(e.key) &&
+                    e.key !== "Backspace" &&
+                    e.key !== "Delete" &&
+                    e.key !== "ArrowLeft" &&
+                    e.key !== "ArrowRight" &&
+                    e.key !== "Tab"
+                  ) {
+                    e.preventDefault(); // ❌ ignora la tecla
+                  }
+                }}
                 onChange={(e) => {
                   const newStock = Math.max(0, parseInt(e.target.value) || 0);
                   console.log("Nuevo stock:", newStock);
