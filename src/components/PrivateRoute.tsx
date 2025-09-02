@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 // Definimos los roles posibles
-type RolPermitido = "master" | "empleado" | "cliente";
+type RolPermitido = "master" | "empleado";
 
 interface PrivateRouteProps {
   children: React.ReactNode;

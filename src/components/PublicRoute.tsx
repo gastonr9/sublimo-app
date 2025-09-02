@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 // Usamos los mismos roles permitidos definidos en ProtectedRoute
-type RolPermitido = "master" | "empleado" | "cliente";
+type RolPermitido = "master" | "empleado";
 
 interface PublicRouteProps {
   children: React.ReactNode;

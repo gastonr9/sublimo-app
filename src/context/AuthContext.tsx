@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .eq("email", user.email)
           .single();
 
-        setRole(perfil?.rol || "cliente");
+        setRole(perfil?.rol);
       } else {
         setRole(null);
       }
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .select("rol")
             .eq("email", session.user.email)
             .single()
-            .then(({ data }) => setRole(data?.rol || "cliente"));
+            .then(({ data }) => setRole(data?.rol));
         } else {
           setRole(null);
         }
