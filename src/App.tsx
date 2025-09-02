@@ -36,7 +36,7 @@ function App() {
           }
         />
         <Route
-          path="/panel"
+          path="/panel/*"
           element={
             <PrivateRoute rolesPermitidos={["master", "empleado"]}>
               <Panel />

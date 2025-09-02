@@ -6,10 +6,10 @@ import path from "path";
 const filePaths = [
   // 'components/Burgon.tsx',
   // "components/Pedidos.tsx",
-  "context/AuthContext.tsx",
-  "pages/Login.tsx",
+  // "context/AuthContext.tsx",
+  // "pages/Login.tsx",
   "components/Usuarios.tsx",
-  "hooks/useAuth.ts",
+  "lib/supabaseClient.ts",
   // "components/Inventario.tsx",
   // // "services/inventario.ts",
   // Agrega más rutas de archivos aquí

@@ -1,8 +1,3 @@
-/**
- * @file Header.tsx
- * @description Barra de navegación con control de sesión y roles.
- */
-
 import { Link, useNavigate } from "react-router-dom";
 import logo from "/sublimo.svg";
 import { useAuth } from "../../context/AuthContext";
@@ -75,7 +70,7 @@ function Navbar() {
                   Burgon
                 </Link>
                 <Link to="/panel" className="text-gray-600 hover:text-blue-600">
-                  Panel Admin
+                  Panel
                 </Link>
               </>
             )}
