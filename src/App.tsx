@@ -16,7 +16,14 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/generador" element={<Generador />} />
         <Route path="/articulos" element={<Articulos />} />
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/login"
+          element={
+            <PrivateRoute rolesPermitidos={["cliente"]}>
+              <Login />
+            </PrivateRoute>
+          }
+        />
 
         {/* Protegidas */}
         <Route
