@@ -220,7 +220,7 @@ const Designs: React.FC = () => {
                         e.stopPropagation();
                         handleDeleteDesign(design);
                       }}
-                      className="absolute top-1 left-1 bg-red-600 text-white text-xs px-2 py-1 rounded-lg hover:bg-red-700 transition"
+                      className="btn-red slot absolute bottom-1 left-1 text-xs px-2 py-1 "
                     >
                       Eliminar
                     </button>
@@ -258,40 +258,42 @@ const Designs: React.FC = () => {
                   onChange={(e) =>
                     handleUpdate(design.id, "nombre", e.target.value)
                   }
-                  className="mt-2 border rounded-lg p-1 w-full"
+                  className="my-2 border rounded-lg p-1 w-full slot"
                   placeholder="Nombre (sin extensión)"
                 />
-                <input
-                  type="number"
-                  value={design.stock}
-                  onKeyDown={(e) => {
-                    if (
-                      !/[0-9]/.test(e.key) &&
-                      e.key !== "Backspace" &&
-                      e.key !== "Delete" &&
-                      e.key !== "ArrowLeft" &&
-                      e.key !== "ArrowRight" &&
-                      e.key !== "Tab"
-                    ) {
-                      e.preventDefault(); // ❌ ignora la tecla
+                <div className="contenedor ">
+                  <input
+                    type="number"
+                    value={design.stock}
+                    onKeyDown={(e) => {
+                      if (
+                        !/[0-9]/.test(e.key) &&
+                        e.key !== "Backspace" &&
+                        e.key !== "Delete" &&
+                        e.key !== "ArrowLeft" &&
+                        e.key !== "ArrowRight" &&
+                        e.key !== "Tab"
+                      ) {
+                        e.preventDefault(); // ❌ ignora la tecla
+                      }
+                    }}
+                    onChange={(e) =>
+                      handleUpdate(
+                        design.id,
+                        "stock",
+                        parseInt(e.target.value) || 0
+                      )
                     }
-                  }}
-                  onChange={(e) =>
-                    handleUpdate(
-                      design.id,
-                      "stock",
-                      parseInt(e.target.value) || 0
-                    )
-                  }
-                  className="mt-2 border rounded-lg p-1 w-24"
-                  min="0"
-                />
-                <button
-                  onClick={() => handleRemove(design.id)}
-                  className="mt-2 bg-red-600 text-white px-4 py-1 rounded-lg hover:bg-red-700 transition"
-                >
-                  Quitar
-                </button>
+                    className="border rounded-lg  w-24 slot"
+                    min="0"
+                  />
+                  <button
+                    onClick={() => handleRemove(design.id)}
+                    className="btn-red slot "
+                  >
+                    Quitar
+                  </button>
+                </div>
               </div>
             ))
           ) : (

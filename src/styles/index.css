@@ -49,9 +49,13 @@ h1 {
   border: 1px solid #000;
   padding-block: calc(var(--spacing) * 0) /* 0.5rem = 8px */;
 }
-input,
-select,
-button {
+.status {
+  border-radius: var(--radius);
+  padding-inline: calc(var(--spacing) * 6) /* 1.5rem = 24px */;
+  padding-block: calc(var(--spacing) * 0.5) /* 0.5rem = 8px */;
+  font-weight: var(--font-weight-medium) /* 500 */;
+}
+.slot {
   border-radius: var(--radius);
   padding-inline: calc(var(--spacing) * 6) /* 1.5rem = 24px */;
   padding-block: calc(var(--spacing) * 2) /* 0.5rem = 8px */;
@@ -100,5 +104,12 @@ button {
   color: white;
   &:hover {
     background-color: #01722b;
+  }
+}
+.btn-grey {
+  background-color: #4a5565;
+  color: white;
+  &:hover {
+    background-color: #282d35;
   }
 }

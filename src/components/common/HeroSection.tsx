@@ -18,7 +18,7 @@ export default function HeroSection() {
             fluidas.
           </h2>
           <Link to="/generador">
-            <button className="btn btn-secondary w-[150px]">Crear</button>
+            <button className="btn btn-secondary slot w-[150px]">Crear</button>
           </Link>
         </div>
       </div>

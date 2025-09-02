@@ -48,16 +48,10 @@ const Sidebar = ({
       label="Color del fondo"
     />
 
-    <button
-      onClick={onOpenCanvas2D}
-      className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
-    >
+    <button onClick={onOpenCanvas2D} className="slot w-full">
       Importar Diseño
     </button>
-    <button
-      onClick={canvasDownloader}
-      className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg transition-colors"
-    >
+    <button onClick={canvasDownloader} className="slot w-full">
       Exportar
     </button>
   </aside>

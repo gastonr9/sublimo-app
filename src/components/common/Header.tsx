@@ -87,7 +87,7 @@ function Navbar() {
                   <span className="text-gray-700 text-sm">
                     {user.email} ({role})
                   </span>
-                  <button onClick={handleLogout} className=" btn-secondary">
+                  <button onClick={handleLogout} className=" btn slot">
                     Salir
                   </button>
                 </div>

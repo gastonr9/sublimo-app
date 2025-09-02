@@ -192,7 +192,7 @@ const Inventario: React.FC = () => {
       {/* Agregar producto */}
       <div className="bg-white shadow-md rounded-lg p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4 text-gray-700">
-          Agregar Producto
+          Crear Producto
         </h2>
         <div className="gap-4 flex flex-col">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -203,7 +203,7 @@ const Inventario: React.FC = () => {
               onChange={(e) =>
                 setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })
               }
-              className="border rounded-lg p-2"
+              className="border rounded-lg p-2 slot"
             />
             <input
               type="number"
@@ -224,7 +224,7 @@ const Inventario: React.FC = () => {
               onChange={(e) =>
                 setNuevoProducto({ ...nuevoProducto, precio: e.target.value })
               }
-              className="border p-2 rounded w-full"
+              className="border p-2 rounded w-full slot"
             />
 
             <input
@@ -237,12 +237,12 @@ const Inventario: React.FC = () => {
                   descripcion: e.target.value,
                 })
               }
-              className="border rounded-lg p-2 sm:col-span-2"
+              className="border rounded-lg p-2 sm:col-span-2 slot"
             />
           </div>
           <button
             onClick={handleAgregarProducto}
-            className={`btn-green  ${
+            className={`btn-green slot ${
               isAgregarProductoDisabled ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={isAgregarProductoDisabled}
@@ -257,67 +257,75 @@ const Inventario: React.FC = () => {
         {productos.map((producto) => (
           <div key={producto.id} className="bg-white shadow-md rounded-lg p-6">
             {editando[producto.id] ? (
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  value={productoEditado?.nombre || ""}
-                  onChange={(e) =>
-                    setProductoEditado({
-                      ...productoEditado!,
-                      nombre: e.target.value,
-                    })
-                  }
-                  className="border rounded-lg p-2"
-                />
-                <input
-                  type="number"
-                  placeholder="Precio"
-                  value={nuevoProducto.precio}
-                  onKeyDown={(e) => {
-                    if (
-                      !/[0-9]/.test(e.key) &&
-                      e.key !== "Backspace" &&
-                      e.key !== "Delete" &&
-                      e.key !== "ArrowLeft" &&
-                      e.key !== "ArrowRight" &&
-                      e.key !== "Tab"
-                    ) {
-                      e.preventDefault(); // ❌ ignora la tecla
+              <div className=" ">
+                <div className="contenedor">
+                  <input
+                    type="text"
+                    value={productoEditado?.nombre || ""}
+                    onChange={(e) =>
+                      setProductoEditado({
+                        ...productoEditado!,
+                        nombre: e.target.value,
+                      })
                     }
-                  }}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Solo permitir enteros positivos
-                    if (/^\d*$/.test(value)) {
-                      setNuevoProducto({ ...nuevoProducto, precio: value });
+                    className="border rounded-lg p-2 slot"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Precio"
+                    value={nuevoProducto.precio}
+                    onKeyDown={(e) => {
+                      if (
+                        !/[0-9]/.test(e.key) &&
+                        e.key !== "Backspace" &&
+                        e.key !== "Delete" &&
+                        e.key !== "ArrowLeft" &&
+                        e.key !== "ArrowRight" &&
+                        e.key !== "Tab"
+                      ) {
+                        e.preventDefault(); // ❌ ignora la tecla
+                      }
+                    }}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Solo permitir enteros positivos
+                      if (/^\d*$/.test(value)) {
+                        setNuevoProducto({ ...nuevoProducto, precio: value });
+                      }
+                    }}
+                    className="border rounded-lg p-2 slot"
+                  />
+                </div>
+
+                <div className="contenedor my-4">
+                  <input
+                    type="text"
+                    value={productoEditado?.descripcion || ""}
+                    onChange={(e) =>
+                      setProductoEditado({
+                        ...productoEditado!,
+                        descripcion: e.target.value,
+                      })
                     }
-                  }}
-                  className="border p-2 rounded w-full"
-                />
-                <input
-                  type="text"
-                  value={productoEditado?.descripcion || ""}
-                  onChange={(e) =>
-                    setProductoEditado({
-                      ...productoEditado!,
-                      descripcion: e.target.value,
-                    })
-                  }
-                  className="border rounded-lg p-2"
-                />
-                <button onClick={handleGuardarEdicion} className="btn-green">
-                  Guardar
-                </button>
-                <button
-                  onClick={() => handleCancelarEdicion(producto.id)}
-                  className="btn-red"
-                >
-                  Cancelar
-                </button>
+                    className="border rounded-lg p-2 slot"
+                  />
+                  <button
+                    onClick={handleGuardarEdicion}
+                    className="btn-green slot"
+                  >
+                    Guardar
+                  </button>
+                  <button
+                    onClick={() => handleCancelarEdicion(producto.id)}
+                    className="btn-red slot"
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </div>
             ) : (
               <div>
-                <h3 className="text-lg font-semibold mt-4">
+                <h3 className="text-lg font-semibold mt-6">
                   {producto.nombre}
                 </h3>
                 <div className="contenedor">
@@ -327,13 +335,13 @@ const Inventario: React.FC = () => {
                   </div>
                   <button
                     onClick={() => handleEditarProducto(producto)}
-                    className="btn-blue"
+                    className="btn-blue slot"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => handleEliminarProducto(producto.id)}
-                    className="btn-red "
+                    className="btn-red slot"
                   >
                     Eliminar
                   </button>
@@ -343,8 +351,8 @@ const Inventario: React.FC = () => {
 
             {/* Inventario */}
             <div>
-              <h4 className="mt-4 font-semibold">Inventario</h4>
-              <div className="contenedor">
+              <h4 className="mt-6 mb-3 font-semibold">Inventario</h4>
+              <div>
                 <ul>
                   {[...producto.inventario]
                     .sort((a, b) => {
@@ -356,7 +364,10 @@ const Inventario: React.FC = () => {
                       return a.color.localeCompare(b.color);
                     })
                     .map((item, i) => (
-                      <li key={i} className="flex items-center gap-2">
+                      <li
+                        key={i}
+                        className=" items-center gap-2 slot contenedor"
+                      >
                         <span>
                           {item.talla} - {item.color}
                         </span>
@@ -387,29 +398,29 @@ const Inventario: React.FC = () => {
                             )
                           }
                           min="0"
-                          className="border rounded-lg p-1 w-20"
+                          className="border rounded-lg p-4  w-20 slot"
                         />
+                        <button
+                          onClick={() =>
+                            handleEliminarCombinacion(
+                              producto.id,
+                              item.talla,
+                              item.color
+                            )
+                          }
+                          className="btn-red slot"
+                        >
+                          Eliminar
+                        </button>
                       </li>
                     ))}
                 </ul>
-                <button
-                  onClick={() =>
-                    handleEliminarCombinacion(
-                      producto.id,
-                      item.talla,
-                      item.color
-                    )
-                  }
-                  className="btn-red"
-                >
-                  Eliminar
-                </button>
               </div>
             </div>
 
             {/* Agregar combinación */}
             <div>
-              <h4 className="font-semibold mt-4">Agregar Combinación</h4>
+              <h4 className="mt-6 mb-3 font-semibold">Agregar Combinación</h4>
               <div className="contenedor">
                 <div>
                   <select
@@ -421,7 +432,7 @@ const Inventario: React.FC = () => {
                         idProducto: producto.id, // 🔥 aseguramos que siempre tenga producto
                       })
                     }
-                    className="border rounded-lg p-2"
+                    className="border rounded-lg p-2 slot"
                   >
                     {["S", "M", "L", "XL", "XXL"].map((t) => (
                       <option key={t}>{t}</option>
@@ -436,7 +447,7 @@ const Inventario: React.FC = () => {
                         idProducto: producto.id, // 🔥
                       })
                     }
-                    className="border rounded-lg p-2 ml-2"
+                    className="border rounded-lg p-2 ml-2 slot"
                   >
                     {coloresFijos.map((c) => (
                       <option key={c.nombre}>{c.nombre}</option>
@@ -471,13 +482,13 @@ const Inventario: React.FC = () => {
                       });
                     }}
                     min="0"
-                    className="border rounded-lg p-4 ml-2 w-20"
+                    className="border rounded-lg p-4 ml-2 w-20 slot"
                   />
                 </div>
 
                 <button
                   onClick={handleAgregarCombinacion}
-                  className={`btn-green  ${
+                  className={`btn-green slot  ${
                     isAgregarCombinacionDisabled
                       ? "opacity-50 cursor-not-allowed"
                       : ""
