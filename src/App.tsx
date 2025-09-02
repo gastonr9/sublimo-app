@@ -5,8 +5,9 @@ import Articulos from "./pages/Articulos";
 import Burgon from "./components/Burgon";
 import Login from "./pages/Login";
 import Panel from "./components/AdminControl";
-import PrivateRoute from "./components/PrivateRoute";
 import Header from "./components/common/Header";
+import PublicRoute from "./components/PublicRoute";
+import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
   return (
@@ -15,13 +16,13 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/generador" element={<Generador />} />
-        <Route path="/articulos" element={<Articulos />} />
+        {/* <Route path="/articulos" element={<Articulos />} /> */}
         <Route
           path="/login"
           element={
-            <PrivateRoute rolesPermitidos={["cliente"]}>
+            <PublicRoute>
               <Login />
-            </PrivateRoute>
+            </PublicRoute>
           }
         />
 

@@ -6,7 +6,7 @@ interface Usuario {
   id: string;
   email: string;
   nombre: string;
-  rol: "master" | "empleado" | "cliente";
+  rol: "master" | "empleado";
 }
 
 const Usuarios: React.FC = () => {
@@ -18,7 +18,7 @@ const Usuarios: React.FC = () => {
   const [nuevoUsuario, setNuevoUsuario] = useState({
     email: "",
     nombre: "",
-    rol: "empleado" as "master" | "empleado" | "cliente",
+    rol: "empleado" as "master" | "empleado",
   });
 
   const [editando, setEditando] = useState<{ [key: string]: boolean }>({});
@@ -123,14 +123,13 @@ const Usuarios: React.FC = () => {
             onChange={(e) =>
               setNuevoUsuario({
                 ...nuevoUsuario,
-                rol: e.target.value as "master" | "empleado" | "cliente",
+                rol: e.target.value as "master" | "empleado",
               })
             }
             className="border rounded-lg p-2"
           >
             <option value="master">Master</option>
             <option value="empleado">Empleado</option>
-            <option value="cliente">Cliente</option>
           </select>
         </div>
         <button
@@ -164,21 +163,17 @@ const Usuarios: React.FC = () => {
                     className="border rounded-lg p-2"
                   />
                   <select
-                    value={usuarioEditado?.rol || "cliente"}
+                    value={usuarioEditado?.rol}
                     onChange={(e) =>
                       setUsuarioEditado({
                         ...usuarioEditado!,
-                        rol: e.target.value as
-                          | "master"
-                          | "empleado"
-                          | "cliente",
+                        rol: e.target.value as "master" | "empleado",
                       })
                     }
                     className="border rounded-lg p-2"
                   >
                     <option value="master">Master</option>
                     <option value="empleado">Empleado</option>
-                    <option value="cliente">Cliente</option>
                   </select>
                   <div className="flex gap-2">
                     <button

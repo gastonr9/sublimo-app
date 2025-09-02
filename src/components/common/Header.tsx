@@ -61,9 +61,9 @@ function Navbar() {
             <Link to="/generador" className="text-gray-600 hover:text-blue-600">
               Generador Mockup 3D
             </Link>
-            <Link to="/articulos" className="text-gray-600 hover:text-blue-600">
+            {/* <Link to="/articulos" className="text-gray-600 hover:text-blue-600">
               Artículos
-            </Link>
+            </Link> */}
 
             {/* Solo master o empleado pueden ver Burgon y Panel */}
             {(role === "master" || role === "empleado") && (
