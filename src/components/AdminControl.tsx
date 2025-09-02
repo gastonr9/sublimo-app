@@ -3,7 +3,6 @@ import Inventario from "./Inventario";
 import Designs from "./Designs";
 import Pedidos from "./Pedidos";
 import Usuarios from "./Usuarios";
-// import Usuarios from "./Usuarios";
 
 const AdminControl: React.FC = () => {
   const [activeTab, setActiveTab] = useState("inventario");
@@ -39,7 +38,7 @@ const AdminControl: React.FC = () => {
           >
             Inventario
           </button>
-         
+
           <button
             onClick={() => setActiveTab("designs")}
             className={`block w-full text-left px-4 py-2 rounded-lg transition ${

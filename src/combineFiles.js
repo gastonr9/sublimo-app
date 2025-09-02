@@ -5,9 +5,13 @@ import path from "path";
 // Array con las rutas de los archivos de tu proyecto (modifica según tus necesidades)
 const filePaths = [
   // 'components/Burgon.tsx',
-  "components/Pedidos.tsx",
-  "components/Inventario.tsx",
-  "services/inventario.ts",
+  // "components/Pedidos.tsx",
+  "context/AuthContext.tsx",
+  "pages/Login.tsx",
+  "components/Usuarios.tsx",
+  "hooks/useAuth.ts",
+  // "components/Inventario.tsx",
+  // // "services/inventario.ts",
   // Agrega más rutas de archivos aquí
 ];
 

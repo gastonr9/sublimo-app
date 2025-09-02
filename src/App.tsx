@@ -4,20 +4,37 @@ import Generador from "./pages/Generador";
 import Articulos from "./pages/Articulos";
 import Burgon from "./components/Burgon";
 import Login from "./pages/Login";
-import Inventario from "./components/Inventario";
 import Panel from "./components/AdminControl";
+import PrivateRoute from "./components/PrivateRoute";
+import Header from "./components/common/Header";
 
 function App() {
   return (
     <>
+      <Header />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/generador" element={<Generador />} />
         <Route path="/articulos" element={<Articulos />} />
-        <Route path="/burgon" element={<Burgon />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/inventario" element={  <Inventario />} />
-        <Route path="/panel" element={  <Panel />} />
+
+        {/* Protegidas */}
+        <Route
+          path="/burgon"
+          element={
+            <PrivateRoute rolesPermitidos={["master", "empleado"]}>
+              <Burgon />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/panel"
+          element={
+            <PrivateRoute rolesPermitidos={["master", "empleado"]}>
+              <Panel />
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </>
   );

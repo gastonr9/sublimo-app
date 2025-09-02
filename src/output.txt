@@ -1,214 +1,400 @@
-// Contenido de: components/Pedidos.tsx
+// Contenido de: context/AuthContext.tsx
 
-import React, { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
-import RemeraPreview from "./RemeraPreview";
-interface Pedido {
+
+interface Usuario {
   id: string;
-  nombre: string;
-  apellido: string;
-  estado: string;
-  fecha: string;
-  inventario_id: string;
-  diseno_id: string;
-  producto_nombre?: string;
-  talla?: string;
-  color?: string;
-  diseno_nombre?: string;
-  diseno_url?: string;
+  email: string;
+  rol: "master" | "empleado" | "cliente";
+  nombre?: string;
 }
 
-const Pedidos: React.FC = () => {
-  const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [loading, setLoading] = useState(false);
+interface AuthContextType {
+  user: Usuario | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+}
 
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUsuario] = useState<Usuario | null>(null);
+
+  // 🔹 Verificar sesión activa al cargar la app
   useEffect(() => {
-    fetchPedidos();
+    const fetchUser = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        await loadUsuario(session.user.id);
+      }
+    };
+    fetchUser();
+
+    // 🔹 Listener de cambios de sesión
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          await loadUsuario(session.user.id);
+        } else {
+          setUsuario(null);
+        }
+      }
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
-  const fetchPedidos = async () => {
+  // 🔹 Cargar user desde tabla usuarios
+  const loadUsuario = async (id: string) => {
+    const { data, error } = await supabase
+      .from("usuarios")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error) {
+      console.error("Error buscando user:", error);
+    } else {
+      console.log("Usuario:", data);
+    }
+  };
+
+  // 🔹 Login
+  const login = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    if (data.user) {
+      await loadUsuario(data.user.id);
+    }
+  };
+
+  // 🔹 Logout
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUsuario(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth debe usarse dentro de AuthProvider");
+  return context;
+};
+
+
+// Contenido de: pages/Login.tsx
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
+const Login = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
     try {
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from("pedidos")
-        .select(
-          `
-          id,
-          nombre,
-          apellido,
-          estado,
-          fecha,
-          inventario_id,
-          diseno_id,
-          inventario:inventario_id (
-            talla,
-            color,
-            producto:producto_id ( nombre )
-          ),
-          diseno:diseno_id (
-            nombre,
-            imagen_url
-          )
-        `
-        )
-        .order("fecha", { ascending: false });
-
-      if (error) throw error;
-
-      const mapped = data.map((p: any) => ({
-        id: p.id,
-        nombre: p.nombre,
-        apellido: p.apellido,
-        estado: p.estado,
-        fecha: p.fecha,
-        inventario_id: p.inventario_id,
-        diseno_id: p.diseno_id,
-        producto_nombre: p.inventario?.producto?.nombre || "",
-        talla: p.inventario?.talla || "",
-        color: p.inventario?.color || "",
-        diseno_nombre: p.diseno?.nombre || "",
-        diseno_url: p.diseno?.imagen_url || "",
-      }));
-
-      setPedidos(mapped);
-    } catch (err) {
-      console.error("Error cargando pedidos:", err);
+      await login(email, password);
+      navigate("/"); // 🔹 Redirige a Home (o a /panel si preferís)
+    } catch (err: any) {
+      console.error("Error login:", err.message);
+      setError("Credenciales incorrectas o usuario no válido");
     } finally {
       setLoading(false);
     }
   };
 
-  // Cambiar estado del pedido usando RPC
-  const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white shadow-lg rounded-lg p-6 w-full max-w-sm"
+      >
+        <h2 className="text-2xl font-bold mb-4 text-center">Acceder</h2>
+
+        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+
+        <input
+          type="email"
+          placeholder="Correo electrónico"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="border rounded-lg p-2 w-full mb-3"
+        />
+
+        <input
+          type="password"
+          placeholder="Contraseña"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          className="border rounded-lg p-2 w-full mb-4"
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? "Ingresando..." : "Ingresar"}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default Login;
+
+
+// Contenido de: components/Usuarios.tsx
+
+import React, { useEffect, useState, useContext } from "react";
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../context/AuthContext";
+
+interface Usuario {
+  id: string;
+  email: string;
+  nombre: string;
+  rol: "master" | "empleado" | "cliente";
+}
+
+const Usuarios: React.FC = () => {
+  const { user } = useAuth();
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [nuevoUsuario, setNuevoUsuario] = useState({
+    email: "",
+    nombre: "",
+    rol: "empleado" as "master" | "empleado" | "cliente",
+  });
+
+  const [editando, setEditando] = useState<{ [key: string]: boolean }>({});
+  const [usuarioEditado, setUsuarioEditado] = useState<Usuario | null>(null);
+
+  // 🚫 Solo master puede entrar
+  if (!user || user.rol !== "master") {
+    return (
+      <p className="text-red-600">❌ Solo master puede administrar usuarios</p>
+    );
+  }
+
+  useEffect(() => {
+    fetchUsuarios();
+  }, []);
+
+  const fetchUsuarios = async () => {
     try {
-      // mapear "confirmado" → "realizado"
-      const estadoValido =
-        nuevoEstado === "confirmado" ? "realizado" : nuevoEstado;
-
-      const { error } = await supabase.rpc("alterar_estado_pedido", {
-        p_id: pedidoId,
-        p_new_estado: estadoValido,
-      });
-
+      setLoading(true);
+      const { data, error } = await supabase.from("usuarios").select("*");
       if (error) throw error;
-
-      alert(`✅ Estado cambiado a ${estadoValido}`);
-      fetchPedidos(); // refresca la lista
+      setUsuarios(data as Usuario[]);
     } catch (err) {
-      console.error("Error cambiando estado:", err);
-      alert("❌ No se pudo cambiar el estado del pedido");
+      console.error("Error cargando usuarios:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeletePedido = async (pedidoId: string) => {
+  const handleAgregarUsuario = async () => {
+    try {
+      const { error } = await supabase.from("usuarios").insert([nuevoUsuario]);
+      if (error) throw error;
+      setNuevoUsuario({ email: "", nombre: "", rol: "empleado" });
+      fetchUsuarios();
+    } catch (err) {
+      console.error("Error agregando usuario:", err);
+      alert("❌ No se pudo agregar el usuario");
+    }
+  };
+
+  const handleGuardarEdicion = async () => {
+    if (!usuarioEditado) return;
     try {
       const { error } = await supabase
-        .from("pedidos")
-        .delete()
-        .eq("id", pedidoId);
-
+        .from("usuarios")
+        .update({
+          nombre: usuarioEditado.nombre,
+          rol: usuarioEditado.rol,
+        })
+        .eq("id", usuarioEditado.id);
       if (error) throw error;
-
-      alert("🗑️ Pedido eliminado correctamente");
-      fetchPedidos();
+      setEditando({ ...editando, [usuarioEditado.id]: false });
+      setUsuarioEditado(null);
+      fetchUsuarios();
     } catch (err) {
-      console.error("Error eliminando pedido:", err);
-      alert("❌ No se pudo eliminar el pedido");
+      console.error("Error editando usuario:", err);
+      alert("❌ No se pudo editar el usuario");
+    }
+  };
+
+  const handleEliminarUsuario = async (id: string) => {
+    if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
+    try {
+      const { error } = await supabase.from("usuarios").delete().eq("id", id);
+      if (error) throw error;
+      fetchUsuarios();
+    } catch (err) {
+      console.error("Error eliminando usuario:", err);
+      alert("❌ No se pudo eliminar el usuario");
     }
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Gestión de Pedidos</h2>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold mb-6">Gestión de Usuarios</h2>
 
+      {/* Agregar usuario */}
+      <div className="bg-white shadow-md rounded-lg p-4 mb-8">
+        <h3 className="text-lg font-semibold mb-4">Agregar Usuario</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <input
+            type="email"
+            placeholder="Email"
+            value={nuevoUsuario.email}
+            onChange={(e) =>
+              setNuevoUsuario({ ...nuevoUsuario, email: e.target.value })
+            }
+            className="border rounded-lg p-2"
+          />
+          <input
+            type="text"
+            placeholder="Nombre"
+            value={nuevoUsuario.nombre}
+            onChange={(e) =>
+              setNuevoUsuario({ ...nuevoUsuario, nombre: e.target.value })
+            }
+            className="border rounded-lg p-2"
+          />
+          <select
+            value={nuevoUsuario.rol}
+            onChange={(e) =>
+              setNuevoUsuario({
+                ...nuevoUsuario,
+                rol: e.target.value as "master" | "empleado" | "cliente",
+              })
+            }
+            className="border rounded-lg p-2"
+          >
+            <option value="master">Master</option>
+            <option value="empleado">Empleado</option>
+            <option value="cliente">Cliente</option>
+          </select>
+        </div>
+        <button
+          onClick={handleAgregarUsuario}
+          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+        >
+          Agregar Usuario
+        </button>
+      </div>
+
+      {/* Lista de usuarios */}
       {loading ? (
-        <p>Cargando pedidos...</p>
-      ) : pedidos.length === 0 ? (
-        <p>No hay pedidos registrados.</p>
+        <p>Cargando usuarios...</p>
+      ) : usuarios.length === 0 ? (
+        <p>No hay usuarios registrados.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {pedidos.map((pedido) => (
-            <div key={pedido.id} className="bg-white shadow-md rounded-lg p-4">
-              <RemeraPreview
-                color={pedido.color || "#ffffff"}
-                disenoUrl={pedido.diseno_url || ""}
-              />
-              <p>
-                <strong>Producto:</strong> {pedido.producto_nombre}
-              </p>
-              <p>
-                <strong>Talle:</strong> {pedido.talla}
-              </p>
-              <p>
-                <strong>Color:</strong> {pedido.color}
-              </p>
-              <p>
-                <strong>Diseño:</strong> {pedido.diseno_nombre}
-              </p>
-              <p>
-                <strong>Cliente:</strong> {pedido.nombre} {pedido.apellido}
-              </p>
-              <p>
-                <strong>Estado:</strong>{" "}
-                <span
-                  className={`px-2 py-1 rounded text-white ${
-                    pedido.estado === "pendiente"
-                      ? "bg-yellow-500"
-                      : pedido.estado === "realizado"
-                      ? "bg-green-600"
-                      : "bg-red-600"
-                  }`}
-                >
-                  {pedido.estado}
-                </span>
-              </p>
-
-              {/* BOTONES SEGÚN ESTADO */}
-              <div className="mt-4 flex gap-2">
-                {pedido.estado === "pendiente" && (
-                  <>
+        <div className="space-y-4">
+          {usuarios.map((u) => (
+            <div key={u.id} className="bg-white shadow-md rounded-lg p-4">
+              {editando[u.id] ? (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <input
+                    type="text"
+                    value={usuarioEditado?.nombre || ""}
+                    onChange={(e) =>
+                      setUsuarioEditado({
+                        ...usuarioEditado!,
+                        nombre: e.target.value,
+                      })
+                    }
+                    className="border rounded-lg p-2"
+                  />
+                  <select
+                    value={usuarioEditado?.rol || "cliente"}
+                    onChange={(e) =>
+                      setUsuarioEditado({
+                        ...usuarioEditado!,
+                        rol: e.target.value as
+                          | "master"
+                          | "empleado"
+                          | "cliente",
+                      })
+                    }
+                    className="border rounded-lg p-2"
+                  >
+                    <option value="master">Master</option>
+                    <option value="empleado">Empleado</option>
+                    <option value="cliente">Cliente</option>
+                  </select>
+                  <div className="flex gap-2">
                     <button
-                      onClick={() => handleChangeEstado(pedido.id, "realizado")}
+                      onClick={handleGuardarEdicion}
                       className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
                     >
-                      Confirmar
+                      Guardar
                     </button>
                     <button
-                      onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                    >
-                      Cancelar
-                    </button>
-                  </>
-                )}
-
-                {pedido.estado === "realizado" && (
-                  <>
-                    <button
-                      onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={() => handleDeletePedido(pedido.id)}
+                      onClick={() =>
+                        setEditando({ ...editando, [u.id]: false })
+                      }
                       className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p>
+                      <strong>{u.nombre}</strong> ({u.email})
+                    </p>
+                    <p className="text-sm text-gray-600">Rol: {u.rol}</p>
+                  </div>
+                  <div className="flex gap-2 mt-2 sm:mt-0">
+                    <button
+                      onClick={() => {
+                        setEditando({ ...editando, [u.id]: true });
+                        setUsuarioEditado(u);
+                      }}
+                      className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleEliminarUsuario(u.id)}
+                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
                     >
                       Eliminar
                     </button>
-                  </>
-                )}
-
-                {pedido.estado === "cancelado" && (
-                  <button
-                    onClick={() => handleDeletePedido(pedido.id)}
-                    className="bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
-                  >
-                    Eliminar
-                  </button>
-                )}
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -217,630 +403,46 @@ const Pedidos: React.FC = () => {
   );
 };
 
-export default Pedidos;
+export default Usuarios;
 
 
-// Contenido de: components/Inventario.tsx
+// Contenido de: hooks/useAuth.ts
 
-//src/components/Inventario.tsx
-import React, { useEffect, useState } from "react";
-import {
-  getProductos,
-  addProducto,
-  uploadStock,
-  uploadProducto,
-  deleteProducto,
-  deleteCombinacion,
-  getColoresFijos,
-} from "../services/inventario";
-import { Producto, Color } from "../types/types";
-const Inventario: React.FC = () => {
-  const [precio, setPrecio] = useState("");
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [coloresFijos, setColoresFijos] = useState<Color[]>([]);
-  const [nuevoProducto, setNuevoProducto] = useState({
-    nombre: "",
-    precio: "",
-    descripcion: "",
-  });
-  const [nuevaCombinacion, setNuevaCombinacion] = useState({
-    idProducto: "",
-    talla: "S",
-    color: "",
-    stock: 0,
-  });
-  const [editando, setEditando] = useState<{ [key: string]: boolean }>({});
-  const [productoEditado, setProductoEditado] = useState<{
-    id: string;
-    nombre: string;
-    precio: number;
-    descripcion: string;
-  } | null>(null);
+import { useState, useEffect } from "react";
 
-  // === Cargar productos y colores ===
+export interface Usuario {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: "master" | "empleado" | "cliente";
+}
+
+export function useAuth() {
+  const [user, setUsuario] = useState<Usuario | null>(null);
+
   useEffect(() => {
-    const cargarDatos = async () => {
-      const productosData = await getProductos();
-      setProductos(productosData);
-
-      const coloresData = await getColoresFijos();
-      setColoresFijos(coloresData);
-
-      if (coloresData.length > 0) {
-        setNuevaCombinacion((prev) => ({
-          ...prev,
-          color: coloresData[0].nombre,
-        }));
+    const stored = localStorage.getItem("usuario");
+    if (stored) {
+      try {
+        setUsuario(JSON.parse(stored));
+      } catch (e) {
+        console.error("Error leyendo usuario de localStorage", e);
+        setUsuario(null);
       }
-    };
-    cargarDatos();
+    }
   }, []);
 
-  const handleAgregarProducto = async () => {
-    try {
-      await addProducto({
-        ...nuevoProducto,
-        precio: parseInt(nuevoProducto.precio, 10) || 0, // 🔥 siempre int
-      });
-      setProductos(await getProductos());
-      setNuevoProducto({ nombre: "", precio: "", descripcion: "" }); // 🔥 reseteamos como string
-    } catch (error: any) {
-      alert(error.message);
-    }
+  const login = (user: Usuario) => {
+    localStorage.setItem("usuario", JSON.stringify(user));
+    setUsuario(user);
   };
 
-  const handleActualizarStock = async (
-    idProducto: string,
-    talla: string,
-    color: string,
-    nuevoStock: number
-  ) => {
-    try {
-      const producto = productos.find((p) => p.id === idProducto);
-      const item = producto?.inventario.find(
-        (i) => i.talla === talla && i.color === color
-      );
-      if (!item) throw new Error("Combinación no encontrada");
-      const cantidad = nuevoStock - item.stock;
-      await uploadStock(idProducto, talla, color, cantidad);
-      setProductos(await getProductos());
-    } catch (error: any) {
-      alert(error.message);
-    }
+  const logout = () => {
+    localStorage.removeItem("usuario");
+    setUsuario(null);
   };
 
-  const handleAgregarCombinacion = async () => {
-    try {
-      if (!nuevaCombinacion.idProducto)
-        throw new Error("Seleccione un producto");
-      if (!nuevaCombinacion.color) throw new Error("Seleccione un color");
-      await uploadStock(
-        nuevaCombinacion.idProducto,
-        nuevaCombinacion.talla,
-        nuevaCombinacion.color,
-        nuevaCombinacion.stock
-      );
-      setProductos(await getProductos());
-      setNuevaCombinacion({
-        idProducto: "",
-        talla: "S",
-        color: coloresFijos.length > 0 ? coloresFijos[0].nombre : "",
-        stock: 0,
-      });
-    } catch (error: any) {
-      alert(error.message);
-    }
-  };
-
-  const handleEditarProducto = (producto: Producto) => {
-    setEditando({ ...editando, [producto.id]: true });
-    setProductoEditado({
-      id: producto.id,
-      nombre: producto.nombre,
-      precio: producto.precio,
-      descripcion: producto.descripcion || "",
-    });
-  };
-
-  const handleGuardarEdicion = async () => {
-    if (productoEditado) {
-      try {
-        await uploadProducto(productoEditado.id, {
-          nombre: productoEditado.nombre,
-          precio: productoEditado.precio,
-          descripcion: productoEditado.descripcion,
-        });
-        setProductos(await getProductos());
-        setEditando({ ...editando, [productoEditado.id]: false });
-        setProductoEditado(null);
-      } catch (error: any) {
-        alert(error.message);
-      }
-    }
-  };
-
-  const handleCancelarEdicion = (id: string) => {
-    setEditando({ ...editando, [id]: false });
-    setProductoEditado(null);
-  };
-
-  const handleEliminarProducto = async (id: string) => {
-    if (window.confirm("¿Eliminar este producto?")) {
-      try {
-        await deleteProducto(id);
-        setProductos(await getProductos());
-      } catch (error: any) {
-        alert(error.message);
-      }
-    }
-  };
-
-  const handleEliminarCombinacion = async (
-    idProducto: string,
-    talla: string,
-    color: string
-  ) => {
-    if (
-      window.confirm(`¿Eliminar combinación Talla: ${talla}, Color: ${color}?`)
-    ) {
-      try {
-        await deleteCombinacion(idProducto, talla, color);
-        setProductos(await getProductos());
-      } catch (error: any) {
-        alert(error.message);
-      }
-    }
-  };
-
-  // Orden de tallas
-  const tallaOrden = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
-
-  // Validaciones
-  const isAgregarProductoDisabled =
-    !nuevoProducto.nombre.trim() ||
-    !nuevoProducto.precio.trim() || // ahora sí funciona porque es string
-    !nuevoProducto.descripcion.trim();
-
-  const isAgregarCombinacionDisabled =
-    nuevaCombinacion.stock <= 0 ||
-    !nuevaCombinacion.talla ||
-    !nuevaCombinacion.color ||
-    !nuevaCombinacion.idProducto;
-
-  return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-        Inventario de Productos
-      </h1>
-
-      {/* Agregar producto */}
-      <div className="bg-white shadow-md rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4 text-gray-700">
-          Agregar Producto
-        </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <input
-            type="text"
-            placeholder="Nombre"
-            value={nuevoProducto.nombre}
-            onChange={(e) =>
-              setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })
-            }
-            className="border rounded-lg p-2"
-          />
-          <input
-            type="number"
-            placeholder="Precio"
-            value={nuevoProducto.precio}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (/^\d*$/.test(value)) {
-                // solo dígitos
-                setNuevoProducto({ ...nuevoProducto, precio: value });
-              }
-            }}
-            className="border p-2 rounded w-full"
-          />
-          <input
-            type="text"
-            placeholder="Descripción"
-            value={nuevoProducto.descripcion}
-            onChange={(e) =>
-              setNuevoProducto({
-                ...nuevoProducto,
-                descripcion: e.target.value,
-              })
-            }
-            className="border rounded-lg p-2 sm:col-span-2"
-          />
-        </div>
-        <button
-          onClick={handleAgregarProducto}
-          className={`mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg ${
-            isAgregarProductoDisabled
-              ? "opacity-50 cursor-not-allowed"
-              : "hover:bg-blue-700"
-          }`}
-          disabled={isAgregarProductoDisabled}
-        >
-          Agregar Producto
-        </button>
-      </div>
-
-      {/* Lista de productos */}
-      <div className="space-y-6">
-        {productos.map((producto) => (
-          <div key={producto.id} className="bg-white shadow-md rounded-lg p-6">
-            {editando[producto.id] ? (
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  value={productoEditado?.nombre || ""}
-                  onChange={(e) =>
-                    setProductoEditado({
-                      ...productoEditado!,
-                      nombre: e.target.value,
-                    })
-                  }
-                  className="border rounded-lg p-2"
-                />
-                <input
-                  type="number"
-                  placeholder="Precio"
-                  value={nuevoProducto.precio}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Solo permitir enteros positivos
-                    if (/^\d*$/.test(value)) {
-                      setNuevoProducto({ ...nuevoProducto, precio: value });
-                    }
-                  }}
-                  className="border p-2 rounded w-full"
-                />
-                <input
-                  type="text"
-                  value={productoEditado?.descripcion || ""}
-                  onChange={(e) =>
-                    setProductoEditado({
-                      ...productoEditado!,
-                      descripcion: e.target.value,
-                    })
-                  }
-                  className="border rounded-lg p-2"
-                />
-                <button
-                  onClick={handleGuardarEdicion}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg"
-                >
-                  Guardar
-                </button>
-                <button
-                  onClick={() => handleCancelarEdicion(producto.id)}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg"
-                >
-                  Cancelar
-                </button>
-              </div>
-            ) : (
-              <>
-                <h3 className="text-lg font-semibold">{producto.nombre}</h3>
-                <p>Precio: ${producto.precio.toFixed(2)}</p>
-                <p>{producto.descripcion}</p>
-                <button
-                  onClick={() => handleEditarProducto(producto)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleEliminarProducto(producto.id)}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg"
-                >
-                  Eliminar
-                </button>
-              </>
-            )}
-
-            {/* Inventario */}
-            <h4 className="mt-4 font-semibold">Inventario</h4>
-            <ul>
-              {[...producto.inventario]
-                .sort((a, b) => {
-                  const ordenA = tallaOrden[a.talla as keyof typeof tallaOrden];
-                  const ordenB = tallaOrden[b.talla as keyof typeof tallaOrden];
-                  if (ordenA !== ordenB) return ordenA - ordenB;
-                  return a.color.localeCompare(b.color);
-                })
-                .map((item, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <span>
-                      {item.talla} - {item.color}
-                    </span>
-                    <input
-                      type="number"
-                      value={item.stock}
-                      onFocus={(e) =>
-                        e.target.value === "0" && e.target.select()
-                      }
-                      onChange={(e) =>
-                        handleActualizarStock(
-                          producto.id,
-                          item.talla,
-                          item.color,
-                          parseInt(e.target.value) || 0
-                        )
-                      }
-                      min="0"
-                      className="border rounded-lg p-1 w-20"
-                    />
-                    <button
-                      onClick={() =>
-                        handleEliminarCombinacion(
-                          producto.id,
-                          item.talla,
-                          item.color
-                        )
-                      }
-                      className="bg-red-500 text-white px-2 py-1 rounded"
-                    >
-                      Eliminar
-                    </button>
-                  </li>
-                ))}
-            </ul>
-
-            {/* Agregar combinación */}
-            <div className="mt-4">
-              <h4 className="font-semibold">Agregar Combinación</h4>
-              <select
-                value={nuevaCombinacion.talla}
-                onChange={(e) =>
-                  setNuevaCombinacion({
-                    ...nuevaCombinacion,
-                    talla: e.target.value,
-                    idProducto: producto.id, // 🔥 aseguramos que siempre tenga producto
-                  })
-                }
-                className="border rounded-lg p-2"
-              >
-                {["S", "M", "L", "XL", "XXL"].map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
-              <select
-                value={nuevaCombinacion.color}
-                onChange={(e) =>
-                  setNuevaCombinacion({
-                    ...nuevaCombinacion,
-                    color: e.target.value,
-                    idProducto: producto.id, // 🔥
-                  })
-                }
-                className="border rounded-lg p-2 ml-2"
-              >
-                {coloresFijos.map((c) => (
-                  <option key={c.nombre}>{c.nombre}</option>
-                ))}
-              </select>
-              <input
-                type="number"
-                value={nuevaCombinacion.stock}
-                onFocus={(e) => e.target.value === "0" && e.target.select()}
-                onChange={(e) => {
-                  const newStock = Math.max(0, parseInt(e.target.value) || 0);
-                  console.log("Nuevo stock:", newStock);
-                  setNuevaCombinacion({
-                    ...nuevaCombinacion,
-                    stock: newStock,
-                    idProducto: producto.id, // 🔥
-                  });
-                }}
-                min="0"
-                className="border rounded-lg p-2 ml-2 w-20"
-              />
-              <button
-                onClick={handleAgregarCombinacion}
-                className={`ml-2 bg-green-600 text-white px-4 py-2 rounded-lg ${
-                  isAgregarCombinacionDisabled
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-green-700"
-                }`}
-                disabled={isAgregarCombinacionDisabled}
-              >
-                Añadir
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-export default Inventario;
-
-
-// Contenido de: services/inventario.ts
-
-// src/services/inventario.ts
-import { supabase } from "../lib/supabaseClient";
-
-import { Producto, Inventario, Color } from '../types/types';
-// =========================
-// Productos
-// =========================
-export const getProductos = async (): Promise<Producto[]> => {
-  const { data, error } = await supabase
-    .from('productos')
-    .select('*, inventario(*)')
-    .order('fecha_actualizacion', { ascending: false });
-
-  if (error) throw error;
-
-  return data as Producto[];
-};
-
-export const getProductoPorId = async (id: string): Promise<Producto | null> => {
-  const { data, error } = await supabase
-    .from('productos')
-    .select('*, inventario(*)')
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    console.error(error);
-    return null;
-  }
-  return data as Producto;
-};
-
-export const addProducto = async (producto: Omit<Producto, 'id' | 'fechaActualizacion' | 'inventario'>) => {
-  const { data, error } = await supabase
-    .from('productos')
-    .insert([producto])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data.id;
-};
-
-export const uploadProducto = async (id: string, producto: Partial<Producto>) => {
-  const { error } = await supabase
-    .from('productos')
-    .update({
-      ...producto,
-      fecha_actualizacion: new Date(),
-    })
-    .eq('id', id);
-
-  if (error) throw error;
-};
-
-export const deleteProducto = async (id: string) => {
-  const { error } = await supabase.from('productos').delete().eq('id', id);
-  if (error) throw error;
-};
-
-// =========================
-// Inventario (talle + color)
-// =========================
-export const uploadStock = async (
-  productoId: string,
-  talla: string,
-  color: string,
-  cantidad: number
-) => {
-  // Buscar si ya existe esa combinación
-  const { data: existente, error: fetchError } = await supabase
-    .from('inventario')
-    .select('*')
-    .eq('producto_id', productoId)
-    .eq('talla', talla)
-    .eq('color', color)
-    .maybeSingle();
-
-  if (fetchError) throw fetchError;
-
-  if (!existente) {
-    // Insertar nuevo registro
-    const { error } = await supabase.from('inventario').insert([
-      {
-        producto_id: productoId,
-        talla,
-        color,
-        stock: cantidad >= 0 ? cantidad : 0,
-      },
-    ]);
-    if (error) throw error;
-  } else {
-    // Actualizar stock existente
-    const nuevoStock = existente.stock + cantidad;
-    if (nuevoStock < 0) throw new Error('Stock insuficiente');
-    const { error } = await supabase
-      .from('inventario')
-      .update({ stock: nuevoStock })
-      .eq('id', existente.id);
-    if (error) throw error;
-  }
-};
-
-export const deleteCombinacion = async (
-  productoId: string,
-  talla: string,
-  color: string
-) => {
-  const { error } = await supabase
-    .from('inventario')
-    .delete()
-    .eq('producto_id', productoId)
-    .eq('talla', talla)
-    .eq('color', color);
-
-  if (error) throw error;
-};
-
-// =========================
-// Colores
-// =========================
-export const getColoresDisponibles = async (): Promise<Color[]> => {
-  const { data, error } = await supabase.from('colores_fijos').select('*');
-  if (error) throw error;
-  return data as Color[];
-};
-
-// Obtener colores válidos para un talle específico
-export const getColoresPorTalle = async (
-  productoId: string,
-  talla: string
-): Promise<Color[]> => {
-  const { data, error } = await supabase
-    .from('inventario')
-    .select('color')
-    .eq('producto_id', productoId)
-    .eq('talla', talla)
-    .gt('stock', 0);
-
-  if (error) throw error;
-
-  const coloresUnicos = Array.from(new Set(data.map((i) => i.color)));
-
-  const { data: coloresFijos } = await supabase
-    .from('colores_fijos')
-    .select('*')
-    .in('nombre', coloresUnicos);
-
-  return coloresFijos || [];
-};
-
-// =========================
-// Talles
-// =========================
-export const getTallesDisponibles = async (
-  productoId: string
-): Promise<string[]> => {
-  const { data, error } = await supabase
-    .from('inventario')
-    .select('talla')
-    .eq('producto_id', productoId)
-    .gt('stock', 0);
-
-  if (error) throw error;
-
-  return Array.from(new Set(data.map((i) => i.talla))).sort();
-};
-
-export const getColoresFijos = async (): Promise<Color[]> => {
-  const { data, error } = await supabase
-    .from("colores_fijos")
-    .select("nombre, hex");
-
-  if (error) {
-    console.error("Error obteniendo colores fijos:", error.message);
-    return [];
-  }
-
-  return data as Color[];
-};
+  return { user, login, logout };
+}
 
 

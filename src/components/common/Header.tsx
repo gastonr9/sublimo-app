@@ -1,31 +1,34 @@
 /**
  * @file Header.tsx
- * @description Este archivo define el componente de la barra de navegación principal de la aplicación.
- * @module components/common/Header
+ * @description Barra de navegación con control de sesión y roles.
  */
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "/sublimo.svg";
+import { useAuth } from "../../context/AuthContext";
 
-/**
- * @function Navbar
- * @description Un componente de React que renderiza la barra de navegación.
- * Incluye el logo de la aplicación, enlaces a las diferentes secciones y un botón de acceso.
- * La navegación es responsive y se adapta a dispositivos móviles.
- * @returns {JSX.Element} El componente de la barra de navegación.
- */
 function Navbar() {
+  const { user, role, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
   return (
-    <header className=" relative w-full z-50 bg-white shadow-md">
+    <header className="relative w-full z-50 bg-white shadow-md">
       <div className="relative mx-auto flex max-w-screen-lg flex-col py-4 sm:flex-row sm:items-center sm:justify-between">
         <Link to="/" className="contents">
           <img
-            className="flex items-center "
+            className="flex items-center"
             src={logo}
             alt="sublimo-logo"
             width="55px"
           />
         </Link>
+
+        {/* Botón hamburguesa móvil */}
         <input className="peer hidden" type="checkbox" id="navbar-open" />
         <label
           className="self-end top-7 absolute cursor-pointer text-xl sm:hidden"
@@ -48,6 +51,8 @@ function Navbar() {
             <path d="M4 18l16 0" />
           </svg>
         </label>
+
+        {/* Navegación */}
         <nav
           aria-label="Header Navigation"
           className="peer-checked:block hidden pl-2 py-6 sm:block sm:py-0"
@@ -57,15 +62,43 @@ function Navbar() {
               Generador Mockup 3D
             </Link>
             <Link to="/articulos" className="text-gray-600 hover:text-blue-600">
-              Articulos
+              Artículos
             </Link>
-            <Link to="/burgon" className="text-gray-600 hover:text-blue-600">
-              Burgon
-            </Link>
+
+            {/* Solo master o empleado pueden ver Burgon y Panel */}
+            {(role === "master" || role === "empleado") && (
+              <>
+                <Link
+                  to="/burgon"
+                  className="text-gray-600 hover:text-blue-600"
+                >
+                  Burgon
+                </Link>
+                <Link to="/panel" className="text-gray-600 hover:text-blue-600">
+                  Panel Admin
+                </Link>
+              </>
+            )}
+
+            {/* Botón Acceder o menú de usuario */}
             <div className="mt-2 sm:mt-0">
-              <Link to="/login" className=" btn">
-                Acceder
-              </Link>
+              {user ? (
+                <div className="flex items-center gap-4">
+                  <span className="text-gray-700 text-sm">
+                    {user.email} ({role})
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                  >
+                    Salir
+                  </button>
+                </div>
+              ) : (
+                <Link to="/login" className="btn">
+                  Acceder
+                </Link>
+              )}
             </div>
           </div>
         </nav>
