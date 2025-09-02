@@ -22,7 +22,7 @@ const ColorPicker = ({
       type="color"
       value={selectedColor}
       onChange={(e) => setSelectedColor(e.target.value)}
-      className="w-10 h-10 border-none outline-none cursor-pointer"
+      className="w-10 h-10 border-none outline-none cursor-pointer colores"
     />
   </div>
 );

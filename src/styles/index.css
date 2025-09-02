@@ -34,6 +34,12 @@ h1 {
   display: flex;
   align-self: center;
 }
+.colores {
+  padding-inline: calc(var(--spacing) * 0) /* 1.5rem = 24px */;
+  border-radius: -1px;
+  border: 1px solid #000;
+  padding-block: calc(var(--spacing) * 0) /* 0.5rem = 8px */;
+}
 input,
 select,
 button {
