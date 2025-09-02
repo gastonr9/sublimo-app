@@ -29,10 +29,19 @@ body {
 h1 {
   font-weight: 700;
 }
+.logo {
+  max-height: fit-content;
+  width: 150px;
+  height: 150px;
+}
 .contenedor {
   gap: 20px;
   display: flex;
   align-self: center;
+}
+#remera {
+  height: 300px;
+  width: 300px;
 }
 .colores {
   padding-inline: calc(var(--spacing) * 0) /* 1.5rem = 24px */;
@@ -50,8 +59,8 @@ button {
 }
 button {
   background-color: var(--gris);
-  align-self: center;
   color: var(--morado);
+  align-self: center;
   max-height: 40px;
   &:hover {
     background-color: var(--morado);

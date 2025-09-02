@@ -374,7 +374,7 @@ const Burgon: React.FC = () => {
             designs.map((design) => (
               <div key={design.id} className="flex flex-col items-center">
                 <button
-                  className={`relative w-24 h-24 border rounded-lg overflow-hidden ${
+                  className={`logo relative w-24 h-24 border rounded-lg overflow-hidden ${
                     order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
                   } ${
                     !order.talle || !order.color
