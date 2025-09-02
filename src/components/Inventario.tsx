@@ -194,62 +194,62 @@ const Inventario: React.FC = () => {
         <h2 className="text-xl font-semibold mb-4 text-gray-700">
           Agregar Producto
         </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <input
-            type="text"
-            placeholder="Nombre"
-            value={nuevoProducto.nombre}
-            onChange={(e) =>
-              setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })
-            }
-            className="border rounded-lg p-2"
-          />
-          <input
-            type="number"
-            placeholder="Precio"
-            value={nuevoProducto.precio}
-            onKeyDown={(e) => {
-              if (
-                !/[0-9]/.test(e.key) &&
-                e.key !== "Backspace" &&
-                e.key !== "Delete" &&
-                e.key !== "ArrowLeft" &&
-                e.key !== "ArrowRight" &&
-                e.key !== "Tab"
-              ) {
-                e.preventDefault(); // ❌ ignora la tecla
+        <div className="gap-4 flex flex-col">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <input
+              type="text"
+              placeholder="Nombre"
+              value={nuevoProducto.nombre}
+              onChange={(e) =>
+                setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })
               }
-            }}
-            onChange={(e) =>
-              setNuevoProducto({ ...nuevoProducto, precio: e.target.value })
-            }
-            className="border p-2 rounded w-full"
-          />
+              className="border rounded-lg p-2"
+            />
+            <input
+              type="number"
+              placeholder="Precio"
+              value={nuevoProducto.precio}
+              onKeyDown={(e) => {
+                if (
+                  !/[0-9]/.test(e.key) &&
+                  e.key !== "Backspace" &&
+                  e.key !== "Delete" &&
+                  e.key !== "ArrowLeft" &&
+                  e.key !== "ArrowRight" &&
+                  e.key !== "Tab"
+                ) {
+                  e.preventDefault(); // ❌ ignora la tecla
+                }
+              }}
+              onChange={(e) =>
+                setNuevoProducto({ ...nuevoProducto, precio: e.target.value })
+              }
+              className="border p-2 rounded w-full"
+            />
 
-          <input
-            type="text"
-            placeholder="Descripción"
-            value={nuevoProducto.descripcion}
-            onChange={(e) =>
-              setNuevoProducto({
-                ...nuevoProducto,
-                descripcion: e.target.value,
-              })
-            }
-            className="border rounded-lg p-2 sm:col-span-2"
-          />
+            <input
+              type="text"
+              placeholder="Descripción"
+              value={nuevoProducto.descripcion}
+              onChange={(e) =>
+                setNuevoProducto({
+                  ...nuevoProducto,
+                  descripcion: e.target.value,
+                })
+              }
+              className="border rounded-lg p-2 sm:col-span-2"
+            />
+          </div>
+          <button
+            onClick={handleAgregarProducto}
+            className={`btn-green  ${
+              isAgregarProductoDisabled ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={isAgregarProductoDisabled}
+          >
+            Agregar Producto
+          </button>
         </div>
-        <button
-          onClick={handleAgregarProducto}
-          className={`mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg ${
-            isAgregarProductoDisabled
-              ? "opacity-50 cursor-not-allowed"
-              : "hover:bg-blue-700"
-          }`}
-          disabled={isAgregarProductoDisabled}
-        >
-          Agregar Producto
-        </button>
       </div>
 
       {/* Lista de productos */}
@@ -305,171 +305,188 @@ const Inventario: React.FC = () => {
                   }
                   className="border rounded-lg p-2"
                 />
-                <button
-                  onClick={handleGuardarEdicion}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg"
-                >
+                <button onClick={handleGuardarEdicion} className="btn-green">
                   Guardar
                 </button>
                 <button
                   onClick={() => handleCancelarEdicion(producto.id)}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg"
+                  className="btn-red"
                 >
                   Cancelar
                 </button>
               </div>
             ) : (
-              <>
-                <h3 className="text-lg font-semibold">{producto.nombre}</h3>
-                <p>Precio: ${producto.precio.toFixed(2)}</p>
-                <p>{producto.descripcion}</p>
-                <button
-                  onClick={() => handleEditarProducto(producto)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleEliminarProducto(producto.id)}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg"
-                >
-                  Eliminar
-                </button>
-              </>
+              <div>
+                <h3 className="text-lg font-semibold mt-4">
+                  {producto.nombre}
+                </h3>
+                <div className="contenedor">
+                  <div>
+                    <p>Precio: ${producto.precio.toFixed(2)}</p>
+                    <p>{producto.descripcion}</p>
+                  </div>
+                  <button
+                    onClick={() => handleEditarProducto(producto)}
+                    className="btn-blue"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleEliminarProducto(producto.id)}
+                    className="btn-red "
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
             )}
 
             {/* Inventario */}
-            <h4 className="mt-4 font-semibold">Inventario</h4>
-            <ul>
-              {[...producto.inventario]
-                .sort((a, b) => {
-                  const ordenA = tallaOrden[a.talla as keyof typeof tallaOrden];
-                  const ordenB = tallaOrden[b.talla as keyof typeof tallaOrden];
-                  if (ordenA !== ordenB) return ordenA - ordenB;
-                  return a.color.localeCompare(b.color);
-                })
-                .map((item, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <span>
-                      {item.talla} - {item.color}
-                    </span>
-                    <input
-                      type="number"
-                      value={item.stock}
-                      onFocus={(e) =>
-                        e.target.value === "0" && e.target.select()
-                      }
-                      onKeyDown={(e) => {
-                        if (
-                          !/[0-9]/.test(e.key) &&
-                          e.key !== "Backspace" &&
-                          e.key !== "Delete" &&
-                          e.key !== "ArrowLeft" &&
-                          e.key !== "ArrowRight" &&
-                          e.key !== "Tab"
-                        ) {
-                          e.preventDefault(); // ❌ ignora la tecla
-                        }
-                      }}
-                      onChange={(e) =>
-                        handleActualizarStock(
-                          producto.id,
-                          item.talla,
-                          item.color,
-                          parseInt(e.target.value) || 0
-                        )
-                      }
-                      min="0"
-                      className="border rounded-lg p-1 w-20"
-                    />
-                    <button
-                      onClick={() =>
-                        handleEliminarCombinacion(
-                          producto.id,
-                          item.talla,
-                          item.color
-                        )
-                      }
-                      className="bg-red-500 text-white px-2 py-1 rounded"
-                    >
-                      Eliminar
-                    </button>
-                  </li>
-                ))}
-            </ul>
+            <div>
+              <h4 className="mt-4 font-semibold">Inventario</h4>
+              <div className="contenedor">
+                <ul>
+                  {[...producto.inventario]
+                    .sort((a, b) => {
+                      const ordenA =
+                        tallaOrden[a.talla as keyof typeof tallaOrden];
+                      const ordenB =
+                        tallaOrden[b.talla as keyof typeof tallaOrden];
+                      if (ordenA !== ordenB) return ordenA - ordenB;
+                      return a.color.localeCompare(b.color);
+                    })
+                    .map((item, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span>
+                          {item.talla} - {item.color}
+                        </span>
+                        <input
+                          type="number"
+                          value={item.stock}
+                          onFocus={(e) =>
+                            e.target.value === "0" && e.target.select()
+                          }
+                          onKeyDown={(e) => {
+                            if (
+                              !/[0-9]/.test(e.key) &&
+                              e.key !== "Backspace" &&
+                              e.key !== "Delete" &&
+                              e.key !== "ArrowLeft" &&
+                              e.key !== "ArrowRight" &&
+                              e.key !== "Tab"
+                            ) {
+                              e.preventDefault(); // ❌ ignora la tecla
+                            }
+                          }}
+                          onChange={(e) =>
+                            handleActualizarStock(
+                              producto.id,
+                              item.talla,
+                              item.color,
+                              parseInt(e.target.value) || 0
+                            )
+                          }
+                          min="0"
+                          className="border rounded-lg p-1 w-20"
+                        />
+                      </li>
+                    ))}
+                </ul>
+                <button
+                  onClick={() =>
+                    handleEliminarCombinacion(
+                      producto.id,
+                      item.talla,
+                      item.color
+                    )
+                  }
+                  className="btn-red"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
 
             {/* Agregar combinación */}
-            <div className="mt-4">
-              <h4 className="font-semibold">Agregar Combinación</h4>
-              <select
-                value={nuevaCombinacion.talla}
-                onChange={(e) =>
-                  setNuevaCombinacion({
-                    ...nuevaCombinacion,
-                    talla: e.target.value,
-                    idProducto: producto.id, // 🔥 aseguramos que siempre tenga producto
-                  })
-                }
-                className="border rounded-lg p-2"
-              >
-                {["S", "M", "L", "XL", "XXL"].map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
-              <select
-                value={nuevaCombinacion.color}
-                onChange={(e) =>
-                  setNuevaCombinacion({
-                    ...nuevaCombinacion,
-                    color: e.target.value,
-                    idProducto: producto.id, // 🔥
-                  })
-                }
-                className="border rounded-lg p-2 ml-2"
-              >
-                {coloresFijos.map((c) => (
-                  <option key={c.nombre}>{c.nombre}</option>
-                ))}
-              </select>
-              <input
-                type="number"
-                value={nuevaCombinacion.stock}
-                onFocus={(e) => e.target.value === "0" && e.target.select()}
-                onKeyDown={(e) => {
-                  if (
-                    !/[0-9]/.test(e.key) &&
-                    e.key !== "Backspace" &&
-                    e.key !== "Delete" &&
-                    e.key !== "ArrowLeft" &&
-                    e.key !== "ArrowRight" &&
-                    e.key !== "Tab"
-                  ) {
-                    e.preventDefault(); // ❌ ignora la tecla
-                  }
-                }}
-                onChange={(e) => {
-                  const newStock = Math.max(0, parseInt(e.target.value) || 0);
-                  console.log("Nuevo stock:", newStock);
-                  setNuevaCombinacion({
-                    ...nuevaCombinacion,
-                    stock: newStock,
-                    idProducto: producto.id, // 🔥
-                  });
-                }}
-                min="0"
-                className="border rounded-lg p-2 ml-2 w-20"
-              />
-              <button
-                onClick={handleAgregarCombinacion}
-                className={`ml-2 bg-green-600 text-white px-4 py-2 rounded-lg ${
-                  isAgregarCombinacionDisabled
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-green-700"
-                }`}
-                disabled={isAgregarCombinacionDisabled}
-              >
-                Añadir
-              </button>
+            <div>
+              <h4 className="font-semibold mt-4">Agregar Combinación</h4>
+              <div className="contenedor">
+                <div>
+                  <select
+                    value={nuevaCombinacion.talla}
+                    onChange={(e) =>
+                      setNuevaCombinacion({
+                        ...nuevaCombinacion,
+                        talla: e.target.value,
+                        idProducto: producto.id, // 🔥 aseguramos que siempre tenga producto
+                      })
+                    }
+                    className="border rounded-lg p-2"
+                  >
+                    {["S", "M", "L", "XL", "XXL"].map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={nuevaCombinacion.color}
+                    onChange={(e) =>
+                      setNuevaCombinacion({
+                        ...nuevaCombinacion,
+                        color: e.target.value,
+                        idProducto: producto.id, // 🔥
+                      })
+                    }
+                    className="border rounded-lg p-2 ml-2"
+                  >
+                    {coloresFijos.map((c) => (
+                      <option key={c.nombre}>{c.nombre}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    value={nuevaCombinacion.stock}
+                    onFocus={(e) => e.target.value === "0" && e.target.select()}
+                    onKeyDown={(e) => {
+                      if (
+                        !/[0-9]/.test(e.key) &&
+                        e.key !== "Backspace" &&
+                        e.key !== "Delete" &&
+                        e.key !== "ArrowLeft" &&
+                        e.key !== "ArrowRight" &&
+                        e.key !== "Tab"
+                      ) {
+                        e.preventDefault(); // ❌ ignora la tecla
+                      }
+                    }}
+                    onChange={(e) => {
+                      const newStock = Math.max(
+                        0,
+                        parseInt(e.target.value) || 0
+                      );
+                      console.log("Nuevo stock:", newStock);
+                      setNuevaCombinacion({
+                        ...nuevaCombinacion,
+                        stock: newStock,
+                        idProducto: producto.id, // 🔥
+                      });
+                    }}
+                    min="0"
+                    className="border rounded-lg p-4 ml-2 w-20"
+                  />
+                </div>
+
+                <button
+                  onClick={handleAgregarCombinacion}
+                  className={`btn-green  ${
+                    isAgregarCombinacionDisabled
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                  disabled={isAgregarCombinacionDisabled}
+                >
+                  Añadir
+                </button>
+              </div>
             </div>
           </div>
         ))}

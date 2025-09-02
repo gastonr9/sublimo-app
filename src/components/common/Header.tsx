@@ -87,10 +87,7 @@ function Navbar() {
                   <span className="text-gray-700 text-sm">
                     {user.email} ({role})
                   </span>
-                  <button
-                    onClick={handleLogout}
-                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                  >
+                  <button onClick={handleLogout} className=" btn-secondary">
                     Salir
                   </button>
                 </div>

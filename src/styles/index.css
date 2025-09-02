@@ -1,4 +1,3 @@
-
 @import "tailwindcss";
 
 :root {
@@ -8,10 +7,12 @@
   --morado-100: #2e2e67;
   --radius-selector: 1rem;
   --radius-field: 2rem;
-  --radius-box: 1rem;
+  --radius-box: 3rem;
   --border: 2px;
   --depth: 1;
   --noise: 0;
+  --radius: 1.5rem;
+  --radius-lg: 1rem;
 }
 
 * {
@@ -28,14 +29,24 @@ body {
 h1 {
   font-weight: 700;
 }
-
-.btn {
-  background-color: var(--gris);
-  color: var(--morado);
-  border-radius: var(--radius-4xl) /* 2rem = 32px */;
+.contenedor {
+  gap: 20px;
+  display: flex;
+  align-self: center;
+}
+input,
+select,
+button {
+  border-radius: var(--radius);
   padding-inline: calc(var(--spacing) * 6) /* 1.5rem = 24px */;
   padding-block: calc(var(--spacing) * 2) /* 0.5rem = 8px */;
   font-weight: var(--font-weight-medium) /* 500 */;
+}
+button {
+  background-color: var(--gris);
+  align-self: center;
+  color: var(--morado);
+  max-height: 40px;
   &:hover {
     background-color: var(--morado);
     color: white;
@@ -46,5 +57,33 @@ h1 {
   color: white;
   &:hover {
     background-color: var(--morado-100);
+  }
+}
+.btn-red {
+  background-color: #ff0000;
+  color: white;
+  &:hover {
+    background-color: #bd1e26;
+  }
+}
+.btn-blue {
+  background-color: #155dfc;
+  color: white;
+  &:hover {
+    background-color: #0e358a;
+  }
+}
+.btn-green {
+  background-color: #00a63e;
+  color: white;
+  &:hover {
+    background-color: #01722b;
+  }
+}
+.btn-green {
+  background-color: #00a63e;
+  color: white;
+  &:hover {
+    background-color: #01722b;
   }
 }
