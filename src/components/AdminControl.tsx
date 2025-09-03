@@ -3,7 +3,6 @@ import { Link, Routes, Route, Navigate } from "react-router-dom";
 import Inventario from "./Inventario";
 import Designs from "./Designs";
 import Pedidos from "./Pedidos";
-import Usuarios from "./Usuarios";
 import PrivateRoute from "../components/PrivateRoute";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase/Client";
