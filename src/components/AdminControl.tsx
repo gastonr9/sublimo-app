@@ -6,31 +6,32 @@ import Pedidos from "./Pedidos";
 import Usuarios from "./Usuarios";
 import PrivateRoute from "../components/PrivateRoute";
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../supabase/Client";
+import RegistrarUsuario from "./RegistrarUsuario";
 
 export default function AdminControl() {
-  const [rol, setRol] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchRol = async () => {
+    const fetchRole = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (user) {
         const { data, error } = await supabase
-          .from("usuarios")
-          .select("rol")
+          .from("profiles")
+          .select("role")
           .eq("id", user.id)
           .single();
 
         if (!error && data) {
-          setRol(data.rol);
+          setRole(data.role);
         }
       }
     };
 
-    fetchRol();
+    fetchRole();
   }, []);
 
   return (
@@ -58,8 +59,8 @@ export default function AdminControl() {
             Pedidos
           </Link>
 
-          {/* 👇 Solo mostrar si el rol es master */}
-          {rol === "master" && (
+          {/* 👇 Solo mostrar si el role es master */}
+          {role === "master" && (
             <Link
               to="/panel/usuarios"
               className="block w-full text-left px-4 py-2 rounded-lg hover:bg-gray-100"
@@ -69,24 +70,21 @@ export default function AdminControl() {
           )}
         </nav>
       </aside>
-
       {/* Main content */}
       <main className="flex-1 p-6 overflow-y-auto">
         <Routes>
           <Route path="inventario" element={<Inventario />} />
           <Route path="designs" element={<Designs />} />
           <Route path="pedidos" element={<Pedidos />} />
-
-          {/* 🔒 Solo rol master puede entrar */}
+          {/* 🔒 Solo role master puede entrar */}
           <Route
             path="usuarios"
             element={
               <PrivateRoute rolesPermitidos={["master"]}>
-                <Usuarios />
+                <RegistrarUsuario />
               </PrivateRoute>
             }
           />
-
           {/* Redirección por defecto */}
           <Route path="*" element={<Navigate to="inventario" replace />} />
         </Routes>

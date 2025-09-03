@@ -1,5 +1,5 @@
 // storage.ts
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../supabase/Client";
 
 // Listar imágenes desde el bucket "designs"
 export const listDesignsFromStorage = async () => {
@@ -50,8 +50,6 @@ export const uploadDesign = async (file: File) => {
 };
 
 export const removeDesignFromStorage = async (fileName: string) => {
-  const { error } = await supabase.storage
-    .from("designs")
-    .remove([fileName]);
+  const { error } = await supabase.storage.from("designs").remove([fileName]);
   if (error) throw error;
 };

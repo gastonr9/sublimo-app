@@ -1,34 +1,20 @@
-import React from "react";
+import React, { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 
-// Definimos los roles posibles
-type RolPermitido = "master" | "empleado";
-
-interface PrivateRouteProps {
-  children: React.ReactNode;
-  rolesPermitidos: RolPermitido[];
-}
-
-const PrivateRoute: React.FC<PrivateRouteProps> = ({
+export default function PrivateRoute({
   children,
   rolesPermitidos,
-}) => {
-  const { user, role, loading } = useAuth();
+}: {
+  children: React.ReactElement;
+  rolesPermitidos: ("empleado" | "master")[];
+}) {
+  const { user, role, loading } = useContext(AuthContext);
 
-  if (loading) {
-    return <p>Cargando...</p>;
-  }
+  if (loading) return <p>Cargando...</p>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/usuarios" replace />;
+  if (!rolesPermitidos.includes(role!)) return <Navigate to="/" replace />;
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!rolesPermitidos.includes(role as RolPermitido)) {
-    return <Navigate to="/" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-export default PrivateRoute;
+  return children;
+}

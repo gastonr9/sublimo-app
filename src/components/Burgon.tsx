@@ -3,7 +3,7 @@ import { useOrder } from "../context/OrderContext";
 import { getProductos, getProductoPorId } from "../services/inventario";
 import { Producto, Color } from "../types/types";
 import { getDesigns } from "../services/designs";
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../supabase/Client";
 import RemeraPreview from "./RemeraPreview";
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();

@@ -1,7 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Generador from "./pages/Generador";
-import Articulos from "./pages/Articulos";
 import Burgon from "./components/Burgon";
 import Login from "./pages/Login";
 import Panel from "./components/AdminControl";

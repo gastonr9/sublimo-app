@@ -1,26 +1,28 @@
 // src/services/inventario.ts
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../supabase/Client";
 
-import { Producto, Inventario, Color } from '../types/types';
+import { Producto, Inventario, Color } from "../types/types";
 // =========================
 // Productos
 // =========================
 export const getProductos = async (): Promise<Producto[]> => {
   const { data, error } = await supabase
-    .from('productos')
-    .select('*, inventario(*)')
-    .order('fecha_actualizacion', { ascending: false });
+    .from("productos")
+    .select("*, inventario(*)")
+    .order("fecha_actualizacion", { ascending: false });
 
   if (error) throw error;
 
   return data as Producto[];
 };
 
-export const getProductoPorId = async (id: string): Promise<Producto | null> => {
+export const getProductoPorId = async (
+  id: string
+): Promise<Producto | null> => {
   const { data, error } = await supabase
-    .from('productos')
-    .select('*, inventario(*)')
-    .eq('id', id)
+    .from("productos")
+    .select("*, inventario(*)")
+    .eq("id", id)
     .single();
 
   if (error) {
@@ -30,9 +32,11 @@ export const getProductoPorId = async (id: string): Promise<Producto | null> => 
   return data as Producto;
 };
 
-export const addProducto = async (producto: Omit<Producto, 'id' | 'fechaActualizacion' | 'inventario'>) => {
+export const addProducto = async (
+  producto: Omit<Producto, "id" | "fechaActualizacion" | "inventario">
+) => {
   const { data, error } = await supabase
-    .from('productos')
+    .from("productos")
     .insert([producto])
     .select()
     .single();
@@ -41,20 +45,23 @@ export const addProducto = async (producto: Omit<Producto, 'id' | 'fechaActualiz
   return data.id;
 };
 
-export const uploadProducto = async (id: string, producto: Partial<Producto>) => {
+export const uploadProducto = async (
+  id: string,
+  producto: Partial<Producto>
+) => {
   const { error } = await supabase
-    .from('productos')
+    .from("productos")
     .update({
       ...producto,
       fecha_actualizacion: new Date(),
     })
-    .eq('id', id);
+    .eq("id", id);
 
   if (error) throw error;
 };
 
 export const deleteProducto = async (id: string) => {
-  const { error } = await supabase.from('productos').delete().eq('id', id);
+  const { error } = await supabase.from("productos").delete().eq("id", id);
   if (error) throw error;
 };
 
@@ -69,18 +76,18 @@ export const uploadStock = async (
 ) => {
   // Buscar si ya existe esa combinación
   const { data: existente, error: fetchError } = await supabase
-    .from('inventario')
-    .select('*')
-    .eq('producto_id', productoId)
-    .eq('talla', talla)
-    .eq('color', color)
+    .from("inventario")
+    .select("*")
+    .eq("producto_id", productoId)
+    .eq("talla", talla)
+    .eq("color", color)
     .maybeSingle();
 
   if (fetchError) throw fetchError;
 
   if (!existente) {
     // Insertar nuevo registro
-    const { error } = await supabase.from('inventario').insert([
+    const { error } = await supabase.from("inventario").insert([
       {
         producto_id: productoId,
         talla,
@@ -92,11 +99,11 @@ export const uploadStock = async (
   } else {
     // Actualizar stock existente
     const nuevoStock = existente.stock + cantidad;
-    if (nuevoStock < 0) throw new Error('Stock insuficiente');
+    if (nuevoStock < 0) throw new Error("Stock insuficiente");
     const { error } = await supabase
-      .from('inventario')
+      .from("inventario")
       .update({ stock: nuevoStock })
-      .eq('id', existente.id);
+      .eq("id", existente.id);
     if (error) throw error;
   }
 };
@@ -107,11 +114,11 @@ export const deleteCombinacion = async (
   color: string
 ) => {
   const { error } = await supabase
-    .from('inventario')
+    .from("inventario")
     .delete()
-    .eq('producto_id', productoId)
-    .eq('talla', talla)
-    .eq('color', color);
+    .eq("producto_id", productoId)
+    .eq("talla", talla)
+    .eq("color", color);
 
   if (error) throw error;
 };
@@ -120,7 +127,7 @@ export const deleteCombinacion = async (
 // Colores
 // =========================
 export const getColoresDisponibles = async (): Promise<Color[]> => {
-  const { data, error } = await supabase.from('colores_fijos').select('*');
+  const { data, error } = await supabase.from("colores_fijos").select("*");
   if (error) throw error;
   return data as Color[];
 };
@@ -131,20 +138,20 @@ export const getColoresPorTalle = async (
   talla: string
 ): Promise<Color[]> => {
   const { data, error } = await supabase
-    .from('inventario')
-    .select('color')
-    .eq('producto_id', productoId)
-    .eq('talla', talla)
-    .gt('stock', 0);
+    .from("inventario")
+    .select("color")
+    .eq("producto_id", productoId)
+    .eq("talla", talla)
+    .gt("stock", 0);
 
   if (error) throw error;
 
   const coloresUnicos = Array.from(new Set(data.map((i) => i.color)));
 
   const { data: coloresFijos } = await supabase
-    .from('colores_fijos')
-    .select('*')
-    .in('nombre', coloresUnicos);
+    .from("colores_fijos")
+    .select("*")
+    .in("nombre", coloresUnicos);
 
   return coloresFijos || [];
 };
@@ -156,10 +163,10 @@ export const getTallesDisponibles = async (
   productoId: string
 ): Promise<string[]> => {
   const { data, error } = await supabase
-    .from('inventario')
-    .select('talla')
-    .eq('producto_id', productoId)
-    .gt('stock', 0);
+    .from("inventario")
+    .select("talla")
+    .eq("producto_id", productoId)
+    .gt("stock", 0);
 
   if (error) throw error;
 

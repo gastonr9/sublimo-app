@@ -1,5 +1,5 @@
 // designs.ts
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "../supabase/Client";
 
 // Traer diseños de la tabla con sus metadatos
 export const getDesigns = async () => {
@@ -23,7 +23,10 @@ export const addDesignMeta = async (nombre: string, imagenUrl: string) => {
 };
 
 // Actualizar nombre, stock o selected
-export const updateDesign = async (id: string, fields: Partial<{ nombre: string; stock: number; selected: boolean }>) => {
+export const updateDesign = async (
+  id: string,
+  fields: Partial<{ nombre: string; stock: number; selected: boolean }>
+) => {
   const { data, error } = await supabase
     .from("disenos")
     .update(fields)
@@ -34,9 +37,6 @@ export const updateDesign = async (id: string, fields: Partial<{ nombre: string;
   return data;
 };
 export const deleteDesign = async (id: string) => {
-  const { error } = await supabase
-    .from("disenos")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabase.from("disenos").delete().eq("id", id);
   if (error) throw error;
 };

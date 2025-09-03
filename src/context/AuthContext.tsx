@@ -1,73 +1,80 @@
-// src/context/AuthContext.tsx
-import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import {
+  createContext,
+  useEffect,
+  useState,
+  useContext,
+  type ReactNode,
+} from "react";
+import { supabase } from "../supabase/Client";
 
-const AuthContext = createContext<any>(null);
+type UserRole = "empleado" | "master";
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+interface AuthContextType {
+  user: any;
+  role: UserRole | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+}
+
+export const AuthContext = createContext<AuthContextType>({
+  user: null,
+  role: null,
+  loading: true,
+  login: async () => {}, // Función login simulada para el valor inicial
+});
+
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getUser = async () => {
-      setLoading(true);
+    const getSession = async () => {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (user) {
-        // Buscar rol en la tabla usuarios
-        const { data: perfil } = await supabase
-          .from("usuarios")
-          .select("rol")
-          .eq("email", user.email)
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", session.user.id)
           .single();
 
-        setRole(perfil?.rol);
-      } else {
-        setRole(null);
+        setRole(profile?.role ?? null);
       }
+
       setLoading(false);
     };
 
-    getUser();
+    getSession();
 
-    // Escuchar cambios de sesión
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          supabase
-            .from("usuarios")
-            .select("rol")
-            .eq("email", session.user.email)
-            .single()
-            .then(({ data }) => setRole(data?.rol));
-        } else {
-          setRole(null);
-        }
-      }
-    );
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      getSession();
+    });
 
     return () => {
       listener.subscription.unsubscribe();
     };
   }, []);
 
-  const login = (email: string, password: string) =>
-    supabase.auth.signInWithPassword({ email, password });
-
-  const logout = () => supabase.auth.signOut();
+  const login = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+  };
 
   return (
-    <AuthContext.Provider value={{ user, role, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, role, loading, login }}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
 }
