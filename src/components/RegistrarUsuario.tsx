@@ -1,126 +1,5 @@
-/* import { useState } from "react";
-import { supabase } from "../supabase/Client";
-
-interface NuevoUsuario {
-  nombre: string;
-  email: string;
-  password: string;
-}
-
-export default function RegistrarUsuario() {
-  const [nuevoUsuario, setNuevoUsuario] = useState<NuevoUsuario>({
-    nombre: "",
-    email: "",
-    password: "",
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
-  const handleRegistrar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user)
-        throw new Error("Debes estar autenticado para registrar usuarios");
-
-      const res = await fetch(
-        "https://ylribvdantmmbkezejhr.supabase.co/functions/v1/create-user",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            "x-user-id": user.id,
-          },
-          body: JSON.stringify({
-            email: nuevoUsuario.email,
-            nombre: nuevoUsuario.nombre,
-            password: nuevoUsuario.password,
-          }),
-        }
-      );
-
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
-
-      if (!res.ok) {
-        throw new Error(
-          data.error || `Error al registrar usuario (código ${res.status})`
-        );
-      }
-
-      setSuccess("Usuario registrado exitosamente");
-      setNuevoUsuario({ nombre: "", email: "", password: "" }); // Limpia el formulario
-    } catch (err) {
-      console.error("Error en handleRegistrar:", err);
-      setError("No se pudo registrar el usuario: " + (err as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="max-w-md mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6 text-center">Registrar Usuario</h1>
-      <form
-        onSubmit={handleRegistrar}
-        className="bg-white shadow-md p-6 rounded-lg grid gap-4"
-      >
-        <input
-          type="text"
-          placeholder="Nombre"
-          value={nuevoUsuario.nombre}
-          onChange={(e) =>
-            setNuevoUsuario({ ...nuevoUsuario, nombre: e.target.value })
-          }
-          required
-          className="border p-2 rounded w-full"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={nuevoUsuario.email}
-          onChange={(e) =>
-            setNuevoUsuario({ ...nuevoUsuario, email: e.target.value })
-          }
-          required
-          className="border p-2 rounded w-full"
-        />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={nuevoUsuario.password}
-          onChange={(e) =>
-            setNuevoUsuario({ ...nuevoUsuario, password: e.target.value })
-          }
-          required
-          className="border p-2 rounded w-full"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className={`bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 ${
-            loading ? "opacity-50 cursor-not-allowed" : ""
-          } w-full`}
-        >
-          {loading ? "Registrando..." : "Registrar"}
-        </button>
-      </form>
-      {error && <p className="text-red-600 mt-4 text-center">{error}</p>}
-      {success && <p className="text-green-600 mt-4 text-center">{success}</p>}
-    </div>
-  );
-}
- */
-
 import { useState } from "react";
+import { supabase } from "../supabase/Client";
 
 export default function CreateUserForm() {
   const [email, setEmail] = useState("");
@@ -135,22 +14,24 @@ export default function CreateUserForm() {
     setMessage("");
 
     try {
+      const { data } = await supabase.auth.getSession();
+
       const res = await fetch("/api/createUser", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session?.access_token}`,
         },
         body: JSON.stringify({ email, password, role }),
       });
 
-      const data = await res.json();
-
       if (res.ok) {
-        setMessage(`✅ Usuario creado: ${data.user.email}`);
+        setMessage(`✅ Usuario creado: ${email}`);
         setEmail("");
         setPassword("");
       } else {
-        setMessage(`❌ Error: ${data.error}`);
+        const errorData = await res.json();
+        setMessage(`❌ Error: ${errorData.error || "Error desconocido"}`);
       }
     } catch (err) {
       setMessage("❌ Error inesperado");

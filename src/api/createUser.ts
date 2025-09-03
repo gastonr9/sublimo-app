@@ -2,9 +2,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-const supabaseServiceRole = import.meta.env
-  .VITE_SUPABASE_SERVICE_ROLE_KEY! as string;
-const supabase = createClient(supabaseUrl, supabaseServiceRole);
+const supabaseKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY! as string;
+const supabase = createClient(supabaseUrl, supabaseKey);
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método no permitido" });
