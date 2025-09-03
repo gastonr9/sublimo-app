@@ -1,4 +1,3 @@
-// src/components/CreateUserForm.tsx
 import { useState } from "react";
 import { supabase } from "../supabase/Client";
 
@@ -20,7 +19,6 @@ export default function CreateUserForm() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.access_token}`,
       },
       body: JSON.stringify({ email, password, role }),
     });
