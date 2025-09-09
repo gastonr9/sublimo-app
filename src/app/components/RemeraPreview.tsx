@@ -14,10 +14,13 @@ const RemeraPreview: React.FC<Props> = ({ color, disenoUrl }) => {
   return (
     <div id="remera" className="relative w-40 h-40 mx-auto">
       <div
-        className="w-full h-full [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
+        className="w-full h-full absolute inset-0"
         style={{
           backgroundColor: color || "#ffffff",
-          maskImage: `url(${remeracolor})`,
+          maskImage: `url(${remeracolor.src})`, // Usa .src para imágenes importadas en Next.js
+          maskSize: "contain", // Corregido de [mask-size:contain]
+          maskRepeat: "no-repeat", // Corregido de [mask-repeat:no-repeat]
+          maskPosition: "center", // Corregido de [mask-position:center]
         }}
       ></div>
 
@@ -26,25 +29,25 @@ const RemeraPreview: React.FC<Props> = ({ color, disenoUrl }) => {
         alt="Remera"
         fill
         className="opacity-30 mix-blend-color-burn absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-      ></Image>
+      />
       <Image
         src={remerahigh}
         fill
         alt="Remera highlight"
         className="opacity-10 mix-blend-soft-light absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-      ></Image>
+      />
       <Image
         fill
         src={remera}
         alt="Remera base"
         className="mix-blend-multiply opacity-100 absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-      ></Image>
+      />
       <Image
         fill
         src={remerablack}
         alt="Remera sombra"
         className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
-      ></Image>
+      />
 
       {disenoUrl && (
         <Image
@@ -59,7 +62,7 @@ const RemeraPreview: React.FC<Props> = ({ color, disenoUrl }) => {
             left: "50%",
             transform: "translateX(-50%)",
           }}
-        ></Image>
+        />
       )}
     </div>
   );
