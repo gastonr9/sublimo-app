@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --gris: #f3f3f3;
+  --negro: #1d2a2a;
+  --morado: #4e4ebd;
+  --morado-100: #2e2e67;
+  --radius-selector: 1rem;
+  --radius-field: 2rem;
+  --radius-box: 3rem;
+  --border: 2px;
+  --depth: 1;
+  --noise: 0;
+  --radius: 1.5rem;
+  --radius-lg: 1rem;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+.App {
+  font-family: sans-serif;
+  text-align: center;
+  height: 100vh;
+  width: 100vw;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  color: var(--negro);
+
+  font-family: Poppins, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+h1 {
+  font-weight: 700;
+}
+.logo {
+  max-height: fit-content;
+  width: 150px;
+  height: 150px;
+}
+.contenedor {
+  gap: 20px;
+  display: flex;
+  align-self: center;
+}
+#remera {
+  height: 300px;
+  width: 300px;
+}
+.colores {
+  padding-inline: calc(var(--spacing) * 0) /* 1.5rem = 24px */;
+  border-radius: -1px;
+  border: 1px solid #000;
+  padding-block: calc(var(--spacing) * 0) /* 0.5rem = 8px */;
+}
+.status {
+  border-radius: var(--radius);
+  padding-inline: calc(var(--spacing) * 6) /* 1.5rem = 24px */;
+  padding-block: calc(var(--spacing) * 0.5) /* 0.5rem = 8px */;
+  font-weight: var(--font-weight-medium) /* 500 */;
+}
+.slot {
+  border-radius: var(--radius);
+  padding-inline: calc(var(--spacing) * 6) /* 1.5rem = 24px */;
+  padding-block: calc(var(--spacing) * 2) /* 0.5rem = 8px */;
+  font-weight: var(--font-weight-medium) /* 500 */;
+}
+.btn {
+  background-color: var(--gris);
+  color: var(--morado);
+  align-self: center;
+  max-height: 40px;
+  &:hover {
+    background-color: var(--morado);
+    color: white;
   }
 }
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.btn-secondary {
+  background-color: var(--morado);
+  color: white;
+  &:hover {
+    background-color: var(--morado-100);
+  }
+}
+.btn-red {
+  background-color: #ff0000;
+  color: white;
+  &:hover {
+    background-color: #bd1e26;
+  }
+}
+.btn-blue {
+  background-color: #155dfc;
+  color: white;
+  &:hover {
+    background-color: #0e358a;
+  }
+}
+.btn-green {
+  background-color: #00a63e;
+  color: white;
+  &:hover {
+    background-color: #01722b;
+  }
+}
+.btn-green {
+  background-color: #00a63e;
+  color: white;
+  &:hover {
+    background-color: #01722b;
+  }
+}
+.btn-grey {
+  background-color: #4a5565;
+  color: white;
+  &:hover {
+    background-color: #282d35;
+  }
 }

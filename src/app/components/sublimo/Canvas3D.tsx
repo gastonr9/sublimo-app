@@ -1,0 +1,240 @@
+"use client";
+
+import { useEffect, useRef, useState, Suspense } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
+import { useLoader } from "@react-three/fiber";
+import * as THREE from "three";
+import Canvas2D from "./Canvas2D";
+// Definir interfaces para las props
+interface ColorPickerProps {
+  selectedColor: string;
+  setSelectedColor: (color: string) => void;
+  label: string;
+}
+
+interface SidebarProps {
+  selectedColor: string;
+  setSelectedColor: (color: string) => void;
+  backgroundColor: string;
+  setBackgroundColor: (color: string) => void;
+  onOpenCanvas2D: () => void;
+}
+
+interface ModelProps {
+  modelPath?: string;
+  color: string;
+  textureUrl?: string;
+}
+
+// Componente ColorPicker
+const ColorPicker = ({
+  selectedColor,
+  setSelectedColor,
+  label,
+}: ColorPickerProps) => (
+  <div className="flex flex-col items-start gap-2">
+    <label htmlFor={label} className="font-medium">
+      {label}
+    </label>
+    <input
+      id={label}
+      type="color"
+      value={selectedColor}
+      onChange={(e) => setSelectedColor(e.target.value)}
+      className="w-10 h-10 border-none outline-none cursor-pointer colores"
+    />
+  </div>
+);
+
+// Componente Sidebar
+const Sidebar = ({
+  selectedColor,
+  setSelectedColor,
+  backgroundColor,
+  setBackgroundColor,
+  onOpenCanvas2D,
+  canvasDownloader,
+}: SidebarProps & { canvasDownloader: () => void }) => (
+  <aside className=" top-[120px] left-0 w-60 p-4 bg-white shadow-lg z-50 space-y-6 rounded-2xl absolute">
+    <h2 className="text-xl font-bold">Personalización</h2>
+    <ColorPicker
+      selectedColor={selectedColor}
+      setSelectedColor={setSelectedColor}
+      label="Color de la prenda"
+    />
+    <ColorPicker
+      selectedColor={backgroundColor}
+      setSelectedColor={setBackgroundColor}
+      label="Color del fondo"
+    />
+    <button onClick={onOpenCanvas2D} className="slot w-full">
+      Importar Diseño
+    </button>
+    <button onClick={canvasDownloader} className="slot w-full">
+      Exportar
+    </button>
+  </aside>
+);
+
+// Componente Model
+const Model = ({
+  modelPath = "/models/tshirt.glb",
+  color,
+  textureUrl,
+}: ModelProps) => {
+  const { scene } = useGLTF(modelPath);
+  const fabricTexture = useLoader(THREE.TextureLoader, `/models/blanco.jpg`);
+  const overlayTexture = textureUrl
+    ? useLoader(THREE.TextureLoader, textureUrl)
+    : null;
+
+  // Configurar texturas
+  if (fabricTexture) {
+    fabricTexture.needsUpdate = true;
+    fabricTexture.format = THREE.RGBAFormat;
+  }
+  if (overlayTexture) {
+    overlayTexture.needsUpdate = true;
+    overlayTexture.format = THREE.RGBAFormat;
+    overlayTexture.repeat.y = -1;
+    overlayTexture.offset.y = 1;
+  }
+
+  // Buscar el mesh principal
+  let mainMesh: THREE.Mesh | null = null;
+  scene.traverse((child) => {
+    if (mainMesh) return;
+    if (child instanceof THREE.Mesh) {
+      mainMesh = child;
+    }
+  });
+
+  // Crear materiales
+  const baseMaterial = new THREE.MeshStandardMaterial({
+    color,
+    map: fabricTexture,
+    side: THREE.DoubleSide,
+  });
+  const overlayMaterial = overlayTexture
+    ? new THREE.MeshStandardMaterial({
+        map: overlayTexture,
+        transparent: true,
+        opacity: 1,
+        depthWrite: false,
+        color: 0xffffff,
+        metalness: 0,
+        roughness: 1,
+      })
+    : null;
+
+  return (
+    <group scale={5} position={[0, 0.2, 0]}>
+      {mainMesh && (
+        <>
+          <mesh geometry={mainMesh.geometry} material={baseMaterial} />
+          {overlayMaterial && (
+            <mesh geometry={mainMesh.geometry} material={overlayMaterial} />
+          )}
+        </>
+      )}
+      {scene.children
+        .filter((child) => child !== mainMesh && child instanceof THREE.Mesh)
+        .map((child, i) => (
+          <mesh
+            key={i}
+            geometry={(child as THREE.Mesh).geometry}
+            material={(child as THREE.Mesh).material}
+          />
+        ))}
+      {scene.children
+        .filter((child) => child !== mainMesh && !(child instanceof THREE.Mesh))
+        .map((child, i) => (
+          <primitive key={i} object={child} />
+        ))}
+    </group>
+  );
+};
+
+// Componente principal
+export default function Canvas3D({ modelPath }: { modelPath?: string }) {
+  const [selectedColor, setSelectedColor] = useState("#ffffff");
+  const [backgroundColor, setBackgroundColor] = useState("#0db4e7");
+  const [showCanvas2D, setShowCanvas2D] = useState(false);
+  const [canvas2DTexture, setCanvas2DTexture] = useState<string | undefined>(
+    undefined
+  );
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+
+  const canvasDownloader = () => {
+    if (!rendererRef.current) return;
+    const dataURL = rendererRef.current.domElement.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.download = "captura.png";
+    link.href = dataURL;
+    link.click();
+  };
+
+  useEffect(() => {
+    if (rendererRef.current) {
+      rendererRef.current.setClearColor(new THREE.Color(backgroundColor));
+    }
+  }, [backgroundColor]);
+
+  return (
+    <div className="relative w-full h-full">
+      <Sidebar
+        selectedColor={selectedColor}
+        setSelectedColor={setSelectedColor}
+        backgroundColor={backgroundColor}
+        setBackgroundColor={setBackgroundColor}
+        onOpenCanvas2D={() => setShowCanvas2D(true)}
+        canvasDownloader={canvasDownloader}
+      />
+      {showCanvas2D && (
+        <div className="fixed bottom-4 right-4 w-96 h-96 bg-gray-800 shadow-2xl z-40 flex flex-col rounded-lg border">
+          <div className="flex items-center p-3 border-b bg-gray-50 rounded-t-lg">
+            <h3 className="font-semibold flex-1 text-center">
+              GUÍA DE POSICIÓN
+            </h3>
+            <button
+              onClick={() => setShowCanvas2D(false)}
+              className="text-gray-500 hover:text-gray-700 text-lg font-bold"
+            >
+              ×
+            </button>
+          </div>
+          <div className="relative rounded-b-lg">
+            <Canvas2D onImageChange={setCanvas2DTexture} />
+          </div>
+        </div>
+      )}
+      <Canvas
+        dpr={[1, 2]}
+        shadows
+        camera={{ fov: 50 }}
+        gl={{
+          preserveDrawingBuffer: true,
+          alpha: false,
+        }}
+        onCreated={({ gl }) => {
+          rendererRef.current = gl;
+          gl.setClearColor(new THREE.Color(backgroundColor));
+        }}
+        style={{ width: "100%", height: "100%" }}
+      >
+        <ambientLight intensity={0.5} />
+        <pointLight position={[10, 10, 10]} />
+        <Suspense fallback={null}>
+          <Model
+            modelPath={modelPath}
+            color={selectedColor}
+            textureUrl={canvas2DTexture}
+          />
+          <OrbitControls />
+          <Environment preset="city" />
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+}
