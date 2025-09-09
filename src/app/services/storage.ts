@@ -9,9 +9,9 @@ export const listDesignsFromStorage = async () => {
 
   if (error) throw error;
 
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) {
-    throw new Error("VITE_SUPABASE_URL no está definido en el entorno");
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL no está definido en el entorno");
   }
 
   return data.map((file) => ({
@@ -36,7 +36,7 @@ export const uploadDesign = async (file: File) => {
   if (uploadError) throw uploadError;
 
   // Crear registro en la tabla disenos
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const imagenUrl = `${supabaseUrl}/storage/v1/object/public/designs/${fileName}`;
   const { data, error: insertError } = await supabase
     .from("disenos")
