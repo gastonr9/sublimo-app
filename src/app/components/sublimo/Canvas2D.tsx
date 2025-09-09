@@ -1,9 +1,7 @@
 "use client";
-
 import { type ChangeEvent, useEffect, useRef } from "react";
 import { FabricJSCanvas, useFabricJSEditor } from "fabricjs-react";
-import { fabric } from "fabric";
-
+import * as fabric from "fabric";
 function Canvas2D({
   onImageChange,
 }: {
@@ -17,7 +15,7 @@ function Canvas2D({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { editor, onReady } = useFabricJSEditor();
-  const tshirtImgUrl = "/models/tshirt.jpg";
+  const tshirtImgUrl = `models/tshirt.jpg`;
 
   // Notifica al padre cuando el canvas cambia
   useEffect(() => {

@@ -1,3 +1,4 @@
+// src/app/components/sublimo/Canvas3D.tsx
 "use client";
 
 import { useEffect, useRef, useState, Suspense } from "react";
@@ -5,7 +6,8 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
 import { useLoader } from "@react-three/fiber";
 import * as THREE from "three";
-import Canvas2D from "./Canvas2D";
+import dynamic from "next/dynamic"; // <-- Importa 'dynamic' de Next.js
+
 // Definir interfaces para las props
 interface ColorPickerProps {
   selectedColor: string;
@@ -19,6 +21,7 @@ interface SidebarProps {
   backgroundColor: string;
   setBackgroundColor: (color: string) => void;
   onOpenCanvas2D: () => void;
+  canvasDownloader: () => void;
 }
 
 interface ModelProps {
@@ -26,6 +29,11 @@ interface ModelProps {
   color: string;
   textureUrl?: string;
 }
+
+// Cargar Canvas2D dinámicamente con SSR deshabilitado
+const Canvas2D = dynamic(() => import("./Canvas2D"), {
+  ssr: false, // ¡Esto es crucial!
+});
 
 // Componente ColorPicker
 const ColorPicker = ({
@@ -55,7 +63,7 @@ const Sidebar = ({
   setBackgroundColor,
   onOpenCanvas2D,
   canvasDownloader,
-}: SidebarProps & { canvasDownloader: () => void }) => (
+}: SidebarProps) => (
   <aside className=" top-[120px] left-0 w-60 p-4 bg-white shadow-lg z-50 space-y-6 rounded-2xl absolute">
     <h2 className="text-xl font-bold">Personalización</h2>
     <ColorPicker
@@ -89,7 +97,6 @@ const Model = ({
     ? useLoader(THREE.TextureLoader, textureUrl)
     : null;
 
-  // Configurar texturas
   if (fabricTexture) {
     fabricTexture.needsUpdate = true;
     fabricTexture.format = THREE.RGBAFormat;
@@ -100,8 +107,6 @@ const Model = ({
     overlayTexture.repeat.y = -1;
     overlayTexture.offset.y = 1;
   }
-
-  // Buscar el mesh principal
   let mainMesh: THREE.Mesh | null = null;
   scene.traverse((child) => {
     if (mainMesh) return;
@@ -110,7 +115,6 @@ const Model = ({
     }
   });
 
-  // Crear materiales
   const baseMaterial = new THREE.MeshStandardMaterial({
     color,
     map: fabricTexture,
@@ -192,7 +196,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         canvasDownloader={canvasDownloader}
       />
       {showCanvas2D && (
-        <div className="fixed bottom-4 right-4 w-96 h-96 bg-gray-800 shadow-2xl z-40 flex flex-col rounded-lg border">
+        <div className="fixed bottom-4 right-4  bg-gray-800 shadow-2xl z-40 flex flex-col rounded-lg border">
           <div className="flex items-center p-3 border-b bg-gray-50 rounded-t-lg">
             <h3 className="font-semibold flex-1 text-center">
               GUÍA DE POSICIÓN
@@ -205,6 +209,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
             </button>
           </div>
           <div className="relative rounded-b-lg">
+            {/* Renderizar Canvas2D dinámicamente */}
             <Canvas2D onImageChange={setCanvas2DTexture} />
           </div>
         </div>
