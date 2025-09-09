@@ -48,17 +48,14 @@ function Navbar() {
           <ul className="flex flex-col gap-y-4 sm:flex-row sm:gap-x-8 items-center">
             <li>
               <Link
-                href="/generador"
+                href="generador"
                 className="text-gray-600 hover:text-blue-600"
               >
                 Generador Mockup 3D
               </Link>
             </li>
             <li>
-              <Link
-                href="/burgon"
-                className="text-gray-600 hover:text-blue-600"
-              >
+              <Link href="burgon" className="text-gray-600 hover:text-blue-600">
                 Burgon
               </Link>
             </li>

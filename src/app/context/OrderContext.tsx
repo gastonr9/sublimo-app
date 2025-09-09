@@ -1,5 +1,6 @@
 // src/context/OrderContext.tsx
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+"use client";
+import React, { createContext, useContext, useState, ReactNode } from "react";
 
 interface Order {
   talle?: string;
@@ -16,12 +17,16 @@ interface OrderContextType {
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const OrderProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [order, setOrder] = useState<Order>({});
   const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null);
 
   return (
-    <OrderContext.Provider value={{ order, setOrder, selectedProduct, setSelectedProduct }}>
+    <OrderContext.Provider
+      value={{ order, setOrder, selectedProduct, setSelectedProduct }}
+    >
       {children}
     </OrderContext.Provider>
   );
@@ -29,6 +34,6 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
 export const useOrder = () => {
   const context = useContext(OrderContext);
-  if (!context) throw new Error('useOrder debe usarse dentro de OrderProvider');
+  if (!context) throw new Error("useOrder debe usarse dentro de OrderProvider");
   return context;
 };
