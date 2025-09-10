@@ -7,6 +7,7 @@ import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
 import { useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import dynamic from "next/dynamic"; // <-- Importa 'dynamic' de Next.js
+import Canvas2DModal from "./Canvas2DModal";
 
 // Definir interfaces para las props
 interface ColorPickerProps {
@@ -192,27 +193,15 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         setSelectedColor={setSelectedColor}
         backgroundColor={backgroundColor}
         setBackgroundColor={setBackgroundColor}
-        onOpenCanvas2D={() => setShowCanvas2D(true)}
+        onOpenCanvas2D={() => setShowCanvas2D((prev) => !prev)} // toggle aquí
         canvasDownloader={canvasDownloader}
       />
       {showCanvas2D && (
-        <div className="fixed bottom-4 right-4  bg-gray-800 shadow-2xl z-40 flex flex-col rounded-lg border">
-          <div className="flex items-center p-3 border-b bg-gray-50 rounded-t-lg">
-            <h3 className="font-semibold flex-1 text-center">
-              GUÍA DE POSICIÓN
-            </h3>
-            <button
-              onClick={() => setShowCanvas2D(false)}
-              className="text-gray-500 hover:text-gray-700 text-lg font-bold"
-            >
-              ×
-            </button>
-          </div>
-          <div className="relative rounded-b-lg">
-            {/* Renderizar Canvas2D dinámicamente */}
-            <Canvas2D onImageChange={setCanvas2DTexture} />
-          </div>
-        </div>
+        <Canvas2D
+          visible={showCanvas2D}
+          onClose={() => setShowCanvas2D(false)}
+          onImageChange={setCanvas2DTexture}
+        />
       )}
       <Canvas
         dpr={[1, 2]}
