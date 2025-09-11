@@ -76,10 +76,10 @@ const Sidebar = ({
       setSelectedColor={setBackgroundColor}
       label="Color del fondo"
     />
-    <button onClick={onOpenCanvas2D} className="slot w-full">
+    <button onClick={onOpenCanvas2D} className="slot w-full btn-secondary">
       Importar Diseño
     </button>
-    <button onClick={canvasDownloader} className="slot w-full">
+    <button onClick={canvasDownloader} className="slot w-full btn-secondary">
       Exportar
     </button>
   </aside>

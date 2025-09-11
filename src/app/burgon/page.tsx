@@ -292,7 +292,7 @@ const Burgon: React.FC = () => {
           <select
             value={selectedProductoId}
             onChange={(e) => handleProductoSelect(e.target.value)}
-            className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {productos.map((producto) => (
               <option key={producto.id} value={producto.id}>
@@ -309,7 +309,7 @@ const Burgon: React.FC = () => {
                 key={talle}
                 className={`px-4 py-2 rounded-lg border transition ${
                   order.talle === talle
-                    ? "bg-blue-600 text-white border-blue-600"
+                    ? "bg-indigo-100 border-indigo-600"
                     : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100"
                 }`}
                 onClick={() => handleTalleSelect(talle)}
@@ -336,7 +336,7 @@ const Burgon: React.FC = () => {
                 key={color.hex}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition ${
                   order.color === color.hex
-                    ? "bg-blue-100 border-blue-600"
+                    ? "bg-indigo-100 border-indigo-600"
                     : "bg-white border-gray-300 hover:bg-gray-100"
                 } ${!order.talle ? "opacity-50 cursor-not-allowed" : ""}`}
                 onClick={() =>
@@ -379,7 +379,9 @@ const Burgon: React.FC = () => {
                 <div key={design.id} className="flex flex-col items-center">
                   <button
                     className={`logo relative w-24 h-24 border rounded-lg overflow-hidden ${
-                      order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
+                      order.disenoId === design.id
+                        ? "ring-2 ring-indigo-500"
+                        : ""
                     } ${
                       !order.talle || !order.color
                         ? "opacity-50 cursor-not-allowed"

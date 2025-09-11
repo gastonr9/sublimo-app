@@ -80,7 +80,7 @@ function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
       <div className="flex flex-col h-[400px] w-full p-2 items-center justify-center bg-gray-800 rounded-b-lg">
         <button
           onClick={() => inputRef.current?.click()}
-          className="py-1 px-3 bg-yellow-500 text-white rounded-lg m-2 text-sm"
+          className="py-1 px-3 bg-yellow-500 text-black rounded-lg m-2 text-sm"
         >
           Subir archivo
         </button>

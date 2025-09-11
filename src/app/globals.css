@@ -45,7 +45,7 @@
     @apply px-2 py-1 font-medium;
   }
   .btn {
-    @apply bg-gris text-indigo-600 hover:bg-indigo-500;
+    @apply bg-gris  hover:bg-indigo-500;
   }
   .btn-secondary {
     @apply bg-indigo-600 text-white hover:bg-indigo-500;
