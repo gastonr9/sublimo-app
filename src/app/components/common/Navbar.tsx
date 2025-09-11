@@ -143,7 +143,7 @@ export default function Navbar() {
                 <li>
                   <button
                     onClick={handleLogout}
-                    className="btn-secondary slot  hover:text-blue-600"
+                    className="btn-secondary slot  "
                   >
                     Salir
                   </button>

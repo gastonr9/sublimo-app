@@ -104,8 +104,6 @@ const Burgon: React.FC = () => {
 
       setColoresDisponibles(coloresPorTalle);
 
-      // Si el color actual no está en la lista de disponibles, o si no hay un color seleccionado,
-      // selecciona el primer color disponible.
       if (!order.color || !coloresPorTalle.some((c) => c.hex === order.color)) {
         if (coloresPorTalle.length > 0) {
           setOrder((prevOrder) => ({
@@ -129,7 +127,6 @@ const Burgon: React.FC = () => {
 
       setColoresDisponibles(todosLosColores);
 
-      // Limpia el color si no hay talle seleccionado.
       setOrder((prevOrder) => ({ ...prevOrder, color: "" }));
     } else {
       setColoresDisponibles([]);
@@ -228,7 +225,7 @@ const Burgon: React.FC = () => {
       Gris: "#808080",
       Rosa: "#ff69b4",
       Naranja: "#ffa500",
-      Morado: "#800080",
+      Morado: "#4e4ebd", // Updated to match Tailwind config
     };
     return coloresConocidos[nombre] || "#000000";
   };
@@ -316,10 +313,24 @@ const Burgon: React.FC = () => {
         throw stockErrorDis;
       }
 
-      alert("Pedido creado con éxito.");
+      // Close modal and reset form before showing success message
+      setShowModal(false);
+      setShowSummary(false);
+      setNombre("");
+      setApellido("");
+      setOrder({
+        ...order,
+        talle: "",
+        color: "",
+        disenoId: "",
+        disenoUrl: "",
+      });
+
+      // Show success message
+      alert("✅ Pedido creado con éxito.");
     } catch (error) {
       console.error("Error al crear pedido:", error.message);
-      alert("Error al crear pedido.");
+      alert("❌ Error al crear pedido.");
     }
   };
 
@@ -334,7 +345,7 @@ const Burgon: React.FC = () => {
           <select
             value={selectedProductoId}
             onChange={(e) => handleProductoSelect(e.target.value)}
-            className="border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="border rounded-lg p-2 focus:outline-none focus:ring-2 bg-indigo-100 border-indigo-600 focus:ring-indigo-500"
           >
             {productos.map((producto) => (
               <option key={producto.id} value={producto.id}>
@@ -351,8 +362,8 @@ const Burgon: React.FC = () => {
                 key={talle}
                 className={`px-4 py-2 rounded-lg border transition ${
                   order.talle === talle
-                    ? "bg-indigo-100 border-indigo-600"
-                    : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100"
+                    ? "bg-indigo-100 border-indigo-600 "
+                    : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100 "
                 }`}
                 onClick={() => handleTalleSelect(talle)}
                 disabled={!selectedProduct}
@@ -422,7 +433,7 @@ const Burgon: React.FC = () => {
                   <button
                     className={`logo relative w-24 h-24 border rounded-lg overflow-hidden ${
                       order.disenoId === design.id
-                        ? "ring-2 ring-indigo-500"
+                        ? "ring-2 ring-indigo-500 bg-indigo-100 border-indigo-600"
                         : ""
                     } ${
                       !order.talle || !order.color
@@ -499,7 +510,7 @@ const Burgon: React.FC = () => {
               />
               <div className="gap-4 flex">
                 <button
-                  className=" w-full slot"
+                  className="w-full slot"
                   onClick={() => setShowModal(false)}
                 >
                   Cancelar

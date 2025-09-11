@@ -44,6 +44,7 @@ const Designs: React.FC = () => {
       setDesignsTable(table);
     } catch (err) {
       console.error("Error al traer diseños:", err);
+      alert("❌ Error al cargar diseños.");
     }
   };
 
@@ -61,6 +62,7 @@ const Designs: React.FC = () => {
         ]);
       } catch (err) {
         console.error("Error al subir diseño:", err);
+        alert("❌ Error al subir diseño.");
       } finally {
         setUploading(false);
         event.target.value = ""; // reset input
@@ -73,21 +75,31 @@ const Designs: React.FC = () => {
       (d) => d.imagen_url === storageDesign.url
     );
     if (!designRow) {
-      const newDesign = await addDesignMeta(
-        storageDesign.name,
-        storageDesign.url
-      );
-      setDesignsTable((prev) => [...prev, newDesign]);
+      try {
+        const newDesign = await addDesignMeta(
+          storageDesign.name,
+          storageDesign.url
+        );
+        setDesignsTable((prev) => [...prev, newDesign]);
+      } catch (err) {
+        console.error("Error al añadir diseño:", err);
+        alert("❌ Error al seleccionar diseño.");
+      }
       return;
     }
 
-    const newSelected = !designRow.selected;
-    const updatedDesign = await updateDesign(designRow.id, {
-      selected: newSelected,
-    });
-    setDesignsTable((prev) =>
-      prev.map((d) => (d.id === designRow.id ? updatedDesign : d))
-    );
+    try {
+      const newSelected = !designRow.selected;
+      const updatedDesign = await updateDesign(designRow.id, {
+        selected: newSelected,
+      });
+      setDesignsTable((prev) =>
+        prev.map((d) => (d.id === designRow.id ? updatedDesign : d))
+      );
+    } catch (err) {
+      console.error("Error al actualizar selección:", err);
+      alert("❌ Error al cambiar estado de selección.");
+    }
   };
 
   const handleUpdate = async (
@@ -100,11 +112,18 @@ const Designs: React.FC = () => {
       if (field === "nombre") {
         const nameWithoutExt = value.toString().replace(/\.[^/.]+$/, "");
         updatedValue = nameWithoutExt || "Sin nombre";
+      } else if (field === "stock") {
+        updatedValue = Math.max(0, parseInt(value.toString()) || 0); // Ensure non-negative
       }
       const updated = await updateDesign(id, { [field]: updatedValue });
-      setDesignsTable((prev) => prev.map((d) => (d.id === id ? updated : d)));
+      setDesignsTable(await getDesigns()); // Refresh from DB
     } catch (err) {
-      console.error("Error actualizando diseño:", err);
+      console.error(`Error actualizando ${field}:`, err);
+      alert(
+        `❌ Error al actualizar ${field === "nombre" ? "nombre" : "stock"}: ${
+          err.message
+        }`
+      );
     }
   };
 
@@ -116,6 +135,7 @@ const Designs: React.FC = () => {
       );
     } catch (err) {
       console.error("Error al quitar diseño:", err);
+      alert("❌ Error al quitar diseño.");
     }
   };
 
@@ -142,6 +162,7 @@ const Designs: React.FC = () => {
       }
     } catch (err) {
       console.error("Error al eliminar diseño:", err);
+      alert("❌ Error al eliminar diseño.");
     }
   };
 
@@ -262,11 +283,13 @@ const Designs: React.FC = () => {
                     className="my-2 border rounded-lg w-full slot"
                     placeholder="Nombre (sin extensión)"
                   />
-
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
                       value={design.stock}
+                      onFocus={(e) =>
+                        e.target.value === "0" && e.target.select()
+                      }
                       onKeyDown={(e) => {
                         if (
                           !/[0-9]/.test(e.key) &&
@@ -279,24 +302,15 @@ const Designs: React.FC = () => {
                           e.preventDefault();
                         }
                       }}
-                      onChange={(e) =>
-                        setDesignsTable((prev) =>
-                          prev.map((d) =>
-                            d.id === design.id
-                              ? { ...d, stock: parseInt(e.target.value) || 0 }
-                              : d
-                          )
-                        )
-                      }
-                      onBlur={(e) =>
-                        handleUpdate(
-                          design.id,
-                          "stock",
+                      onChange={(e) => {
+                        const newValue = Math.max(
+                          0,
                           parseInt(e.target.value) || 0
-                        )
-                      }
-                      className="border rounded-lg w-24 slot"
+                        );
+                        handleUpdate(design.id, "stock", newValue);
+                      }}
                       min="0"
+                      className="border rounded-lg w-24 slot"
                     />
                     <button
                       onClick={() => handleRemove(design.id)}
