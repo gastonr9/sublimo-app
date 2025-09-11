@@ -94,14 +94,28 @@ const Burgon: React.FC = () => {
     cargarProductoSeleccionado();
   }, [selectedProductoId]);
 
-  // actualizar colores según talle
+  // actualizar colores según talle y autoseleccionar el primero
   useEffect(() => {
     if (selectedProduct && order.talle && selectedProduct.inventario) {
       const coloresPorTalle = selectedProduct.inventario
         .filter((i) => i.talla === order.talle && i.stock > 0)
         .map((i) => ({ nombre: i.color, hex: getDefaultHex(i.color) }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
       setColoresDisponibles(coloresPorTalle);
+
+      // Si el color actual no está en la lista de disponibles, o si no hay un color seleccionado,
+      // selecciona el primer color disponible.
+      if (!order.color || !coloresPorTalle.some((c) => c.hex === order.color)) {
+        if (coloresPorTalle.length > 0) {
+          setOrder((prevOrder) => ({
+            ...prevOrder,
+            color: coloresPorTalle[0].hex,
+          }));
+        } else {
+          setOrder((prevOrder) => ({ ...prevOrder, color: "" }));
+        }
+      }
     } else if (selectedProduct && selectedProduct.inventario) {
       const todosLosColores = [
         ...new Set(
@@ -112,7 +126,14 @@ const Burgon: React.FC = () => {
       ]
         .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
       setColoresDisponibles(todosLosColores);
+
+      // Limpia el color si no hay talle seleccionado.
+      setOrder((prevOrder) => ({ ...prevOrder, color: "" }));
+    } else {
+      setColoresDisponibles([]);
+      setOrder((prevOrder) => ({ ...prevOrder, color: "" }));
     }
   }, [order.talle, selectedProduct]);
 
