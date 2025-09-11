@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../supabase/Client";
 import RemeraPreview from "../../components/RemeraPreview";
+
 interface Pedido {
   id: string;
   nombre: string;
@@ -20,6 +21,23 @@ interface Pedido {
 const Pedidos: React.FC = () => {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Function to map color names to hex codes
+  const getDefaultHex = (nombre: string): string => {
+    const coloresConocidos = {
+      Blanco: "#ffffff",
+      Negro: "#000000",
+      Rojo: "#ff0000",
+      Azul: "#0000ff",
+      Verde: "#008000",
+      Amarillo: "#ffff00",
+      Gris: "#808080",
+      Rosa: "#ff69b4",
+      Naranja: "#ffa500",
+      Morado: "#800080",
+    };
+    return coloresConocidos[nombre] || "#000000";
+  };
 
   useEffect(() => {
     fetchPedidos();
@@ -65,7 +83,7 @@ const Pedidos: React.FC = () => {
         diseno_id: p.diseno_id,
         producto_nombre: p.inventario?.producto?.nombre || "",
         talla: p.inventario?.talla || "",
-        color: p.inventario?.color || "",
+        color: p.inventario?.color || "", // Store color name
         diseno_nombre: p.diseno?.nombre || "",
         diseno_url: p.diseno?.imagen_url || "",
       }));
@@ -78,10 +96,8 @@ const Pedidos: React.FC = () => {
     }
   };
 
-  // Cambiar estado del pedido usando RPC + actualizar stock
   const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
     try {
-      // 1. Traemos el pedido con inventario y diseño
       const { data: pedido, error: fetchError } = await supabase
         .from("pedidos")
         .select(
@@ -97,11 +113,9 @@ const Pedidos: React.FC = () => {
 
       if (fetchError || !pedido) throw fetchError;
 
-      // Mapear estado
       const estadoValido =
         nuevoEstado === "confirmado" ? "realizado" : nuevoEstado;
 
-      // 2. Actualizamos el estado
       const { error: estadoError } = await supabase.rpc(
         "alterar_estado_pedido",
         {
@@ -112,7 +126,6 @@ const Pedidos: React.FC = () => {
 
       if (estadoError) throw estadoError;
 
-      // 3. Si el pedido se cancela y antes estaba pendiente o realizado → devolver stock
       if (estadoValido === "cancelado" && pedido.estado !== "cancelado") {
         if (pedido.inventario) {
           await supabase
@@ -136,10 +149,8 @@ const Pedidos: React.FC = () => {
     }
   };
 
-  // Eliminar pedido con control de stock
   const handleDeletePedido = async (pedidoId: string) => {
     try {
-      // Buscar el pedido antes de eliminarlo
       const { data: pedido, error: fetchError } = await supabase
         .from("pedidos")
         .select(
@@ -155,7 +166,6 @@ const Pedidos: React.FC = () => {
 
       if (fetchError || !pedido) throw fetchError;
 
-      // Si estaba en realizado → devolver stock al borrar
       if (pedido.estado === "realizado") {
         if (pedido.inventario) {
           await supabase
@@ -171,7 +181,6 @@ const Pedidos: React.FC = () => {
         }
       }
 
-      // Ahora sí, borrar
       const { error } = await supabase
         .from("pedidos")
         .delete()
@@ -203,7 +212,7 @@ const Pedidos: React.FC = () => {
               className="bg-white shadow-md rounded-lg p-4 min-w-fit"
             >
               <RemeraPreview
-                color={pedido.color || ""}
+                color={getDefaultHex(pedido.color || "")} // Convert color name to hex
                 disenoUrl={pedido.diseno_url || ""}
               />
               <p>
@@ -222,10 +231,9 @@ const Pedidos: React.FC = () => {
                 <strong>Cliente:</strong> {pedido.nombre} {pedido.apellido}
               </p>
               <p>
-                <strong>Estado:</strong>
-                {""}
+                <strong>Estado:</strong>{" "}
                 <span
-                  className={`status  ${
+                  className={`status ${
                     pedido.estado === "pendiente"
                       ? "text-yellow-500 capitalize"
                       : pedido.estado === "realizado"
@@ -237,19 +245,18 @@ const Pedidos: React.FC = () => {
                 </span>
               </p>
 
-              {/* BOTONES SEGÚN ESTADO */}
               <div className="mt-4 flex gap-2">
                 {pedido.estado === "pendiente" && (
                   <>
                     <button
                       onClick={() => handleChangeEstado(pedido.id, "realizado")}
-                      className="btn-green  "
+                      className="btn-green"
                     >
                       Confirmar
                     </button>
                     <button
                       onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-                      className="btn-red  "
+                      className="btn-red"
                     >
                       Cancelar
                     </button>
@@ -260,13 +267,13 @@ const Pedidos: React.FC = () => {
                   <>
                     <button
                       onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-                      className="btn-red "
+                      className="btn-red"
                     >
                       Cancelar
                     </button>
                     <button
                       onClick={() => handleDeletePedido(pedido.id)}
-                      className="btn-grey  "
+                      className="btn-grey"
                     >
                       Eliminar
                     </button>
@@ -276,7 +283,7 @@ const Pedidos: React.FC = () => {
                 {pedido.estado === "cancelado" && (
                   <button
                     onClick={() => handleDeletePedido(pedido.id)}
-                    className="btn-grey  "
+                    className="btn-grey"
                   >
                     Eliminar
                   </button>

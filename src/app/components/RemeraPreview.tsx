@@ -16,11 +16,11 @@ const RemeraPreview: React.FC<Props> = ({ color, disenoUrl }) => {
       <div
         className="w-full h-full absolute inset-0"
         style={{
-          backgroundColor: color || "#ffffff",
-          maskImage: `url(${remeracolor.src})`, // Usa .src para imágenes importadas en Next.js
-          maskSize: "contain", // Corregido de [mask-size:contain]
-          maskRepeat: "no-repeat", // Corregido de [mask-repeat:no-repeat]
-          maskPosition: "center", // Corregido de [mask-position:center]
+          backgroundColor: color,
+          maskImage: `url(${remeracolor.src})`,
+          maskSize: "contain",
+          maskRepeat: "no-repeat",
+          maskPosition: "center",
         }}
       ></div>
 
