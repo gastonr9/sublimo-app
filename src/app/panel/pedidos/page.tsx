@@ -159,8 +159,8 @@ const Pedidos: React.FC = () => {
                     pedido.estado === "pendiente"
                       ? "text-yellow-500 capitalize"
                       : pedido.estado === "realizado"
-                      ? "bg-green-600"
-                      : "bg-red-600"
+                      ? "text-green-500 capitalize"
+                      : "text-red-500 capitalize"
                   }`}
                 >
                   {pedido.estado}
