@@ -14,7 +14,7 @@ function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
   // Tamaño visual del canvas
   const CANVAS_SIZE = 350;
   // Tamaño de exportación de la textura
-  const EXPORT_SIZE = 4096;
+  const EXPORT_SIZE = 3072;
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -22,14 +22,20 @@ function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
   const tshirtImgUrl = `models/tshirt.jpg`;
   if (!visible) return null;
 
+  // 🔧 Función para exportar SIEMPRE en alta resolución
+  const exportHighRes = () => {
+    if (!editor?.canvas) return;
+    return editor.canvas.toDataURL({
+      format: "png",
+      multiplier: EXPORT_SIZE / CANVAS_SIZE,
+    });
+  };
+
   useEffect(() => {
     if (!editor?.canvas || !onImageChange) return;
     const handler = () => {
-      const dataURL = editor.canvas.toDataURL({
-        format: "png",
-        multiplier: EXPORT_SIZE / CANVAS_SIZE,
-      });
-      onImageChange(dataURL);
+      const dataURL = exportHighRes();
+      if (dataURL) onImageChange(dataURL);
     };
     editor.canvas.on("object:added", handler);
     editor.canvas.on("object:modified", handler);
@@ -48,11 +54,12 @@ function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
     fabric.Image.fromURL(url, (oImg: any) => {
       oImg.scale(0.1).set("flipY", false);
       editor?.canvas.add(oImg);
-      // Notifica al padre inmediatamente después de agregar la imagen
+
+      // 🔧 Notifica al padre inmediatamente en alta resolución
       setTimeout(() => {
-        if (editor?.canvas && onImageChange) {
-          const dataUrl = editor.canvas.toDataURL({ format: "png" });
-          onImageChange(dataUrl);
+        if (onImageChange) {
+          const dataUrl = exportHighRes();
+          if (dataUrl) onImageChange(dataUrl);
         }
       }, 100);
     });

@@ -18,7 +18,7 @@
     @apply font-bold;
   }
   button {
-    @apply bg-gris text-morado self-center max-h-[40px] hover:bg-morado hover:text-white rounded-full px-2 py-1 font-medium;
+    @apply self-center max-h-[40px]  rounded-full px-2 py-1 font-medium;
   }
 }
 
@@ -42,11 +42,13 @@
   }
 
   .status {
-    @apply rounded px-2 py-1 font-medium;
+    @apply px-2 py-1 font-medium;
   }
-
+  .btn {
+    @apply bg-gris text-indigo-600 hover:bg-indigo-500;
+  }
   .btn-secondary {
-    @apply bg-morado text-white hover:bg-morado-100;
+    @apply bg-indigo-600 text-white hover:bg-indigo-500;
   }
 
   .btn-red {

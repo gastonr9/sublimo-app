@@ -151,7 +151,7 @@ export default function Navbar() {
               </>
             ) : (
               <li>
-                <button className="btn-secondary ">
+                <button className="btn-secondary slot ">
                   <Link href="/login">Acceder</Link>
                 </button>
               </li>

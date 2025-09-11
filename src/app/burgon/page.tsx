@@ -7,6 +7,7 @@ import { getDesigns } from "../services/designs";
 import { supabase } from "../supabase/Client";
 import RemeraPreview from "../components/RemeraPreview";
 import Image from "next/image";
+import OptionButton from "../components/OptionButton";
 
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
@@ -27,6 +28,7 @@ const Burgon: React.FC = () => {
   const [apellido, setApellido] = useState("");
   const [showSummary, setShowSummary] = useState(false);
 
+  // cargar productos
   useEffect(() => {
     const cargarProductos = async () => {
       const productosData = await getProductos();
@@ -41,6 +43,7 @@ const Burgon: React.FC = () => {
     cargarProductos();
   }, []);
 
+  // cargar producto seleccionado
   useEffect(() => {
     const cargarProductoSeleccionado = async () => {
       if (selectedProductoId) {
@@ -91,6 +94,7 @@ const Burgon: React.FC = () => {
     cargarProductoSeleccionado();
   }, [selectedProductoId]);
 
+  // actualizar colores según talle
   useEffect(() => {
     if (selectedProduct && order.talle && selectedProduct.inventario) {
       const coloresPorTalle = selectedProduct.inventario
@@ -112,6 +116,7 @@ const Burgon: React.FC = () => {
     }
   }, [order.talle, selectedProduct]);
 
+  // cargar diseños
   useEffect(() => {
     const cargarDesigns = async () => {
       try {
@@ -127,9 +132,10 @@ const Burgon: React.FC = () => {
     cargarDesigns();
   }, []);
 
+  // ajustar preview del diseño
   useEffect(() => {
     if (order.disenoUrl) {
-      const img = new window.Image(); // 👈 Forzamos el objeto del navegador
+      const img = new window.Image();
       img.src = order.disenoUrl;
       img.onload = () => {
         const aspectRatio = img.width / img.height;
@@ -177,7 +183,6 @@ const Burgon: React.FC = () => {
   };
 
   const handleNext = () => {
-    // console.log('Handle Next clicked. Order:', order); // Depuración
     if (order.talle && order.color && order.disenoId) {
       setShowModal(true);
     } else {
@@ -214,7 +219,6 @@ const Burgon: React.FC = () => {
         return;
       }
 
-      // Buscar inventario_id según producto/talle/color
       const { data: inv, error: invError } = await supabase
         .from("inventario")
         .select("id, stock")
@@ -238,7 +242,6 @@ const Burgon: React.FC = () => {
         return;
       }
 
-      // Iniciar transacción manual: insertar pedido + descontar stock
       const { error: pedidoError } = await supabase.from("pedidos").insert({
         nombre,
         apellido,
@@ -249,14 +252,12 @@ const Burgon: React.FC = () => {
 
       if (pedidoError) throw pedidoError;
 
-      // Actualizar stock (-1)
       const { error: stockError } = await supabase
         .from("inventario")
         .update({ stock: inv.stock - 1 })
         .eq("id", inv.id);
 
       if (stockError) {
-        // ⚠️ Si falla el update, borramos el pedido recién creado
         await supabase
           .from("pedidos")
           .delete()
@@ -269,7 +270,6 @@ const Burgon: React.FC = () => {
 
       alert("✅ Pedido creado y stock actualizado.");
 
-      // limpiar estado
       setShowModal(false);
       setShowSummary(false);
       setNombre("");

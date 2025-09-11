@@ -7,7 +7,6 @@ import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
 import { useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import dynamic from "next/dynamic"; // <-- Importa 'dynamic' de Next.js
-import Canvas2DModal from "./Canvas2DModal";
 
 // Definir interfaces para las props
 interface ColorPickerProps {
