@@ -168,7 +168,7 @@ const Designs: React.FC = () => {
           <h3 className="text-xl font-semibold text-gray-700">
             Imágenes Disponibles en Storage
           </h3>
-          <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+          <label className="">
             {uploading ? "Subiendo..." : "Cargar Imagen"}
             <input
               type="file"

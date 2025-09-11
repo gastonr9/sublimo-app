@@ -2,7 +2,7 @@
 "use client";
 import { type ChangeEvent, useEffect, useRef } from "react";
 import { FabricJSCanvas, useFabricJSEditor } from "fabricjs-react";
-import * as fabric from "fabric"; // ✅ importar todo el namespace
+import { fabric } from "fabric"; // ✅ importar todo el namespace
 
 interface Canvas2DProps {
   onImageChange?: (dataUrl: string) => void;
@@ -59,7 +59,7 @@ function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 bg-gray-800 shadow-2xl z-40 flex flex-col rounded-lg border w-[380px]">
+    <div className="fixed bottom-4 right-4 bg-gray-800 shadow-2xl z-40 flex flex-col rounded-lg  w-[380px]">
       <div className="flex items-center p-3 border-b bg-gray-50 rounded-t-lg">
         <h3 className="font-semibold flex-1 text-center">GUÍA DE POSICIÓN</h3>
         <button

@@ -149,11 +149,12 @@ const Pedidos: React.FC = () => {
                 <strong>Cliente:</strong> {pedido.nombre} {pedido.apellido}
               </p>
               <p>
-                <strong>Estado:</strong>{" "}
+                <strong>Estado:</strong>
+                {""}
                 <span
                   className={`status  ${
                     pedido.estado === "pendiente"
-                      ? "bg-yellow-500"
+                      ? "text-yellow-500 capitalize"
                       : pedido.estado === "realizado"
                       ? "bg-green-600"
                       : "bg-red-600"
@@ -169,13 +170,13 @@ const Pedidos: React.FC = () => {
                   <>
                     <button
                       onClick={() => handleChangeEstado(pedido.id, "realizado")}
-                      className="btn-green slot "
+                      className="btn-green  "
                     >
                       Confirmar
                     </button>
                     <button
                       onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-                      className="btn-red slot "
+                      className="btn-red  "
                     >
                       Cancelar
                     </button>
@@ -186,13 +187,13 @@ const Pedidos: React.FC = () => {
                   <>
                     <button
                       onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-                      className="btn-red slot"
+                      className="btn-red "
                     >
                       Cancelar
                     </button>
                     <button
                       onClick={() => handleDeletePedido(pedido.id)}
-                      className="btn-grey slot "
+                      className="btn-grey  "
                     >
                       Eliminar
                     </button>
@@ -202,7 +203,7 @@ const Pedidos: React.FC = () => {
                 {pedido.estado === "cancelado" && (
                   <button
                     onClick={() => handleDeletePedido(pedido.id)}
-                    className="btn-grey slot "
+                    className="btn-grey  "
                   >
                     Eliminar
                   </button>

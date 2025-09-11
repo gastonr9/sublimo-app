@@ -169,7 +169,7 @@ const Designs: React.FC = () => {
           <h3 className="text-xl font-semibold text-gray-700">
             Imágenes Disponibles en Storage
           </h3>
-          <label className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition">
+          <button className="btn-blue">
             {uploading ? "Subiendo..." : "Cargar Imagen"}
             <input
               type="file"
@@ -178,7 +178,7 @@ const Designs: React.FC = () => {
               className="hidden"
               disabled={uploading}
             />
-          </label>
+          </button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {storageDesigns.length > 0 ? (

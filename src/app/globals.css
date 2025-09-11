@@ -1,122 +1,63 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --gris: #f3f3f3;
-  --negro: #1d2a2a;
-  --morado: #4e4ebd;
-  --morado-100: #2e2e67;
-  --radius-selector: 1rem;
-  --radius-field: 2rem;
-  --radius-box: 3rem;
-  --border: 2px;
-  --depth: 1;
-  --noise: 0;
-  --radius: 1.5rem;
-  --radius-lg: 1rem;
-}
-html,
-body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-}
-.App {
-  font-family: sans-serif;
-  text-align: center;
-  height: 100vh;
-  width: 100vw;
+@layer base {
+  html,
+  body {
+    @apply m-0 p-0 h-full;
+  }
+
+  * {
+    @apply text-negro font-poppins;
+  }
+
+  h1 {
+    @apply font-bold;
+  }
+  button {
+    @apply bg-gris text-morado self-center max-h-[40px] hover:bg-morado hover:text-white rounded-full px-2 py-1 font-medium;
+  }
 }
 
-* {
-  color: var(--negro);
+@layer components {
+  .App {
+    @apply font-poppins text-center h-screen w-screen;
+  }
 
-  font-family: Poppins, sans-serif;
-}
+  .logo {
+    @apply max-h-full w-[150px] h-[150px];
+  }
 
-h1 {
-  font-weight: 700;
-}
-.logo {
-  max-height: fit-content;
-  width: 150px;
-  height: 150px;
-}
-.contenedor {
-  gap: 20px;
-  display: flex;
-  align-self: center;
-}
-#remera {
-  height: 300px;
-  width: 300px;
-}
-.colores {
-  padding-inline: calc(var(--spacing) * 0) /* 1.5rem = 24px */;
-  border-radius: -1px;
-  border: 1px solid #000;
-  padding-block: calc(var(--spacing) * 0) /* 0.5rem = 8px */;
-}
-.status {
-  border-radius: var(--radius);
-  padding-inline: calc(var(--spacing) * 6) /* 1.5rem = 24px */;
-  padding-block: calc(var(--spacing) * 0.5) /* 0.5rem = 8px */;
-  font-weight: var(--font-weight-medium) /* 500 */;
-}
-.slot {
-  border-radius: var(--radius);
-  padding-inline: calc(var(--spacing) * 6) /* 1.5rem = 24px */;
-  padding-block: calc(var(--spacing) * 2) /* 0.5rem = 8px */;
-  font-weight: var(--font-weight-medium) /* 500 */;
-}
-.btn {
-  background-color: var(--gris);
-  color: var(--morado);
-  align-self: center;
-  max-height: 40px;
-  &:hover {
-    background-color: var(--morado);
-    color: white;
+  .contenedor {
+    @apply flex gap-5 self-center;
   }
-}
-.btn-secondary {
-  background-color: var(--morado);
-  color: white;
-  &:hover {
-    background-color: var(--morado-100);
+
+  #remera {
+    @apply h-[300px] w-[300px];
   }
-}
-.btn-red {
-  background-color: #ff0000;
-  color: white;
-  &:hover {
-    background-color: #bd1e26;
+
+  .status {
+    @apply rounded px-2 py-1 font-medium;
   }
-}
-.btn-blue {
-  background-color: #155dfc;
-  color: white;
-  &:hover {
-    background-color: #0e358a;
+
+  .btn-secondary {
+    @apply bg-morado text-white hover:bg-morado-100;
   }
-}
-.btn-green {
-  background-color: #00a63e;
-  color: white;
-  &:hover {
-    background-color: #01722b;
+
+  .btn-red {
+    @apply bg-red text-white hover:bg-red-dark;
   }
-}
-.btn-green {
-  background-color: #00a63e;
-  color: white;
-  &:hover {
-    background-color: #01722b;
+
+  .btn-blue {
+    @apply bg-blue text-white hover:bg-blue-dark;
   }
-}
-.btn-grey {
-  background-color: #4a5565;
-  color: white;
-  &:hover {
-    background-color: #282d35;
+
+  .btn-green {
+    @apply bg-green text-white hover:bg-green-dark;
+  }
+
+  .btn-grey {
+    @apply bg-grey text-white hover:bg-grey-dark;
   }
 }
