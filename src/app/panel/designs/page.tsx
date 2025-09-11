@@ -259,7 +259,7 @@ const Designs: React.FC = () => {
                   onChange={(e) =>
                     handleUpdate(design.id, "nombre", e.target.value)
                   }
-                  className="my-2 border rounded-lg p-1 w-full slot"
+                  className="my-2 border rounded-lg  w-full slot"
                   placeholder="Nombre (sin extensión)"
                 />
                 <div className="contenedor ">

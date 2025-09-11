@@ -11,7 +11,9 @@
   * {
     @apply text-negro font-poppins;
   }
-
+  input {
+    @apply m-2;
+  }
   h1 {
     @apply font-bold;
   }
@@ -24,7 +26,9 @@
   .App {
     @apply font-poppins text-center h-screen w-screen;
   }
-
+  .slot {
+    @apply rounded-lg px-6 py-2 font-semibold;
+  }
   .logo {
     @apply max-h-full w-[150px] h-[150px];
   }

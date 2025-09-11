@@ -334,7 +334,7 @@ const Burgon: React.FC = () => {
                 order.color === color.hex
                   ? "bg-blue-100 border-blue-600"
                   : "bg-white border-gray-300 hover:bg-gray-100"
-              } ${!order.talle ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${!order.talle ? " cursor-not-allowed" : ""}`}
               onClick={() =>
                 order.talle ? handleColorSelect(color.hex) : null
               }
@@ -377,9 +377,7 @@ const Burgon: React.FC = () => {
                   className={`logo relative w-24 h-24 border rounded-lg overflow-hidden ${
                     order.disenoId === design.id ? "ring-2 ring-blue-500" : ""
                   } ${
-                    !order.talle || !order.color
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
+                    !order.talle || !order.color ? " cursor-not-allowed" : ""
                   }`}
                   onClick={() =>
                     handleDesignSelect(design.id, design.imagen_url)
@@ -428,7 +426,7 @@ const Burgon: React.FC = () => {
 
       {/* Modal para ingresar nombre y apellido */}
       {showModal && !showSummary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg- flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h3 className="text-lg font-semibold mb-4">Ingresa tus datos</h3>
             <input
@@ -466,7 +464,7 @@ const Burgon: React.FC = () => {
 
       {/* Modal para resumen del pedido */}
       {showModal && showSummary && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg- flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h3 className="text-lg font-semibold mb-4">Resumen del pedido</h3>
             <p>Producto: {selectedProduct?.nombre}</p>

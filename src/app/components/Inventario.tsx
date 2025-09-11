@@ -244,7 +244,7 @@ const Inventario: React.FC = () => {
           <button
             onClick={handleAgregarProducto}
             className={`btn-green slot ${
-              isAgregarProductoDisabled ? "opacity-50 cursor-not-allowed" : ""
+              isAgregarProductoDisabled ? " cursor-not-allowed" : ""
             }`}
             disabled={isAgregarProductoDisabled}
           >
@@ -490,9 +490,7 @@ const Inventario: React.FC = () => {
                 <button
                   onClick={handleAgregarCombinacion}
                   className={`btn-green slot  ${
-                    isAgregarCombinacionDisabled
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
+                    isAgregarCombinacionDisabled ? " cursor-not-allowed" : ""
                   }`}
                   disabled={isAgregarCombinacionDisabled}
                 >

@@ -128,9 +128,12 @@ const Pedidos: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {pedidos.map((pedido) => (
-            <div key={pedido.id} className="bg-white shadow-md rounded-lg p-4">
+            <div
+              key={pedido.id}
+              className="bg-white shadow-md rounded-lg p-4 min-w-fit"
+            >
               <RemeraPreview
-                color={pedido.color || "#ffffff"}
+                color={pedido.color || ""}
                 disenoUrl={pedido.diseno_url || ""}
               />
               <p>
