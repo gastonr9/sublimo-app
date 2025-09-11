@@ -235,11 +235,7 @@ const Burgon: React.FC = () => {
 
   const handleCreatePedido = async () => {
     try {
-      if (!selectedProduct || !order.talle || !order.color || !order.disenoId) {
-        alert("Faltan datos para crear el pedido.");
-        return;
-      }
-
+      // 1. Buscar inventario (producto + talle + color)
       const { data: inv, error: invError } = await supabase
         .from("inventario")
         .select("id, stock")
@@ -251,54 +247,79 @@ const Burgon: React.FC = () => {
         )
         .single();
 
-      if (invError || !inv) {
-        alert(
-          "No existe inventario para esa combinación de producto/talle/color."
-        );
+      if (invError || !inv || inv.stock <= 0) {
+        alert("No hay stock disponible para este producto/talle/color.");
         return;
       }
 
-      if (inv.stock <= 0) {
-        alert("No hay stock disponible para este producto.");
+      // 2. Buscar diseño
+      const { data: diseno, error: disenoError } = await supabase
+        .from("disenos")
+        .select("id, stock")
+        .eq("id", order.disenoId)
+        .single();
+
+      if (disenoError || !diseno || diseno.stock <= 0) {
+        alert("No hay stock disponible para este diseño.");
         return;
       }
 
+      // 3. Insertar pedido
       const { error: pedidoError } = await supabase.from("pedidos").insert({
         nombre,
         apellido,
         inventario_id: inv.id,
-        diseno_id: order.disenoId,
+        diseno_id: diseno.id,
         estado: "pendiente",
       });
 
       if (pedidoError) throw pedidoError;
 
-      const { error: stockError } = await supabase
+      // 4. Descontar stock de inventario
+      const { error: stockErrorInv } = await supabase
         .from("inventario")
         .update({ stock: inv.stock - 1 })
         .eq("id", inv.id);
 
-      if (stockError) {
+      if (stockErrorInv) {
+        // rollback pedido
         await supabase
           .from("pedidos")
           .delete()
           .eq("inventario_id", inv.id)
-          .eq("diseno_id", order.disenoId)
+          .eq("diseno_id", diseno.id)
           .eq("nombre", nombre)
           .eq("apellido", apellido);
-        throw stockError;
+        throw stockErrorInv;
       }
 
-      alert("✅ Pedido creado y stock actualizado.");
+      // 5. Descontar stock de diseño
+      const { error: stockErrorDis } = await supabase
+        .from("disenos")
+        .update({ stock: diseno.stock - 1 })
+        .eq("id", diseno.id);
 
-      setShowModal(false);
-      setShowSummary(false);
-      setNombre("");
-      setApellido("");
-      setOrder({ ...order, talle: "", color: "", disenoId: "", disenoUrl: "" });
-    } catch (err) {
-      console.error("Error creando pedido:", err);
-      alert("❌ No se pudo crear el pedido.");
+      if (stockErrorDis) {
+        // rollback inventario
+        await supabase
+          .from("inventario")
+          .update({ stock: inv.stock })
+          .eq("id", inv.id);
+        // rollback pedido
+        await supabase
+          .from("pedidos")
+          .delete()
+          .eq("inventario_id", inv.id)
+          .eq("diseno_id", diseno.id)
+          .eq("nombre", nombre)
+          .eq("apellido", apellido);
+        throw stockErrorDis;
+      }
+
+      alert("Pedido creado con éxito.");
+    } catch (error) {
+      console.error("Error al crear pedido:", error.message);
+      alert("Error al crear pedido.");
     }
   };
 

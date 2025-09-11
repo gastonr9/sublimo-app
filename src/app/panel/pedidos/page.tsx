@@ -78,30 +78,100 @@ const Pedidos: React.FC = () => {
     }
   };
 
-  // Cambiar estado del pedido usando RPC
+  // Cambiar estado del pedido usando RPC + actualizar stock
   const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
     try {
-      // mapear "confirmado" → "realizado"
+      // 1. Traemos el pedido con inventario y diseño
+      const { data: pedido, error: fetchError } = await supabase
+        .from("pedidos")
+        .select(
+          `
+        id,
+        estado,
+        inventario:inventario_id ( id, stock ),
+        diseno:diseno_id ( id, stock )
+      `
+        )
+        .eq("id", pedidoId)
+        .single();
+
+      if (fetchError || !pedido) throw fetchError;
+
+      // Mapear estado
       const estadoValido =
         nuevoEstado === "confirmado" ? "realizado" : nuevoEstado;
 
-      const { error } = await supabase.rpc("alterar_estado_pedido", {
-        p_id: pedidoId,
-        p_new_estado: estadoValido,
-      });
+      // 2. Actualizamos el estado
+      const { error: estadoError } = await supabase.rpc(
+        "alterar_estado_pedido",
+        {
+          p_id: pedidoId,
+          p_new_estado: estadoValido,
+        }
+      );
 
-      if (error) throw error;
+      if (estadoError) throw estadoError;
+
+      // 3. Si el pedido se cancela y antes estaba pendiente o realizado → devolver stock
+      if (estadoValido === "cancelado" && pedido.estado !== "cancelado") {
+        if (pedido.inventario) {
+          await supabase
+            .from("inventario")
+            .update({ stock: pedido.inventario.stock + 1 })
+            .eq("id", pedido.inventario.id);
+        }
+        if (pedido.diseno) {
+          await supabase
+            .from("disenos")
+            .update({ stock: pedido.diseno.stock + 1 })
+            .eq("id", pedido.diseno.id);
+        }
+      }
 
       alert(`✅ Estado cambiado a ${estadoValido}`);
-      fetchPedidos(); // refresca la lista
+      fetchPedidos();
     } catch (err) {
       console.error("Error cambiando estado:", err);
       alert("❌ No se pudo cambiar el estado del pedido");
     }
   };
 
+  // Eliminar pedido con control de stock
   const handleDeletePedido = async (pedidoId: string) => {
     try {
+      // Buscar el pedido antes de eliminarlo
+      const { data: pedido, error: fetchError } = await supabase
+        .from("pedidos")
+        .select(
+          `
+        id,
+        estado,
+        inventario:inventario_id ( id, stock ),
+        diseno:diseno_id ( id, stock )
+      `
+        )
+        .eq("id", pedidoId)
+        .single();
+
+      if (fetchError || !pedido) throw fetchError;
+
+      // Si estaba en realizado → devolver stock al borrar
+      if (pedido.estado === "realizado") {
+        if (pedido.inventario) {
+          await supabase
+            .from("inventario")
+            .update({ stock: pedido.inventario.stock + 1 })
+            .eq("id", pedido.inventario.id);
+        }
+        if (pedido.diseno) {
+          await supabase
+            .from("disenos")
+            .update({ stock: pedido.diseno.stock + 1 })
+            .eq("id", pedido.diseno.id);
+        }
+      }
+
+      // Ahora sí, borrar
       const { error } = await supabase
         .from("pedidos")
         .delete()

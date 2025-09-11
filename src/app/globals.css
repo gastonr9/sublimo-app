@@ -20,6 +20,9 @@
   button {
     @apply self-center max-h-[40px]  rounded-full px-2 py-1 font-medium;
   }
+  label {
+    @apply self-center max-h-[40px]  rounded-full px-2 py-1 font-medium;
+  }
 }
 
 @layer components {
