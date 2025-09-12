@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -9,22 +10,44 @@ export async function POST(req: Request) {
   try {
     const { email, password, role } = await req.json();
 
+    // Crear usuario en Auth
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { role },
     });
 
-    if (error)
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 400,
-      });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
 
-    return new Response(JSON.stringify({ user: data.user }), { status: 200 });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: "Server error" }), {
-      status: 500,
-    });
+    // Verificar que data.user exista
+    const userId = data?.user?.id;
+    if (!userId) {
+      return NextResponse.json(
+        { error: "El usuario no se creó correctamente en Auth." },
+        { status: 500 }
+      );
+    }
+
+    // Insertar perfil en tabla profiles
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert([{ id: userId, role }]);
+
+    if (profileError) {
+      return NextResponse.json(
+        { error: profileError.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { user: { id: userId, email: data.user.email, role } },
+      { status: 200 }
+    );
+  } catch (err: any) {
+    console.error("Server error:", err.message || err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

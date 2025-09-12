@@ -78,11 +78,14 @@ export default function Navbar() {
                 </Link>
               </li>
             )}
-            <li>
-              <Link href="/panel/inventario" className=" hover:text-blue-600">
-                Panel
-              </Link>
-            </li>
+            {role === "master" && (
+              <li>
+                <Link href="/panel/inventario" className=" hover:text-blue-600">
+                  Panel
+                </Link>
+              </li>
+            )}
+
             {user ? (
               <>
                 {/* Mostrar email y rol si está logueado */}

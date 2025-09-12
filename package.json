@@ -18,6 +18,7 @@
     "next": "14.2.32",
     "react": "^18",
     "react-dom": "^18",
+    "react-router-dom": "^7.8.2",
     "three": "^0.179.1"
   },
   "devDependencies": {
