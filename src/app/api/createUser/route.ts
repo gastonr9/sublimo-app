@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
+// Use the Supabase Service Role Key for secure server-side operations
+// This key bypasses Row Level Security. Keep it secret!
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -10,18 +12,19 @@ export async function POST(req: Request) {
   try {
     const { email, password, role } = await req.json();
 
-    // Crear usuario en Auth
-    const { data, error } = await supabase.auth.admin.createUser({
+    // 1. Create the user in Supabase auth using the admin client.
+    // The 'on_auth_user_created' trigger will automatically create the profile with 'empleado' role.
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     });
 
     if (error) {
+      console.error("Supabase create user error:", error.message);
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    // Verificar que data.user exista
     const userId = data?.user?.id;
     if (!userId) {
       return NextResponse.json(
@@ -30,18 +33,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // Insertar perfil en tabla profiles
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .insert([{ id: userId, role }]);
+    // 2. If the desired role is 'master', update the profile created by the trigger.
+    if (role === "master") {
+      const { error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .update({ role: role })
+        .eq("id", userId);
 
-    if (profileError) {
-      return NextResponse.json(
-        { error: profileError.message },
-        { status: 400 }
-      );
+      if (profileError) {
+        console.error("Supabase profile update error:", profileError.message);
+        return NextResponse.json(
+          { error: profileError.message },
+          { status: 500 }
+        );
+      }
     }
 
+    // Return a success response with the user data.
     return NextResponse.json(
       { user: { id: userId, email: data.user.email, role } },
       { status: 200 }
