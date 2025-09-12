@@ -18,47 +18,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Función asíncrona para obtener el usuario y el rol
     const fetchUserAndRole = async () => {
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
 
-        if (userError) {
-          console.error("Error al obtener el usuario:", userError);
-          setUser(null);
-          setRole(null);
-          setIsAuthReady(true);
-          return;
-        }
-
-        setUser(user);
-
-        if (user) {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
-          if (error) {
-            console.error("Error al obtener el perfil:", error);
-            setRole(null);
-          } else if (data) {
-            setRole(data.role);
-          } else {
-            setRole(null);
-          }
-        } else {
-          setRole(null);
-        }
-      } catch (error) {
-        console.error("Error inesperado:", error);
-        setRole(null);
-      } finally {
-        setIsAuthReady(true);
-      }
-    };
+      if (user) {
+        // Busca el rol solo si el usuario existe
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+if (error) {
+  console.error("Error al obtener el perfil:", error);
+  setRole(null);
+} else if (data) {
+  setRole(data.role);
+} else {
+  setRole(null); // No profile found
+}
 
     fetchUserAndRole();
 

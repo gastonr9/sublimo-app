@@ -1,71 +1,14 @@
-// components/Navbar.tsx
 "use client";
 import Link from "next/link";
 import Image from "next/image";
 import logo from "../../assets/sublimo.svg";
-import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../supabase/Client";
 import { useRouter } from "next/navigation";
 
 export default function Navbar() {
-  const [user, setUser] = useState<any | null>(null); // Estado para el usuario
-  const [role, setRole] = useState<string | null>(null); // Estado para el rol
+  const { user, role, isAuthReady } = useAuth(); // Usar el hook del contexto
   const router = useRouter();
-
-  // Obtener el estado de autenticación y el rol del usuario
-  useEffect(() => {
-    const fetchUserAndRole = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (user) {
-        setUser(user);
-
-        // Obtener el rol desde la tabla profiles
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        if (!error && data) {
-          setRole(data.role);
-        }
-      } else {
-        setUser(null);
-        setRole(null);
-      }
-    };
-
-    fetchUserAndRole();
-
-    // Escuchar cambios en el estado de autenticación
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        if (!session?.user) {
-          setRole(null);
-        } else {
-          // Re-obtener el rol si el usuario cambia
-          supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", session.user.id)
-            .single()
-            .then(({ data, error }) => {
-              if (!error && data) {
-                setRole(data.role);
-              }
-            });
-        }
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
 
   // Función para cerrar sesión
   const handleLogout = async () => {
@@ -76,6 +19,10 @@ export default function Navbar() {
       console.error("Error al cerrar sesión:", error);
     }
   };
+
+  if (!isAuthReady) {
+    return null; // O muestra un spinner de carga
+  }
 
   return (
     <header className="relative w-full z-50 bg-white shadow-md">
@@ -124,13 +71,15 @@ export default function Navbar() {
                 Generador Mockup 3D
               </Link>
             </li>
+            {role === "master" && (
+              <li>
+                <Link href="/burgon" className=" hover:text-blue-600">
+                  Burgon
+                </Link>
+              </li>
+            )}
             <li>
-              <Link href="/burgon" className=" hover:text-blue-600">
-                Burgon
-              </Link>
-            </li>
-            <li>
-              <Link href="/panel" className=" hover:text-blue-600">
+              <Link href="/panel/inventario" className=" hover:text-blue-600">
                 Panel
               </Link>
             </li>
@@ -141,17 +90,14 @@ export default function Navbar() {
                   {user.email} ({role || "Sin rol"})
                 </li>
                 <li>
-                  <button
-                    onClick={handleLogout}
-                    className="btn-secondary slot  "
-                  >
+                  <button onClick={handleLogout} className="btn-secondary slot">
                     Salir
                   </button>
                 </li>
               </>
             ) : (
               <li>
-                <button className="btn-secondary slot ">
+                <button className="btn-secondary slot">
                   <Link href="/login">Acceder</Link>
                 </button>
               </li>
