@@ -7,8 +7,8 @@ import { getDesigns } from "../services/designs";
 import { supabase } from "../supabase/Client";
 import RemeraPreview from "../components/RemeraPreview";
 import Image from "next/image";
-import OptionButton from "../components/OptionButton";
-
+import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/navigation";
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -27,6 +27,28 @@ const Burgon: React.FC = () => {
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [showSummary, setShowSummary] = useState(false);
+
+  const { user, role, isAuthReady } = useAuth();
+  const router = useRouter();
+
+  // Redirect if not authenticated or not a master user
+  useEffect(() => {
+    if (isAuthReady) {
+      if (!user) {
+        router.push("/login");
+      } else if (role !== "master") {
+        router.push("/"); // Or another fallback route
+      }
+    }
+  }, [isAuthReady, user, role, router]);
+
+  if (!isAuthReady) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user || role !== "master") {
+    return null; // Will redirect due to useEffect
+  }
 
   // cargar productos
   useEffect(() => {
