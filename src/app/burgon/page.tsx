@@ -28,28 +28,17 @@ const Burgon: React.FC = () => {
   const [apellido, setApellido] = useState("");
   const [showSummary, setShowSummary] = useState(false);
 
-  const { user, role, isAuthReady } = useAuth();
+  const { user, isAuthReady } = useAuth();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Redirect if not authenticated or not a master user
+  // Verificar autenticación
   useEffect(() => {
-    if (isAuthReady) {
-      if (!user) {
-        router.push("/login");
-      } else if (role !== "master" && role !== "employee") {
-        router.push("/"); // Or another fallback route
-      }
+    if (isAuthReady && !user) {
+      router.push("/login");
     }
-  }, [isAuthReady, user, role, router]);
-
-  if (!isAuthReady) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user || (role !== "master" && role !== "employee")) {
-    return null; // Will redirect due to useEffect
-  }
-
+  }, [isAuthReady, user, router]);
   // cargar productos
   useEffect(() => {
     const cargarProductos = async () => {

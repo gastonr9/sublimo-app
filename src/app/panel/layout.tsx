@@ -1,44 +1,28 @@
 // app/panel/layout.tsx
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { supabase } from "../supabase/Client";
-import { usePathname } from "next/navigation";
 
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
 export default function PanelLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [role, setRole] = useState<string | null>(null);
+  type AuthUser = {
+    email?: string;
+    // agrega otras propiedades si es necesario
+  };
+  // const [role, setRole] = useState<string | null>(null);
   const pathname = usePathname(); // Para resaltar el enlace activo
-
-  useEffect(() => {
-    const fetchRole = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        // No redirigir aquí para evitar conflictos; manejarlo en middleware si es necesario
-        setRole(null);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (!error && data) {
-        setRole(data.role);
-      }
-    };
-
-    fetchRole();
-  }, []);
-
+  const { user, role, isAuthReady } = useAuth() as {
+    user: AuthUser | null;
+    role: string | null;
+    isAuthReady: boolean;
+  }; // Usar el hook del contexto
+  const router = useRouter();
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
@@ -79,7 +63,7 @@ export default function PanelLayout({
             <Link
               href="/panel/usuarios"
               className={`block w-full text-left px-4 py-2 rounded-lg ${
-                pathname === "/panel/usuarios"
+                pathname === "/panel/pedidos"
                   ? "bg-blue-100 text-blue-600"
                   : "hover:bg-gray-100"
               }`}

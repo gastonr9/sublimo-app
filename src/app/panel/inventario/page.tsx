@@ -11,6 +11,7 @@ import {
   getColoresFijos,
 } from "../../services/inventario";
 import { Producto, Color } from "../../types/types";
+
 const Inventario: React.FC = () => {
   const [precio, setPrecio] = useState("");
   const [productos, setProductos] = useState<Producto[]>([]);
