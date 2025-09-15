@@ -6,8 +6,17 @@ import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../supabase/Client";
 import { useRouter } from "next/navigation";
 
+type AuthUser = {
+  email?: string;
+  // agrega otras propiedades si es necesario
+};
+
 export default function Navbar() {
-  const { user, role, isAuthReady } = useAuth(); // Usar el hook del contexto
+  const { user, role, isAuthReady } = useAuth() as {
+    user: AuthUser | null;
+    role: string | null;
+    isAuthReady: boolean;
+  }; // Usar el hook del contexto
   const router = useRouter();
 
   // Función para cerrar sesión
@@ -71,14 +80,14 @@ export default function Navbar() {
                 Generador Mockup 3D
               </Link>
             </li>
-            {role === "master" && (
+            {(role === "employee" || role === "master") && (
               <li>
                 <Link href="/burgon" className=" hover:text-blue-600">
                   Burgon
                 </Link>
               </li>
             )}
-            {role === "master" && (
+            {(role === "employee" || role === "master") && (
               <li>
                 <Link href="/panel/inventario" className=" hover:text-blue-600">
                   Panel

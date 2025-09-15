@@ -13,7 +13,7 @@ export default function UsersPanel() {
       if (!user) {
         router.push("/login");
       } else if (role !== "master") {
-        router.push("/");
+        router.push("/panel");
       }
     }
   }, [isAuthReady, user, role, router]);

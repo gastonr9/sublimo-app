@@ -36,7 +36,7 @@ const Burgon: React.FC = () => {
     if (isAuthReady) {
       if (!user) {
         router.push("/login");
-      } else if (role !== "master") {
+      } else if (role !== "master" && role !== "employee") {
         router.push("/"); // Or another fallback route
       }
     }
@@ -46,7 +46,7 @@ const Burgon: React.FC = () => {
     return <div>Loading...</div>;
   }
 
-  if (!user || role !== "master") {
+  if (!user || (role !== "master" && role !== "employee")) {
     return null; // Will redirect due to useEffect
   }
 
