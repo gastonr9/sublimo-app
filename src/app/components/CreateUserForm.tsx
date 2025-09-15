@@ -5,7 +5,7 @@ import { useState } from "react";
 export default function UsuariosPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("empleado");
+  const [role, setRole] = useState("employee");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -28,7 +28,7 @@ export default function UsuariosPage() {
       setMessage("✅ Usuario creado con éxito");
       setEmail("");
       setPassword("");
-      setRole("empleado");
+      setRole("employee");
     } catch (err: any) {
       setMessage(`❌ Error: ${err.message}`);
     } finally {
@@ -70,7 +70,7 @@ export default function UsuariosPage() {
             onChange={(e) => setRole(e.target.value)}
             className="border rounded w-full p-2"
           >
-            <option value="empleado">Empleado</option>
+            <option value="employee">employee</option>
             <option value="admin">Admin</option>
           </select>
         </div>

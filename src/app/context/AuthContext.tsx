@@ -1,9 +1,13 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "../supabase/Client";
+import { supabase } from "../supabase/client";
 
 // 1. Crea el contexto
-const AuthContext = createContext({
+const AuthContext = createContext<{
+  user: any | null;
+  role: string | null;
+  isAuthReady: boolean;
+}>({
   user: null,
   role: null,
   isAuthReady: false,

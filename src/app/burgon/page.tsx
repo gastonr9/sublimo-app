@@ -4,7 +4,7 @@ import { useOrder } from "../context/OrderContext";
 import { getProductos, getProductoPorId } from "../services/inventario";
 import { Producto, Color } from "../types/types";
 import { getDesigns } from "../services/designs";
-import { supabase } from "../supabase/Client";
+import { supabase } from "../supabase/client";
 import RemeraPreview from "../components/RemeraPreview";
 import Image from "next/image";
 import { useAuth } from "../context/AuthContext";

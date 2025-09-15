@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import logo from "../../assets/sublimo.svg";
 import { useAuth } from "../../context/AuthContext";
-import { supabase } from "../../supabase/Client";
+import { supabase } from "../../supabase/client";
 import { useRouter } from "next/navigation";
 
 type AuthUser = {

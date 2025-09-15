@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "../supabase/Client";
+import { supabase } from "../supabase/client";
 
 export default function Login() {
   const router = useRouter();
@@ -47,7 +47,7 @@ export default function Login() {
       if (profileData.role === "master") {
         router.push("/panel/inventario");
       } else {
-        router.push("/panel/inventario"); // O a otra página para los empleados
+        router.push("/panel/inventario"); // O a otra página para los employees
       }
     } catch (err: any) {
       console.error("Error de login:", err.message);

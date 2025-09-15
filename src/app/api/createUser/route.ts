@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const { email, password, role } = await req.json();
 
     // 1. Create the user in Supabase auth using the admin client.
-    // The 'on_auth_user_created' trigger will automatically create the profile with 'empleado' role.
+    // The 'on_auth_user_created' trigger will automatically create the profile with 'employee' role.
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,

@@ -1,4 +1,4 @@
-import { supabase } from "../supabase/Client";
+import { supabase } from "../supabase/client";
 
 export const getUsuarioActual = async () => {
   const {

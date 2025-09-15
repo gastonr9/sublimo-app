@@ -1,38 +1,16 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/app/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
-export default function PanelLayout({
+export default function PanelLayoutClient({
   children,
+  role,
 }: {
   children: React.ReactNode;
+  role: string | null;
 }) {
-  const pathname = usePathname();
-  const { user, role, isAuthReady } = useAuth();
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (isAuthReady) {
-      if (!user) {
-        router.push("/login");
-      } else if (role !== "master" && role !== "employee") {
-        router.push("/");
-      }
-      setLoading(false);
-    }
-  }, [isAuthReady, user, role, router]);
-
-  if (loading || !isAuthReady) {
-    return (
-      <div className="flex h-screen bg-gray-100 items-center justify-center">
-        Cargando...
-      </div>
-    );
-  }
+  const pathname = usePathname(); // Para resaltar el enlace activo
 
   return (
     <div className="flex h-screen bg-gray-100">
