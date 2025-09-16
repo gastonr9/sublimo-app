@@ -1,5 +1,5 @@
 // storage.ts
-import { supabase } from "../supabase/client";
+import { supabase } from "../../supabase/client";
 
 // Listar imágenes desde el bucket "designs"
 export const listDesignsFromStorage = async () => {

@@ -1,18 +1,21 @@
 // src/context/OrderContext.tsx
 "use client";
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { Producto } from "@/app/types"; // <-- IMPORTA EL TIPO
 
 interface Order {
   talle?: string;
   color?: string;
   productoId?: string; // ID del producto seleccionado
+  disenoId?: string; // Add this line
+  disenoUrl?: string; // Add this line
 }
 
 interface OrderContextType {
   order: Order;
-  setOrder: (order: Order) => void;
-  selectedProduct?: Producto | null; // Producto seleccionado con su inventario
-  setSelectedProduct: (product: Producto | null) => void;
+  setOrder: React.Dispatch<React.SetStateAction<Order>>;
+  selectedProduct: Producto | null;
+  setSelectedProduct: React.Dispatch<React.SetStateAction<Producto | null>>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);

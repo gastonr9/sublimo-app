@@ -10,7 +10,7 @@ import {
   deleteCombinacion,
   getColoresFijos,
 } from "../../services/inventario";
-import { Producto, Color } from "../../types/types";
+import { Producto, Color } from "../../types";
 
 const Inventario: React.FC = () => {
   const [precio, setPrecio] = useState("");

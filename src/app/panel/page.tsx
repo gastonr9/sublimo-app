@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/app/supabase/server";
+import { createClient } from "@/supabase/server";
 
 export default async function PanelPage() {
   const supabase = createClient();

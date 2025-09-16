@@ -1,5 +1,5 @@
 // designs.ts
-import { supabase } from "../supabase/client";
+import { supabase } from "../../supabase/client";
 
 // Traer diseños de la tabla con sus metadatos
 export const getDesigns = async () => {

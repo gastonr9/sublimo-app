@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { useOrder } from "../context/OrderContext";
 import { getProductos, getProductoPorId } from "../services/inventario";
-import { Producto, Color } from "../types/types";
+import { Producto, Color } from "../types";
 import { getDesigns } from "../services/designs";
-import { supabase } from "../supabase/client";
+import { supabase } from "../../supabase/client";
 import RemeraPreview from "../components/RemeraPreview";
 import Image from "next/image";
 import { useAuth } from "../context/AuthContext";
@@ -54,55 +54,86 @@ const Burgon: React.FC = () => {
     cargarProductos();
   }, []);
 
-  // cargar producto seleccionado
+  // ============================
+  // Función para cargar producto seleccionado
+  // ============================
+  const cargarProductoSeleccionado = async (id: string) => {
+    const producto = await getProductoPorId(id);
+
+    if (producto) {
+      setSelectedProduct(producto);
+      setOrder((prev) => ({ ...prev, productoId: id }));
+
+      // Talles con stock (ordenados)
+      const tallesConStock = Array.from(
+        new Set(
+          producto.inventario?.filter((i) => i.stock > 0).map((i) => i.talla) ||
+            []
+        )
+      ).sort((a, b) => {
+        const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
+        return (
+          ordenTalles[a as keyof typeof ordenTalles] -
+          ordenTalles[b as keyof typeof ordenTalles]
+        );
+      });
+      setTalles(tallesConStock);
+
+      // Colores con stock
+      const todosLosColores = Array.from(
+        new Set(
+          producto.inventario?.filter((i) => i.stock > 0).map((i) => i.color) ||
+            []
+        )
+      )
+        .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+      setColoresDisponibles(todosLosColores);
+    } else {
+      setSelectedProduct(null);
+      setTalles([]);
+      setColoresDisponibles([]);
+    }
+  };
+
+  // ============================
+  // Verificar autenticación
+  // ============================
   useEffect(() => {
-    const cargarProductoSeleccionado = async () => {
-      if (selectedProductoId) {
-        const producto = await getProductoPorId(selectedProductoId);
-        if (producto) {
-          setSelectedProduct(producto);
-          setOrder({ ...order, productoId: selectedProductoId });
+    if (isAuthReady && !user) {
+      router.push("/login");
+    }
+  }, [isAuthReady, user, router]);
 
-          const tallesConStock = [
-            ...new Set(
-              producto.inventario.filter((i) => i.stock > 0).map((i) => i.talla)
-            ),
-          ].sort((a, b) => {
-            const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
-            return (
-              ordenTalles[a as keyof typeof ordenTalles] -
-              ordenTalles[b as keyof typeof ordenTalles]
-            );
-          });
+  // ============================
+  // Cargar productos al inicio
+  // ============================
+  useEffect(() => {
+    const cargarProductos = async () => {
+      const productosData = await getProductos();
+      setProductos(productosData);
 
-          setTalles(tallesConStock);
-
-          if (producto.inventario) {
-            const todosLosColores = [
-              ...new Set(
-                producto.inventario
-                  .filter((i) => i.stock > 0)
-                  .map((i) => i.color)
-              ),
-            ]
-              .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
-              .sort((a, b) => a.nombre.localeCompare(b.nombre));
-            setColoresDisponibles(todosLosColores);
-          } else {
-            setColoresDisponibles([]);
-          }
-        } else {
-          setSelectedProduct(null);
-          setTalles([]);
-          setColoresDisponibles([]);
-        }
-      } else {
-        setSelectedProduct(null);
-        setTalles([]);
-        setColoresDisponibles([]);
+      if (productosData.length > 0 && !selectedProductoId) {
+        const firstProductId = productosData[0].id;
+        setSelectedProductoId(firstProductId);
+        cargarProductoSeleccionado(firstProductId);
       }
     };
-    cargarProductoSeleccionado();
+    cargarProductos();
+  }, []);
+
+  // ============================
+  // Cargar producto seleccionado al cambiar ID
+  // ============================
+  useEffect(() => {
+    if (selectedProductoId) {
+      cargarProductoSeleccionado(selectedProductoId);
+    } else {
+      setSelectedProduct(null);
+      setTalles([]);
+      setColoresDisponibles([]);
+    }
   }, [selectedProductoId]);
 
   // actualizar colores según talle y autoseleccionar el primero
@@ -126,15 +157,18 @@ const Burgon: React.FC = () => {
         }
       }
     } else if (selectedProduct && selectedProduct.inventario) {
-      const todosLosColores = [
+      // --- START OF FIX ---
+      const uniqueColorNames = [
         ...new Set(
           selectedProduct.inventario
             .filter((i) => i.stock > 0)
             .map((i) => i.color)
         ),
-      ]
+      ];
+      const todosLosColores = uniqueColorNames
         .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      // --- END OF FIX ---
 
       setColoresDisponibles(todosLosColores);
 
@@ -236,12 +270,32 @@ const Burgon: React.FC = () => {
       Gris: "#808080",
       Rosa: "#ff69b4",
       Naranja: "#ffa500",
-      Morado: "#4e4ebd", // Updated to match Tailwind config
+      Morado: "#4e4ebd",
     };
-    return coloresConocidos[nombre] || "#000000";
+    return (
+      coloresConocidos[nombre as keyof typeof coloresConocidos] || "#000000"
+    );
   };
 
   const handleCreatePedido = async () => {
+    // Add an early return check to ensure all necessary data is present
+    if (!selectedProduct || !order.talle || !order.color || !order.disenoId) {
+      alert(
+        "Por favor, completa todas las selecciones antes de crear el pedido."
+      );
+      return;
+    }
+
+    const colorNombre = coloresDisponibles.find(
+      (c) => c.hex === order.color
+    )?.nombre;
+
+    // Check if a valid color name was found
+    if (!colorNombre) {
+      alert("Color seleccionado no válido.");
+      return;
+    }
+
     try {
       // 1. Buscar inventario (producto + talle + color)
       const { data: inv, error: invError } = await supabase
@@ -249,14 +303,12 @@ const Burgon: React.FC = () => {
         .select("id, stock")
         .eq("producto_id", selectedProduct.id)
         .eq("talla", order.talle)
-        .eq(
-          "color",
-          coloresDisponibles.find((c) => c.hex === order.color)?.nombre
-        )
+        .eq("color", colorNombre)
         .single();
 
       if (invError || !inv || inv.stock <= 0) {
         alert("No hay stock disponible para este producto/talle/color.");
+        console.error("Error fetching inventory:", invError);
         return;
       }
 
@@ -269,62 +321,28 @@ const Burgon: React.FC = () => {
 
       if (disenoError || !diseno || diseno.stock <= 0) {
         alert("No hay stock disponible para este diseño.");
+        console.error("Error fetching design:", disenoError);
         return;
       }
 
-      // 3. Insertar pedido
-      const { error: pedidoError } = await supabase.from("pedidos").insert({
-        nombre,
-        apellido,
-        inventario_id: inv.id,
-        diseno_id: diseno.id,
-        estado: "pendiente",
-      });
+      // 3. Crear pedido y actualizar stock en una sola llamada RPC (recomendado)
+      const { data, error: rpcError } = await supabase.rpc(
+        "create_order_and_update_stock",
+        {
+          p_nombre: nombre,
+          p_apellido: apellido,
+          p_inventario_id: inv.id,
+          p_diseno_id: diseno.id,
+        }
+      );
 
-      if (pedidoError) throw pedidoError;
-
-      // 4. Descontar stock de inventario
-      const { error: stockErrorInv } = await supabase
-        .from("inventario")
-        .update({ stock: inv.stock - 1 })
-        .eq("id", inv.id);
-
-      if (stockErrorInv) {
-        // rollback pedido
-        await supabase
-          .from("pedidos")
-          .delete()
-          .eq("inventario_id", inv.id)
-          .eq("diseno_id", diseno.id)
-          .eq("nombre", nombre)
-          .eq("apellido", apellido);
-        throw stockErrorInv;
+      if (rpcError) {
+        console.error("Error al crear el pedido (RPC):", rpcError);
+        alert("❌ Error al crear pedido: " + rpcError.message);
+        return;
       }
 
-      // 5. Descontar stock de diseño
-      const { error: stockErrorDis } = await supabase
-        .from("disenos")
-        .update({ stock: diseno.stock - 1 })
-        .eq("id", diseno.id);
-
-      if (stockErrorDis) {
-        // rollback inventario
-        await supabase
-          .from("inventario")
-          .update({ stock: inv.stock })
-          .eq("id", inv.id);
-        // rollback pedido
-        await supabase
-          .from("pedidos")
-          .delete()
-          .eq("inventario_id", inv.id)
-          .eq("diseno_id", diseno.id)
-          .eq("nombre", nombre)
-          .eq("apellido", apellido);
-        throw stockErrorDis;
-      }
-
-      // Close modal and reset form before showing success message
+      // Close modal and reset state on success
       setShowModal(false);
       setShowSummary(false);
       setNombre("");
@@ -337,14 +355,17 @@ const Burgon: React.FC = () => {
         disenoUrl: "",
       });
 
-      // Show success message
       alert("✅ Pedido creado con éxito.");
     } catch (error) {
-      console.error("Error al crear pedido:", error.message);
-      alert("❌ Error al crear pedido.");
+      if (error instanceof Error) {
+        console.error("Error general al crear pedido:", error.message);
+        alert("❌ Error general al crear pedido.");
+      } else {
+        console.error("Error general al crear pedido:", error);
+        alert("❌ Error general al crear pedido.");
+      }
     }
   };
-
   return (
     <div className="relative w-full h-full">
       <div className="bg-white py-10 px-4 w-full max-w-screen-xl mx-auto">
