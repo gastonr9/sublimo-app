@@ -24,7 +24,7 @@ const Pedidos: React.FC = () => {
 
   // Function to map color names to hex codes
   const getDefaultHex = (nombre: string): string => {
-    const coloresConocidos = {
+    const coloresConocidos: Record<string, string> = {
       Blanco: "#ffffff",
       Negro: "#000000",
       Rojo: "#ff0000",
@@ -36,6 +36,7 @@ const Pedidos: React.FC = () => {
       Naranja: "#ffa500",
       Morado: "#800080",
     };
+
     return coloresConocidos[nombre] || "#000000";
   };
 

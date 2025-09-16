@@ -26,10 +26,10 @@ export interface Inventario {
 export interface Producto {
   id: string;
   nombre: string;
-  descripcion?: string;
   precio: number;
-  fecha_actualizacion: string;
-  inventario: Inventario[]; // <- sin el "?"
+  descripcion: string;
+  fecha_actualizacion?: string; //  opcional
+  inventario: Inventario[];
 }
 
 // =======================

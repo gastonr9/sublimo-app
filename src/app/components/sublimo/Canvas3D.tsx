@@ -136,12 +136,19 @@ const Model = ({
     <group scale={5} position={[0, 0.2, 0]}>
       {mainMesh && (
         <>
-          <mesh geometry={mainMesh.geometry} material={baseMaterial} />
+          <mesh
+            geometry={(mainMesh as THREE.Mesh).geometry}
+            material={baseMaterial}
+          />
           {overlayMaterial && (
-            <mesh geometry={mainMesh.geometry} material={overlayMaterial} />
+            <mesh
+              geometry={(mainMesh as THREE.Mesh).geometry}
+              material={overlayMaterial}
+            />
           )}
         </>
       )}
+
       {scene.children
         .filter((child) => child !== mainMesh && child instanceof THREE.Mesh)
         .map((child, i) => (

@@ -58,10 +58,10 @@ const Inventario: React.FC = () => {
     try {
       await addProducto({
         ...nuevoProducto,
-        precio: parseInt(nuevoProducto.precio, 10) || 0, // 🔥 siempre int
+        precio: parseInt(nuevoProducto.precio, 10) || 0, //  siempre int
       });
       setProductos(await getProductos());
-      setNuevoProducto({ nombre: "", precio: "", descripcion: "" }); // 🔥 reseteamos como string
+      setNuevoProducto({ nombre: "", precio: "", descripcion: "" }); //  reseteamos como string
     } catch (error: any) {
       alert(error.message);
     }

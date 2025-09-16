@@ -119,10 +119,16 @@ const Designs: React.FC = () => {
       setDesignsTable(await getDesigns()); // Refresh from DB
     } catch (err) {
       console.error(`Error actualizando ${field}:`, err);
+
+      let mensaje = "Error desconocido";
+      if (err instanceof Error) {
+        mensaje = err.message;
+      }
+
       alert(
-        `❌ Error al actualizar ${field === "nombre" ? "nombre" : "stock"}: ${
-          err.message
-        }`
+        `❌ Error al actualizar ${
+          field === "nombre" ? "nombre" : "stock"
+        }: ${mensaje}`
       );
     }
   };
