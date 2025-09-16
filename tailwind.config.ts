@@ -44,8 +44,8 @@ const config: Config = {
         poppins: ["Poppins", "sans-serif"],
       },
       fontWeight: {
-        medium: 500,
-        bold: 700,
+        medium: "500",
+        bold: "700",
       },
     },
   },
