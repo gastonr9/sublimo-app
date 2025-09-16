@@ -128,17 +128,25 @@ const Pedidos: React.FC = () => {
       if (estadoError) throw estadoError;
 
       if (estadoValido === "cancelado" && pedido.estado !== "cancelado") {
-        if (pedido.inventario) {
+        if (
+          pedido.inventario &&
+          Array.isArray(pedido.inventario) &&
+          pedido.inventario.length > 0
+        ) {
           await supabase
             .from("inventario")
-            .update({ stock: pedido.inventario.stock + 1 })
-            .eq("id", pedido.inventario.id);
+            .update({ stock: pedido.inventario[0].stock + 1 })
+            .eq("id", pedido.inventario[0].id);
         }
-        if (pedido.diseno) {
+        if (
+          pedido.diseno &&
+          Array.isArray(pedido.diseno) &&
+          pedido.diseno.length > 0
+        ) {
           await supabase
             .from("disenos")
-            .update({ stock: pedido.diseno.stock + 1 })
-            .eq("id", pedido.diseno.id);
+            .update({ stock: pedido.diseno[0].stock + 1 })
+            .eq("id", pedido.diseno[0].id);
         }
       }
 
@@ -168,17 +176,25 @@ const Pedidos: React.FC = () => {
       if (fetchError || !pedido) throw fetchError;
 
       if (pedido.estado === "realizado") {
-        if (pedido.inventario) {
+        if (
+          pedido.inventario &&
+          Array.isArray(pedido.inventario) &&
+          pedido.inventario.length > 0
+        ) {
           await supabase
             .from("inventario")
-            .update({ stock: pedido.inventario.stock + 1 })
-            .eq("id", pedido.inventario.id);
+            .update({ stock: pedido.inventario[0].stock + 1 })
+            .eq("id", pedido.inventario[0].id);
         }
-        if (pedido.diseno) {
+        if (
+          pedido.diseno &&
+          Array.isArray(pedido.diseno) &&
+          pedido.diseno.length > 0
+        ) {
           await supabase
             .from("disenos")
-            .update({ stock: pedido.diseno.stock + 1 })
-            .eq("id", pedido.diseno.id);
+            .update({ stock: pedido.diseno[0].stock + 1 })
+            .eq("id", pedido.diseno[0].id);
         }
       }
 
