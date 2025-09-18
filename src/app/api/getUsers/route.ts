@@ -20,7 +20,7 @@ export async function GET() {
     }
 
     return new Response(JSON.stringify({ users: data }), { status: 200 });
-  } catch (err) {
+  } catch {
     return new Response(JSON.stringify({ error: "Server error" }), {
       status: 500,
     });

@@ -54,8 +54,16 @@ export async function POST(req: Request) {
       { user: { id: userId, email: data.user.email, role } },
       { status: 200 }
     );
-  } catch (err: any) {
-    console.error("Server error:", err.message || err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (err) {
+    // Narrow down the type of err to access its properties safely
+    if (err instanceof Error) {
+      console.error("Server error:", err.message);
+      // Explicitly log the error object itself to ensure 'err' is considered used
+      console.error("Full error object:", err);
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    } else {
+      console.error("Server error:", err);
+      return NextResponse.json({ error: "Server error" }, { status: 500 });
+    }
   }
 }

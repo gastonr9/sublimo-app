@@ -71,7 +71,7 @@ export default function UsuariosPage() {
             className="border rounded w-full p-2"
           >
             <option value="employee">employee</option>
-            <option value="admin">Admin</option>
+            <option value="master">Master</option>
           </select>
         </div>
 

@@ -9,6 +9,16 @@ import RemeraPreview from "../components/RemeraPreview";
 import Image from "next/image";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
+
+// Define the Design interface
+interface Design {
+  id: string;
+  stock: number;
+  selected: boolean;
+  imagen_url: string;
+  nombre: string;
+}
+
 const Burgon: React.FC = () => {
   const { order, setOrder, selectedProduct, setSelectedProduct } = useOrder();
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -17,12 +27,7 @@ const Burgon: React.FC = () => {
   );
   const [talles, setTalles] = useState<string[]>([]);
   const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
-  const [designs, setDesigns] = useState<any[]>([]);
-  const [designStyle, setDesignStyle] = useState({
-    maxWidth: "70%",
-    maxHeight: "80%",
-    top: "20%",
-  });
+  const [designs, setDesigns] = useState<Design[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
@@ -30,8 +35,6 @@ const Burgon: React.FC = () => {
 
   const { user, isAuthReady } = useAuth();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // Verificar autenticación
   useEffect(() => {
@@ -39,16 +42,16 @@ const Burgon: React.FC = () => {
       router.push("/login");
     }
   }, [isAuthReady, user, router]);
-  // cargar productos
+
+  // ============================
+  // Cargar productos al inicio
+  // ============================
   useEffect(() => {
     const cargarProductos = async () => {
       const productosData = await getProductos();
       setProductos(productosData);
+
       if (productosData.length > 0 && !selectedProductoId) {
-        const firstProductId = productosData[0].id;
-        setSelectedProductoId(firstProductId);
-        const producto = await getProductoPorId(firstProductId);
-        if (producto) setSelectedProduct(producto);
       }
     };
     cargarProductos();
@@ -134,7 +137,7 @@ const Burgon: React.FC = () => {
       setTalles([]);
       setColoresDisponibles([]);
     }
-  }, [selectedProductoId]);
+  }, [selectedProductoId, setSelectedProduct]);
 
   // actualizar colores según talle y autoseleccionar el primero
   useEffect(() => {
@@ -177,7 +180,7 @@ const Burgon: React.FC = () => {
       setColoresDisponibles([]);
       setOrder((prevOrder) => ({ ...prevOrder, color: "" }));
     }
-  }, [order.talle, selectedProduct]);
+  }, [order.talle, selectedProduct, order.color]);
 
   // cargar diseños
   useEffect(() => {
@@ -196,32 +199,8 @@ const Burgon: React.FC = () => {
   }, []);
 
   // ajustar preview del diseño
-  useEffect(() => {
-    if (order.disenoUrl) {
-      const img = new window.Image();
-      img.src = order.disenoUrl;
-      img.onload = () => {
-        const aspectRatio = img.width / img.height;
-        let maxWidth = "70%";
-        let maxHeight = "80%";
-        let top = "20%";
-        if (aspectRatio > 1) {
-          maxWidth = "40%";
-          maxHeight = "80%";
-          top = "25%";
-        } else if (aspectRatio < 0.67) {
-          maxWidth = "80%";
-          maxHeight = "50%";
-          top = "25%";
-        } else {
-          maxWidth = "70%";
-          maxHeight = "50%";
-          top = "25%";
-        }
-        setDesignStyle({ maxWidth, maxHeight, top });
-      };
-    }
-  }, [order.disenoUrl]);
+  // This useEffect is no longer needed as designStyle state has been removed.
+  // If styling for RemeraPreview is required, it should be handled differently.
 
   const handleProductoSelect = (id: string) => {
     setSelectedProductoId(id);
@@ -326,7 +305,7 @@ const Burgon: React.FC = () => {
       }
 
       // 3. Crear pedido y actualizar stock en una sola llamada RPC (recomendado)
-      const { data, error: rpcError } = await supabase.rpc(
+      const { error: rpcError } = await supabase.rpc(
         "create_order_and_update_stock",
         {
           p_nombre: nombre,
