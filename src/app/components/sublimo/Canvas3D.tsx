@@ -93,9 +93,10 @@ const Model = ({
 }: ModelProps) => {
   const { scene } = useGLTF(modelPath);
   const fabricTexture = useLoader(THREE.TextureLoader, `/models/blanco.jpg`);
-  const overlayTexture = textureUrl
-    ? useLoader(THREE.TextureLoader, textureUrl)
-    : null;
+  const [overlayTexture] = useLoader(
+    THREE.TextureLoader,
+    textureUrl ? [textureUrl] : []
+  );
 
   if (fabricTexture) {
     fabricTexture.needsUpdate = true;

@@ -1,6 +1,6 @@
 // src/app/components/sublimo/Canvas2D.tsx
 "use client";
-import { type ChangeEvent, useEffect, useRef } from "react";
+import { type ChangeEvent, useEffect, useRef, useCallback } from "react";
 import { FabricJSCanvas, useFabricJSEditor } from "fabricjs-react";
 import { fabric } from "fabric";
 
@@ -11,26 +11,23 @@ interface Canvas2DProps {
 }
 
 function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
-  if (!visible) return null;
-
   // Tamaño visual del canvas
   const CANVAS_SIZE = 350;
   // Tamaño de exportación de la textura
   const EXPORT_SIZE = 3072;
 
   const inputRef = useRef<HTMLInputElement>(null);
-
   const { editor, onReady } = useFabricJSEditor();
   const tshirtImgUrl = `models/tshirt.jpg`;
 
   // 🔧 Función para exportar SIEMPRE en alta resolución
-  const exportHighRes = () => {
+  const exportHighRes = useCallback(() => {
     if (!editor?.canvas) return;
     return editor.canvas.toDataURL({
       format: "png",
       multiplier: EXPORT_SIZE / CANVAS_SIZE,
     });
-  };
+  }, [editor, EXPORT_SIZE, CANVAS_SIZE]);
 
   useEffect(() => {
     if (!editor?.canvas || !onImageChange) return;
@@ -46,7 +43,9 @@ function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
       editor.canvas.off("object:modified", handler);
       editor.canvas.off("object:removed", handler);
     };
-  }, [editor, onImageChange, exportHighRes]); // Añadir exportHighRes a las dependencias
+  }, [editor, onImageChange, exportHighRes]);
+
+  if (!visible) return null;
 
   const handlePic = (event: ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files) return;
