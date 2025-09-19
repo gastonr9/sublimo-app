@@ -13,13 +13,11 @@
     "@react-three/fiber": "^8.13.7",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.55.0",
-    "@vercel/node": "^5.3.20",
     "fabric": "^5.3.0",
     "fabricjs-react": "^1.2.2",
     "next": "14.2.32",
     "react": "^18",
     "react-dom": "^18",
-    "react-router-dom": "^7.8.2",
     "three": "^0.179.1"
   },
   "devDependencies": {
@@ -27,7 +25,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "eslint": "^8",
+    "eslint": "^9.36.0",
     "eslint-config-next": "14.2.32",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
