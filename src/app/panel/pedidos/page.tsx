@@ -18,6 +18,28 @@ interface Pedido {
   diseno_url?: string;
 }
 
+// Tipo intermedio para mapear la respuesta cruda de Supabase
+type PedidoRaw = {
+  id: string;
+  nombre: string;
+  apellido: string;
+  estado: string;
+  fecha: string;
+  inventario_id: string;
+  diseno_id: string;
+  inventario?: {
+    talla?: string;
+    color?: string;
+    producto?: {
+      nombre?: string;
+    };
+  };
+  diseno?: {
+    nombre?: string;
+    imagen_url?: string;
+  };
+};
+
 const Pedidos: React.FC = () => {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,8 +95,9 @@ const Pedidos: React.FC = () => {
         .order("fecha", { ascending: false });
 
       if (error) throw error;
+      if (!data) return;
 
-      const mapped = data.map((p: any) => ({
+      const mapped: Pedido[] = (data as PedidoRaw[]).map((p) => ({
         id: p.id,
         nombre: p.nombre,
         apellido: p.apellido,
@@ -84,7 +107,7 @@ const Pedidos: React.FC = () => {
         diseno_id: p.diseno_id,
         producto_nombre: p.inventario?.producto?.nombre || "",
         talla: p.inventario?.talla || "",
-        color: p.inventario?.color || "", // Store color name
+        color: p.inventario?.color || "",
         diseno_nombre: p.diseno?.nombre || "",
         diseno_url: p.diseno?.imagen_url || "",
       }));
@@ -229,7 +252,7 @@ const Pedidos: React.FC = () => {
               className="bg-white shadow-md rounded-lg p-4 min-w-fit"
             >
               <RemeraPreview
-                color={getDefaultHex(pedido.color || "")} // Convert color name to hex
+                color={getDefaultHex(pedido.color || "")}
                 disenoUrl={pedido.diseno_url || ""}
               />
               <p>

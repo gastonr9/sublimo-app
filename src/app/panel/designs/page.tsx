@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import {
   listDesignsFromStorage,
@@ -115,7 +116,7 @@ const Designs: React.FC = () => {
       } else if (field === "stock") {
         updatedValue = Math.max(0, parseInt(value.toString()) || 0); // Ensure non-negative
       }
-      const updated = await updateDesign(id, { [field]: updatedValue });
+      await updateDesign(id, { [field]: updatedValue });
       setDesignsTable(await getDesigns()); // Refresh from DB
     } catch (err) {
       console.error(`Error actualizando ${field}:`, err);
@@ -218,9 +219,11 @@ const Designs: React.FC = () => {
                     }`}
                     onClick={() => toggleSelectDesign(design)}
                   >
-                    <img
+                    <Image
                       src={design.url}
                       alt={design.name}
+                      width={128}
+                      height={128}
                       className="w-full h-full object-contain p-1"
                     />
                     {isSelected && (
@@ -262,9 +265,11 @@ const Designs: React.FC = () => {
                   key={design.id}
                   className="bg-white shadow-md rounded-lg p-4 relative"
                 >
-                  <img
+                  <Image
                     src={design.imagen_url}
                     alt={design.nombre}
+                    width={160}
+                    height={160}
                     className="w-full h-40 object-contain"
                   />
                   <input

@@ -13,7 +13,6 @@ import {
 import { Producto, Color } from "../../types";
 
 const Inventario: React.FC = () => {
-  const [precio, setPrecio] = useState("");
   const [productos, setProductos] = useState<Producto[]>([]);
   const [coloresFijos, setColoresFijos] = useState<Color[]>([]);
   const [nuevoProducto, setNuevoProducto] = useState({
@@ -62,8 +61,12 @@ const Inventario: React.FC = () => {
       });
       setProductos(await getProductos());
       setNuevoProducto({ nombre: "", precio: "", descripcion: "" }); //  reseteamos como string
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("An unknown error occurred");
+      }
     }
   };
 
@@ -82,8 +85,12 @@ const Inventario: React.FC = () => {
       const cantidad = nuevoStock - item.stock;
       await uploadStock(idProducto, talla, color, cantidad);
       setProductos(await getProductos());
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("An unknown error occurred");
+      }
     }
   };
 
@@ -105,8 +112,12 @@ const Inventario: React.FC = () => {
         color: coloresFijos.length > 0 ? coloresFijos[0].nombre : "",
         stock: 0,
       });
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        alert(error.message);
+      } else {
+        alert("An unknown error occurred");
+      }
     }
   };
 
@@ -131,8 +142,12 @@ const Inventario: React.FC = () => {
         setProductos(await getProductos());
         setEditando({ ...editando, [productoEditado.id]: false });
         setProductoEditado(null);
-      } catch (error: any) {
-        alert(error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          alert(error.message);
+        } else {
+          alert("An unknown error occurred");
+        }
       }
     }
   };
@@ -147,8 +162,12 @@ const Inventario: React.FC = () => {
       try {
         await deleteProducto(id);
         setProductos(await getProductos());
-      } catch (error: any) {
-        alert(error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          alert(error.message);
+        } else {
+          alert("An unknown error occurred");
+        }
       }
     }
   };
@@ -164,8 +183,12 @@ const Inventario: React.FC = () => {
       try {
         await deleteCombinacion(idProducto, talla, color);
         setProductos(await getProductos());
-      } catch (error: any) {
-        alert(error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          alert(error.message);
+        } else {
+          alert("An unknown error occurred");
+        }
       }
     }
   };
