@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useOrder } from "../context/OrderContext";
 import { getProductos, getProductoPorId } from "../services/inventario";
 import { Producto, Color } from "../types";
@@ -9,6 +9,22 @@ import RemeraPreview from "../components/RemeraPreview";
 import Image from "next/image";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
+
+const getDefaultHex = (nombre: string): string => {
+  const coloresConocidos = {
+    Blanco: "#ffffff",
+    Negro: "#000000",
+    Rojo: "#ff0000",
+    Azul: "#0000ff",
+    Verde: "#008000",
+    Amarillo: "#ffff00",
+    Gris: "#808080",
+    Rosa: "#ff69b4",
+    Naranja: "#ffa500",
+    Morado: "#4e4ebd",
+  };
+  return coloresConocidos[nombre as keyof typeof coloresConocidos] || "#000000";
+};
 
 // Define the Design interface
 interface Design {
@@ -55,59 +71,55 @@ const Burgon: React.FC = () => {
       }
     };
     cargarProductos();
-  }, []);
+  }, [selectedProductoId]); // Added selectedProductoId
 
   // ============================
   // Función para cargar producto seleccionado
   // ============================
-  const cargarProductoSeleccionado = async (id: string) => {
-    const producto = await getProductoPorId(id);
+  const cargarProductoSeleccionado = useCallback(
+    async (id: string) => {
+      const producto = await getProductoPorId(id);
 
-    if (producto) {
-      setSelectedProduct(producto);
-      setOrder((prev) => ({ ...prev, productoId: id }));
+      if (producto) {
+        setSelectedProduct(producto);
+        setOrder((prev) => ({ ...prev, productoId: id }));
 
-      // Talles con stock (ordenados)
-      const tallesConStock = Array.from(
-        new Set(
-          producto.inventario?.filter((i) => i.stock > 0).map((i) => i.talla) ||
-            []
+        // Talles con stock (ordenados)
+        const tallesConStock = Array.from(
+          new Set(
+            producto.inventario
+              ?.filter((i) => i.stock > 0)
+              .map((i) => i.talla) || []
+          )
+        ).sort((a, b) => {
+          const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
+          return (
+            ordenTalles[a as keyof typeof ordenTalles] -
+            ordenTalles[b as keyof typeof ordenTalles]
+          );
+        });
+        setTalles(tallesConStock);
+
+        // Colores con stock
+        const todosLosColores = Array.from(
+          new Set(
+            producto.inventario
+              ?.filter((i) => i.stock > 0)
+              .map((i) => i.color) || []
+          )
         )
-      ).sort((a, b) => {
-        const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
-        return (
-          ordenTalles[a as keyof typeof ordenTalles] -
-          ordenTalles[b as keyof typeof ordenTalles]
-        );
-      });
-      setTalles(tallesConStock);
+          .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
+          .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
-      // Colores con stock
-      const todosLosColores = Array.from(
-        new Set(
-          producto.inventario?.filter((i) => i.stock > 0).map((i) => i.color) ||
-            []
-        )
-      )
-        .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
-        .sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-      setColoresDisponibles(todosLosColores);
-    } else {
-      setSelectedProduct(null);
-      setTalles([]);
-      setColoresDisponibles([]);
-    }
-  };
-
-  // ============================
-  // Verificar autenticación
-  // ============================
-  useEffect(() => {
-    if (isAuthReady && !user) {
-      router.push("/login");
-    }
-  }, [isAuthReady, user, router]);
+        setColoresDisponibles(todosLosColores);
+      } else {
+        setSelectedProduct(null);
+        setTalles([]);
+        setColoresDisponibles([]);
+      }
+    },
+    [setSelectedProduct, setOrder, setTalles, setColoresDisponibles]
+  );
 
   // ============================
   // Cargar productos al inicio
@@ -124,7 +136,7 @@ const Burgon: React.FC = () => {
       }
     };
     cargarProductos();
-  }, []);
+  }, [selectedProductoId, setSelectedProductoId, cargarProductoSeleccionado]);
 
   // ============================
   // Cargar producto seleccionado al cambiar ID
@@ -137,7 +149,13 @@ const Burgon: React.FC = () => {
       setTalles([]);
       setColoresDisponibles([]);
     }
-  }, [selectedProductoId, setSelectedProduct]);
+  }, [
+    selectedProductoId,
+    cargarProductoSeleccionado,
+    setSelectedProduct,
+    setTalles,
+    setColoresDisponibles,
+  ]);
 
   // actualizar colores según talle y autoseleccionar el primero
   useEffect(() => {
@@ -180,7 +198,7 @@ const Burgon: React.FC = () => {
       setColoresDisponibles([]);
       setOrder((prevOrder) => ({ ...prevOrder, color: "" }));
     }
-  }, [order.talle, selectedProduct, order.color]);
+  }, [order.talle, selectedProduct, order.color, setOrder]);
 
   // cargar diseños
   useEffect(() => {
@@ -236,24 +254,6 @@ const Burgon: React.FC = () => {
     if (nombre && apellido) {
       setShowSummary(true);
     }
-  };
-
-  const getDefaultHex = (nombre: string): string => {
-    const coloresConocidos = {
-      Blanco: "#ffffff",
-      Negro: "#000000",
-      Rojo: "#ff0000",
-      Azul: "#0000ff",
-      Verde: "#008000",
-      Amarillo: "#ffff00",
-      Gris: "#808080",
-      Rosa: "#ff69b4",
-      Naranja: "#ffa500",
-      Morado: "#4e4ebd",
-    };
-    return (
-      coloresConocidos[nombre as keyof typeof coloresConocidos] || "#000000"
-    );
   };
 
   const handleCreatePedido = async () => {

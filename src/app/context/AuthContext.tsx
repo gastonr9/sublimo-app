@@ -1,10 +1,11 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../../supabase/client";
+import { User } from "@supabase/supabase-js"; // Importa el tipo User
 
 // 1. Crea el contexto
 const AuthContext = createContext<{
-  user: any | null;
+  user: User | null; // Usa User en lugar de any
   role: string | null;
   isAuthReady: boolean;
 }>({
@@ -15,7 +16,7 @@ const AuthContext = createContext<{
 
 // 2. Crea el proveedor que gestionará el estado
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null); // Usa User en lugar de any
   const [role, setRole] = useState<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 

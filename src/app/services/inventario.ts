@@ -1,7 +1,7 @@
 // src/services/inventario.ts
 import { supabase } from "../../supabase/client";
 
-import { Producto, Inventario, Color } from "../types";
+import { Producto, Color } from "../types";
 // =========================
 // Productos
 // =========================

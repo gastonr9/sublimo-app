@@ -29,8 +29,12 @@ export default function UsuariosPage() {
       setEmail("");
       setPassword("");
       setRole("employee");
-    } catch (err: any) {
-      setMessage(`❌ Error: ${err.message}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setMessage(`❌ Error: ${err.message}`);
+      } else {
+        setMessage("❌ Error: Ocurrió un error desconocido.");
+      }
     } finally {
       setLoading(false);
     }

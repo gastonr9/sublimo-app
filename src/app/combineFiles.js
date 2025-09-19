@@ -1,6 +1,5 @@
 // Importar módulos necesarios de Node.js
 import { promises as fs } from "fs";
-import path from "path";
 
 // Array con las rutas de los archivos de tu proyecto (modifica según tus necesidades)
 const filePaths = [

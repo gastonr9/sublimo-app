@@ -49,8 +49,9 @@ export default function Login() {
       } else {
         router.push("/panel/inventario"); // O a otra página para los employees
       }
-    } catch (err: any) {
-      console.error("Error de login:", err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("Error de login:", message);
       setError("❌ Credenciales incorrectas");
     } finally {
       setLoading(false);
