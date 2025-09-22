@@ -35,7 +35,6 @@ export async function GET() {
     );
 
     const data = usersWithEmails;
-    const error = null;
 
     // No error handling needed here since we constructed the data ourselves
 

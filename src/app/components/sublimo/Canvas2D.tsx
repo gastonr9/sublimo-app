@@ -10,6 +10,11 @@ interface Canvas2DProps {
   onClose: () => void;
 }
 
+// Interfaz para extender fabric.Image con propiedades adicionales
+interface ExtendedFabricImage extends fabric.Image {
+  objectControlsAlwaysVisible?: boolean;
+}
+
 function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
   // Tamaño visual del canvas
   const CANVAS_SIZE = 350;
@@ -129,7 +134,7 @@ function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
         hasBorders: true,
         objectCaching: false,
       });
-      (oImg as any).objectControlsAlwaysVisible = true;
+      (oImg as ExtendedFabricImage).objectControlsAlwaysVisible = true;
 
       editor?.canvas.add(oImg);
       editor?.canvas.requestRenderAll();

@@ -40,7 +40,7 @@ export async function DELETE(
         status: 200,
       }
     );
-  } catch (error) {
+  } catch {
     return new Response(JSON.stringify({ error: "Server error" }), {
       status: 500,
     });
