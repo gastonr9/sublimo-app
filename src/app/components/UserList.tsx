@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import EditUserModal from "./EditUserModal";
+import { supabase } from "@/supabase/client";
 
 interface User {
   id: string;
@@ -33,9 +34,38 @@ export default function UserList() {
     }
   };
 
+  // Configura la suscripción Realtime
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    // Inicializa la suscripción
+    const channel = supabase
+      .channel("profiles-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        (payload) => {
+          console.log("Cambio detectado:", payload);
+          // Actualiza la lista cuando se detecte un cambio
+          if (
+            payload.eventType === "INSERT" ||
+            payload.eventType === "UPDATE" ||
+            payload.eventType === "DELETE"
+          ) {
+            fetchUsers(); // Refresca la lista completa (puedes optimizar con payload.new/old si prefieres)
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log("Suscripción estado:", status);
+        if (status === "SUBSCRIBED") {
+          fetchUsers(); // Carga inicial al suscribirse
+        }
+      });
+
+    // Limpia la suscripción al desmontar el componente
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []); // El array vacío asegura que se ejecute solo al montar
 
   const handleDeleteUser = async (userId: string) => {
     if (!confirm("¿Estás seguro de que quieres eliminar este usuario?")) {
@@ -48,7 +78,6 @@ export default function UserList() {
       });
 
       if (response.ok) {
-        // Refresh the list
         fetchUsers();
       } else {
         const data = await response.json();
@@ -89,7 +118,6 @@ export default function UserList() {
       });
 
       if (response.ok) {
-        // Refresh the list
         fetchUsers();
       } else {
         const data = await response.json();
