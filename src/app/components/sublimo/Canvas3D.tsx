@@ -128,7 +128,7 @@ const Model = ({
         opacity: 1,
         depthWrite: false,
         color: 0xffffff,
-        metalness: 0,
+        metalness: 1,
         roughness: 1,
       })
     : null;
@@ -178,6 +178,11 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
   );
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
+  // Wrapper function to handle type conversion from string | null to string | undefined
+  const handleImageChange = (dataUrl: string | null) => {
+    setCanvas2DTexture(dataUrl || undefined);
+  };
+
   const canvasDownloader = () => {
     if (!rendererRef.current) return;
     const dataURL = rendererRef.current.domElement.toDataURL("image/png");
@@ -207,7 +212,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         <Canvas2D
           visible={showCanvas2D}
           onClose={() => setShowCanvas2D(false)}
-          onImageChange={setCanvas2DTexture}
+          onImageChange={handleImageChange}
         />
       )}
       <Canvas
@@ -224,7 +229,7 @@ export default function Canvas3D({ modelPath }: { modelPath?: string }) {
         }}
         style={{ width: "100%", height: "100%" }}
       >
-        <ambientLight intensity={0.5} />
+        <ambientLight intensity={0} />
         <pointLight position={[10, 10, 10]} />
         <Suspense fallback={null}>
           <Model
