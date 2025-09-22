@@ -14,7 +14,7 @@ export default function PanelLayoutClient({
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 w-64 h-full bg-white border-r shadow-md flex flex-col z-40">
+      <aside className="fixed left-0 top-20 w-64 h-[calc(100vh-5rem)] bg-white border-r shadow-md flex flex-col z-40">
         <div className="p-4 text-2xl font-bold text-blue-600">AdminPanel</div>
         <nav className="flex-1 p-4 space-y-2">
           <Link
@@ -62,7 +62,7 @@ export default function PanelLayoutClient({
         </nav>
       </aside>
       {/* Main content */}
-      <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+      <main className="flex-1 p-6 overflow-y-auto ml-64 mt-20">{children}</main>
     </div>
   );
 }

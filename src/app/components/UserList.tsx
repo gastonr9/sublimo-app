@@ -26,7 +26,7 @@ export default function UserList() {
       } else {
         setError(data.error || "Error al cargar usuarios");
       }
-    } catch (err) {
+    } catch {
       setError("Error de conexión");
     } finally {
       setLoading(false);
@@ -54,7 +54,7 @@ export default function UserList() {
         const data = await response.json();
         alert(data.error || "Error al eliminar usuario");
       }
-    } catch (err) {
+    } catch {
       alert("Error de conexión");
     }
   };
@@ -74,7 +74,9 @@ export default function UserList() {
     role: string
   ) => {
     try {
-      const updateData: any = { role };
+      const updateData: { role: string; email?: string; password?: string } = {
+        role,
+      };
       if (email) updateData.email = email;
       if (password) updateData.password = password;
 
@@ -93,7 +95,7 @@ export default function UserList() {
         const data = await response.json();
         alert(data.error || "Error al actualizar usuario");
       }
-    } catch (err) {
+    } catch {
       alert("Error de conexión");
     }
   };

@@ -234,6 +234,7 @@ const Inventario: React.FC = () => {
               type="number"
               placeholder="Precio"
               value={nuevoProducto.precio}
+              min="0"
               onKeyDown={(e) => {
                 if (
                   !/[0-9]/.test(e.key) &&
@@ -246,9 +247,15 @@ const Inventario: React.FC = () => {
                   e.preventDefault(); // ❌ ignora la tecla
                 }
               }}
-              onChange={(e) =>
-                setNuevoProducto({ ...nuevoProducto, precio: e.target.value })
-              }
+              onChange={(e) => {
+                const value = e.target.value;
+                // Asegurar que el valor sea no negativo
+                const numericValue = Math.max(0, parseInt(value) || 0);
+                setNuevoProducto({
+                  ...nuevoProducto,
+                  precio: numericValue.toString(),
+                });
+              }}
               className="border p-2 rounded-lg slot"
             />
 

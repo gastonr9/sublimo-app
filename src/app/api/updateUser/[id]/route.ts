@@ -29,7 +29,7 @@ export async function PUT(
     }
 
     // Update email and/or password in auth.users
-    const updateData: any = {};
+    const updateData: { email?: string; password?: string } = {};
     if (email) updateData.email = email;
     if (password) updateData.password = password;
 
@@ -52,7 +52,8 @@ export async function PUT(
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (updateError) {
+    console.error("Error updating user:", updateError);
     return new Response(JSON.stringify({ error: "Server error" }), {
       status: 500,
     });
