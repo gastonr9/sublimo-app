@@ -5,7 +5,7 @@ import { FabricJSCanvas, useFabricJSEditor } from "fabricjs-react";
 import { fabric } from "fabric";
 
 interface Canvas2DProps {
-  onImageChange?: (dataUrl: string) => void;
+  onImageChange?: (dataUrl: string | null) => void;
   visible: boolean;
   onClose: () => void;
 }
@@ -29,11 +29,77 @@ function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
     });
   }, [editor, EXPORT_SIZE, CANVAS_SIZE]);
 
+  // 🎯 Control de eliminar (❌)
+  const deleteControl = new fabric.Control({
+    x: 0.5, // esquina derecha
+    y: -0.5, // esquina superior
+    offsetY: -16,
+    offsetX: 16,
+    cursorStyle: "pointer",
+    mouseUpHandler: (eventData, transform) => {
+      const target = transform.target;
+      const canvas = target?.canvas;
+      if (canvas && target) {
+        // 🔧 Eliminar inmediatamente y forzar renderizado
+        canvas.remove(target);
+        canvas.requestRenderAll();
+
+        // 🔧 Pequeño delay para asegurar la eliminación visual
+        setTimeout(() => {
+          canvas.requestRenderAll();
+
+          // 🔧 Disparar evento personalizado para que el useEffect lo capture
+          canvas.fire("object:removed");
+
+          // 🔧 Notificar al padre después de eliminar
+          if (typeof onImageChange === "function") {
+            const dataUrl = canvas.toDataURL({
+              format: "png",
+              multiplier: EXPORT_SIZE / CANVAS_SIZE,
+            });
+            onImageChange(dataUrl);
+          }
+        }, 50);
+      }
+      return true;
+    },
+    render: (ctx, left, top) => {
+      ctx.save();
+      ctx.translate(left, top);
+
+      // círculo rojo
+      ctx.beginPath();
+      ctx.arc(0, 0, 10, 0, 2 * Math.PI, false);
+      ctx.fillStyle = "red";
+      ctx.fill();
+
+      // ❌ blanca
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 2;
+      ctx.moveTo(-4, -4);
+      ctx.lineTo(4, 4);
+      ctx.moveTo(4, -4);
+      ctx.lineTo(-4, 4);
+      ctx.stroke();
+
+      ctx.restore();
+    },
+  });
+
+  // 📡 Hook para avisar al padre cuando cambian objetos
   useEffect(() => {
     if (!editor?.canvas || !onImageChange) return;
     const handler = () => {
-      const dataURL = exportHighRes();
-      if (dataURL) onImageChange(dataURL);
+      // Verificamos si hay objetos además del fondo
+      const hasObjects = editor.canvas.getObjects().length > 0;
+
+      if (hasObjects) {
+        const dataURL = exportHighRes();
+        if (dataURL) onImageChange(dataURL);
+      } else {
+        // 🔴 No quedan imágenes → limpiar textura en el padre
+        onImageChange(null);
+      }
     };
     editor.canvas.on("object:added", handler);
     editor.canvas.on("object:modified", handler);
@@ -47,14 +113,26 @@ function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
 
   if (!visible) return null;
 
+  // 📂 Manejo de carga de imagen
   const handlePic = (event: ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files) return;
     const file = event.target.files[0];
     const url = URL.createObjectURL(file);
     fabric.Image.fromURL(url, (oImg: fabric.Image) => {
-      // Cambiar 'any' a 'fabric.Image'
       oImg.scale(0.1).set("flipY", false);
+
+      // 👉 Agregar control de eliminar siempre visible
+      oImg.controls.deleteControl = deleteControl;
+      oImg.set({
+        selectable: true,
+        hasControls: true,
+        hasBorders: true,
+        objectCaching: false,
+      });
+      (oImg as any).objectControlsAlwaysVisible = true;
+
       editor?.canvas.add(oImg);
+      editor?.canvas.requestRenderAll();
 
       // 🔧 Notifica al padre inmediatamente en alta resolución
       setTimeout(() => {

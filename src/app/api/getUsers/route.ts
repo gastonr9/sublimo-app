@@ -8,16 +8,36 @@ const supabase = createClient(
 
 export async function GET() {
   try {
-    const { data, error } = await supabase
+    // First get profiles
+    const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("id, role")
       .order("role", { ascending: false });
 
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
+    if (profilesError) {
+      return new Response(JSON.stringify({ error: profilesError.message }), {
         status: 400,
       });
     }
+
+    // Then get emails for each user
+    const usersWithEmails = await Promise.all(
+      profiles.map(async (profile) => {
+        const { data: authUser, error: authError } =
+          await supabase.auth.admin.getUserById(profile.id);
+
+        return {
+          id: profile.id,
+          role: profile.role,
+          email: authError ? null : authUser.user?.email || null,
+        };
+      })
+    );
+
+    const data = usersWithEmails;
+    const error = null;
+
+    // No error handling needed here since we constructed the data ourselves
 
     return new Response(JSON.stringify({ users: data }), { status: 200 });
   } catch {

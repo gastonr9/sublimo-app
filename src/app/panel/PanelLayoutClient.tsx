@@ -14,7 +14,7 @@ export default function PanelLayoutClient({
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r shadow-md flex flex-col">
+      <aside className="fixed left-0 top-0 w-64 h-full bg-white border-r shadow-md flex flex-col z-40">
         <div className="p-4 text-2xl font-bold text-blue-600">AdminPanel</div>
         <nav className="flex-1 p-4 space-y-2">
           <Link
