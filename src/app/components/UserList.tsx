@@ -18,7 +18,10 @@ export default function UserList() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/getUsers");
+      const res = await fetch("/api/getUsers", {
+        method: "GET",
+        cache: "no-store", // 🔹 fuerza a no usar cache en producción
+      });
       const data = await res.json();
       setUsers(data.users || []);
     } catch (error) {
