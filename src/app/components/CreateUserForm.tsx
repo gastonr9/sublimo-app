@@ -51,7 +51,7 @@ export default function UsuariosPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="border rounded w-full p-2"
+            className="border slot"
             required
           />
         </div>
@@ -62,30 +62,30 @@ export default function UsuariosPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="border rounded w-full p-2"
+            className="border slot"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium">Rol</label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="border rounded w-full p-2"
-          >
-            <option value="employee">employee</option>
-            <option value="master">Master</option>
-          </select>
-        </div>
+          <label className="flex text-sm font-medium">Rol</label>
+          <div className="px-4 py-2 flex gap-10 ">
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="border slot"
+            >
+              <option value="employee">employee</option>
+              <option value="master">Master</option>
+            </select>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          {loading ? "Creando..." : "Crear Usuario"}
-        </button>
+            <button type="submit" disabled={loading} className="bg-green slot">
+              <div className="text-white">
+                {loading ? "Creando..." : "Crear Usuario"}
+              </div>
+            </button>
+          </div>
+        </div>
       </form>
 
       {message && <p className="mt-4">{message}</p>}

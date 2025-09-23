@@ -1,3 +1,4 @@
+// src/app/components/EditUserModal.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,19 +13,14 @@ interface EditUserModalProps {
   user: User | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (
-    userId: string,
-    email: string,
-    password: string,
-    role: string
-  ) => void;
+  onUserUpdated: () => void; // 🔹 para refrescar la lista al guardar
 }
 
 export default function EditUserModal({
   user,
   isOpen,
   onClose,
-  onSave,
+  onUserUpdated,
 }: EditUserModalProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,10 +41,22 @@ export default function EditUserModal({
 
     setLoading(true);
     try {
-      await onSave(user.id, email, password, role);
+      const res = await fetch(`/api/updateUser/${user.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, role }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al actualizar usuario");
+      }
+
+      onUserUpdated(); // 🔹 refrescar lista
       onClose();
     } catch (error) {
       console.error("Error updating user:", error);
+      alert("Error al actualizar el usuario.");
     } finally {
       setLoading(false);
     }
@@ -58,10 +66,11 @@ export default function EditUserModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
         <h2 className="text-xl font-bold mb-4">Editar Usuario</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
@@ -75,6 +84,7 @@ export default function EditUserModal({
             />
           </div>
 
+          {/* Contraseña */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nueva Contraseña (opcional)
@@ -88,6 +98,7 @@ export default function EditUserModal({
             />
           </div>
 
+          {/* Rol */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Rol
@@ -102,6 +113,7 @@ export default function EditUserModal({
             </select>
           </div>
 
+          {/* Botones */}
           <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"

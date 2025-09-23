@@ -14,7 +14,7 @@ export async function PUT(
     const userId = params.id;
     const { email, password, role } = await request.json();
 
-    // Update role in profiles table
+    // Actualizar role en profiles
     if (role) {
       const { error: profileError } = await supabase
         .from("profiles")
@@ -28,7 +28,7 @@ export async function PUT(
       }
     }
 
-    // Update email and/or password in auth.users
+    // Actualizar email y/o password en auth.users
     const updateData: { email?: string; password?: string } = {};
     if (email) updateData.email = email;
     if (password) updateData.password = password;
@@ -48,9 +48,7 @@ export async function PUT(
 
     return new Response(
       JSON.stringify({ message: "Usuario actualizado exitosamente" }),
-      {
-        status: 200,
-      }
+      { status: 200 }
     );
   } catch (updateError) {
     console.error("Error updating user:", updateError);

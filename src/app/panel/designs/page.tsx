@@ -183,7 +183,7 @@ const Designs: React.FC = () => {
           <h3 className="text-xl font-semibold text-gray-700">
             Imágenes Disponibles en Storage
           </h3>
-          <label className="btn-blue">
+          <label className="btn-yellow slot">
             {uploading ? "Subiendo..." : "Cargar Imagen"}
             <input
               type="file"
@@ -227,9 +227,9 @@ const Designs: React.FC = () => {
                       className="w-full h-full object-contain p-1"
                     />
                     {isSelected && (
-                      <span className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                      <button className="absolute top-1 right-1 text-xs px-2 py-1 slot btn-blue">
                         Seleccionado
-                      </span>
+                      </button>
                     )}
                     <button
                       onClick={(e) => {

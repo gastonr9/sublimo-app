@@ -274,7 +274,7 @@ const Inventario: React.FC = () => {
           </div>
           <button
             onClick={handleAgregarProducto}
-            className={`btn-green slot opacity-50 text-nowrap${
+            className={`btn-green slot  text-nowrap${
               isAgregarProductoDisabled ? " cursor-not-allowed" : ""
             }`}
             disabled={isAgregarProductoDisabled}
@@ -367,7 +367,7 @@ const Inventario: React.FC = () => {
                   </div>
                   <button
                     onClick={() => handleEditarProducto(producto)}
-                    className="btn-blue slot"
+                    className="btn-yellow slot"
                   >
                     Editar
                   </button>
@@ -520,7 +520,7 @@ const Inventario: React.FC = () => {
 
                 <button
                   onClick={handleAgregarCombinacion}
-                  className={`btn-green slot opacity-50 ${
+                  className={`btn-green slot  ${
                     isAgregarCombinacionDisabled ? " cursor-not-allowed" : ""
                   }`}
                   disabled={isAgregarCombinacionDisabled}

@@ -13,7 +13,7 @@ export async function DELETE(
   try {
     const userId = params.id;
 
-    // First delete from profiles table
+    // Primero borro en profiles
     const { error: profileError } = await supabase
       .from("profiles")
       .delete()
@@ -25,7 +25,7 @@ export async function DELETE(
       });
     }
 
-    // Then delete from auth.users (this requires admin privileges)
+    // Luego borro en auth.users (requiere role key)
     const { error: authError } = await supabase.auth.admin.deleteUser(userId);
 
     if (authError) {
@@ -36,11 +36,10 @@ export async function DELETE(
 
     return new Response(
       JSON.stringify({ message: "Usuario eliminado exitosamente" }),
-      {
-        status: 200,
-      }
+      { status: 200 }
     );
-  } catch {
+  } catch (err) {
+    console.error("Error deleting user:", err);
     return new Response(JSON.stringify({ error: "Server error" }), {
       status: 500,
     });
