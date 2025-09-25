@@ -84,7 +84,7 @@ export default function UsesrList() {
       try {
         await updatePerfil(selectedUser.id, {
           email,
-          role: role as "master" | "employee",
+          role: role as "admin" | "empleado",
         });
 
         showToast("Usuario actualizado con éxito.", "success");
@@ -133,8 +133,8 @@ export default function UsesrList() {
                 onChange={(e) => setRole(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="master">Master</option>
-                <option value="employee">Empleado</option>
+                <option value="admin">admin</option>
+                <option value="empleado">Empleado</option>
               </select>
             </div>
 

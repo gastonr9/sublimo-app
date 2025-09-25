@@ -13,7 +13,7 @@ export default function HeroSection() {
             segundos.
           </h1>
           <h2>
-            Transforma tus diseños 2D en impresionantes 3D, con efectos de
+            Transforma tus estampas 2D en impresionantes 3D, con efectos de
             viento, animaciones de desplazamiento y exportaciones de vídeo
             fluidas.
           </h2>

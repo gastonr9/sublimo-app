@@ -13,7 +13,7 @@ export default function UsersPanel() {
     if (isAuthReady) {
       if (!user) {
         router.push("/login");
-      } else if (role !== "master") {
+      } else if (role !== "admin") {
         router.push("/panel");
       }
     }
@@ -23,7 +23,7 @@ export default function UsersPanel() {
     return <div>Loading...</div>;
   }
 
-  if (!user || role !== "master") {
+  if (!user || role !== "admin") {
     return null; // Will redirect due to useEffect
   }
 

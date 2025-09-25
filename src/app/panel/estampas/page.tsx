@@ -1,34 +1,35 @@
+// src/app/panel/estampas/page.tsx
 "use client";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import {
-  listDesignsFromStorage,
-  uploadDesign,
-  removeDesignFromStorage,
+  listEstampasFromStorage,
+  uploadEstampas, // 👈 corregido
+  removeEstampasFromStorage,
 } from "../../services/storage";
 import {
-  getDesigns,
-  addDesignMeta,
-  updateDesign,
-  deleteDesign,
-} from "../../services/designs";
+  getEstampas,
+  addEstampasMeta,
+  updateEstampas,
+  deleteEstampas,
+} from "../../services/estampas";
 
-interface StorageDesign {
+interface StorageEstampas {
   name: string;
   url: string;
 }
 
-interface DesignRow {
+interface EstampasRow {
   id: string;
   nombre: string;
   imagen_url: string;
   stock: number;
-  selected: boolean;
+  disponible: boolean;
 }
 
-const Designs: React.FC = () => {
-  const [storageDesigns, setStorageDesigns] = useState<StorageDesign[]>([]);
-  const [designsTable, setDesignsTable] = useState<DesignRow[]>([]);
+const Estampas: React.FC = () => {
+  const [storageEstampas, setStorageEstampas] = useState<StorageEstampas[]>([]);
+  const [estampasTable, setEstampasTable] = useState<EstampasRow[]>([]);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -38,14 +39,14 @@ const Designs: React.FC = () => {
   const fetchAll = async () => {
     try {
       const [storage, table] = await Promise.all([
-        listDesignsFromStorage(),
-        getDesigns(),
+        listEstampasFromStorage(),
+        getEstampas(),
       ]);
-      setStorageDesigns(storage);
-      setDesignsTable(table);
+      setStorageEstampas(storage);
+      setEstampasTable(table);
     } catch (err) {
-      console.error("Error al traer diseños:", err);
-      alert("❌ Error al cargar diseños.");
+      console.error("Error al traer estampas:", err);
+      alert("❌ Error al cargar estampas.");
     }
   };
 
@@ -55,15 +56,15 @@ const Designs: React.FC = () => {
       setUploading(true);
       try {
         const file = files[0];
-        const newDesign = await uploadDesign(file);
-        setDesignsTable((prev) => [...prev, newDesign]);
-        setStorageDesigns((prev) => [
+        const newestampas = await uploadEstampas(file);
+        setEstampasTable((prev) => [...prev, newestampas]);
+        setStorageEstampas((prev) => [
           ...prev,
-          { name: newDesign.nombre, url: newDesign.imagen_url },
+          { name: newestampas.nombre, url: newestampas.imagen_url },
         ]);
       } catch (err) {
-        console.error("Error al subir diseño:", err);
-        alert("❌ Error al subir diseño.");
+        console.error("Error al subir estampa:", err);
+        alert("❌ Error al subir estampa.");
       } finally {
         setUploading(false);
         event.target.value = ""; // reset input
@@ -71,31 +72,31 @@ const Designs: React.FC = () => {
     }
   };
 
-  const toggleSelectDesign = async (storageDesign: StorageDesign) => {
-    const designRow = designsTable.find(
-      (d) => d.imagen_url === storageDesign.url
+  const toggleSelectEstampas = async (storageEstampas: StorageEstampas) => {
+    const designRow = estampasTable.find(
+      (d) => d.imagen_url === storageEstampas.url
     );
     if (!designRow) {
       try {
-        const newDesign = await addDesignMeta(
-          storageDesign.name,
-          storageDesign.url
+        const newestampas = await addEstampasMeta(
+          storageEstampas.name,
+          storageEstampas.url
         );
-        setDesignsTable((prev) => [...prev, newDesign]);
+        setEstampasTable((prev) => [...prev, newestampas]);
       } catch (err) {
-        console.error("Error al añadir diseño:", err);
-        alert("❌ Error al seleccionar diseño.");
+        console.error("Error al añadir estampa:", err);
+        alert("❌ Error al seleccionar estampa.");
       }
       return;
     }
 
     try {
-      const newSelected = !designRow.selected;
-      const updatedDesign = await updateDesign(designRow.id, {
-        selected: newSelected,
+      const newDisponible = !designRow.disponible;
+      const updatedEstampas = await updateEstampas(designRow.id, {
+        disponible: newDisponible,
       });
-      setDesignsTable((prev) =>
-        prev.map((d) => (d.id === designRow.id ? updatedDesign : d))
+      setEstampasTable((prev) =>
+        prev.map((d) => (d.id === designRow.id ? updatedEstampas : d))
       );
     } catch (err) {
       console.error("Error al actualizar selección:", err);
@@ -114,10 +115,10 @@ const Designs: React.FC = () => {
         const nameWithoutExt = value.toString().replace(/\.[^/.]+$/, "");
         updatedValue = nameWithoutExt || "Sin nombre";
       } else if (field === "stock") {
-        updatedValue = Math.max(0, parseInt(value.toString()) || 0); // Ensure non-negative
+        updatedValue = Math.max(0, parseInt(value.toString()) || 0);
       }
-      await updateDesign(id, { [field]: updatedValue });
-      setDesignsTable(await getDesigns()); // Refresh from DB
+      await updateEstampas(id, { [field]: updatedValue });
+      setEstampasTable(await getEstampas());
     } catch (err) {
       console.error(`Error actualizando ${field}:`, err);
 
@@ -136,17 +137,17 @@ const Designs: React.FC = () => {
 
   const handleRemove = async (id: string) => {
     try {
-      const updatedDesign = await updateDesign(id, { selected: false });
-      setDesignsTable((prev) =>
-        prev.map((d) => (d.id === id ? updatedDesign : d))
+      const updatedEstampas = await updateEstampas(id, { disponible: false });
+      setEstampasTable((prev) =>
+        prev.map((d) => (d.id === id ? updatedEstampas : d))
       );
     } catch (err) {
-      console.error("Error al quitar diseño:", err);
-      alert("❌ Error al quitar diseño.");
+      console.error("Error al quitar estampa:", err);
+      alert("❌ Error al quitar estampa.");
     }
   };
 
-  const handleDeleteDesign = async (storageDesign: StorageDesign) => {
+  const handleDeleteEstampas = async (storageEstampas: StorageEstampas) => {
     if (
       !window.confirm(
         "¿Estás seguro de que deseas eliminar esta imagen y su registro? Esta acción no se puede deshacer."
@@ -156,26 +157,26 @@ const Designs: React.FC = () => {
     }
 
     try {
-      const designRow = designsTable.find(
-        (d) => d.imagen_url === storageDesign.url
+      const designRow = estampasTable.find(
+        (d) => d.imagen_url === storageEstampas.url
       );
       if (designRow) {
-        await removeDesignFromStorage(storageDesign.name);
-        await deleteDesign(designRow.id);
-        setStorageDesigns((prev) =>
-          prev.filter((d) => d.name !== storageDesign.name)
+        await removeEstampasFromStorage(storageEstampas.name);
+        await deleteEstampas(designRow.id);
+        setStorageEstampas((prev) =>
+          prev.filter((d) => d.name !== storageEstampas.name)
         );
-        setDesignsTable((prev) => prev.filter((d) => d.id !== designRow.id));
+        setEstampasTable((prev) => prev.filter((d) => d.id !== designRow.id));
       }
     } catch (err) {
-      console.error("Error al eliminar diseño:", err);
-      alert("❌ Error al eliminar diseño.");
+      console.error("Error al eliminar estampa:", err);
+      alert("❌ Error al eliminar estampa.");
     }
   };
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Diseños</h2>
+      <h2 className="text-2xl font-bold mb-4">Estampas</h2>
 
       {/* Contenedor superior → Imágenes de Storage */}
       <div className="bg-white shadow-md rounded-lg p-6 mb-6">
@@ -195,29 +196,29 @@ const Designs: React.FC = () => {
           </label>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {storageDesigns.length > 0 ? (
-            storageDesigns
+          {storageEstampas.length > 0 ? (
+            storageEstampas
               .map((design) => {
-                const designRow = designsTable.find(
+                const designRow = estampasTable.find(
                   (d) => d.imagen_url === design.url
                 );
-                return { ...design, ...designRow };
+                return { ...design, ...(designRow || {}) }; // 👈 seguro
               })
               .sort((a, b) => {
-                if (a.selected !== b.selected) return a.selected ? -1 : 1;
+                if (a.disponible !== b.disponible) return a.disponible ? -1 : 1;
                 return (b.stock || 0) - (a.stock || 0);
               })
               .map((design) => {
-                const isSelected = design.selected || false;
+                const isDisponible = design.disponible || false;
                 return (
                   <div
                     key={design.name}
                     className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
-                      isSelected
+                      isDisponible
                         ? "border-4 border-blue-500"
                         : "border-gray-300 hover:border-gray-400"
                     }`}
-                    onClick={() => toggleSelectDesign(design)}
+                    onClick={() => toggleSelectEstampas(design)}
                   >
                     <Image
                       src={design.url}
@@ -226,15 +227,18 @@ const Designs: React.FC = () => {
                       height={128}
                       className="w-full h-full object-contain p-1"
                     />
-                    {isSelected && (
-                      <button className="absolute top-1 right-1 text-xs px-2 py-1 slot btn-blue">
+                    {isDisponible && (
+                      <button
+                        onClick={(e) => e.stopPropagation()} // 👈 evita doble toggle
+                        className="absolute top-1 right-1 text-xs px-2 py-1 slot btn-blue"
+                      >
                         Seleccionado
                       </button>
                     )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteDesign(design);
+                        handleDeleteEstampas(design);
                       }}
                       className="btn-red slot absolute bottom-1 left-1 text-xs px-2 py-1"
                     >
@@ -245,21 +249,21 @@ const Designs: React.FC = () => {
               })
           ) : (
             <p className="text-gray-600 col-span-full text-center">
-              No hay diseños disponibles en storage
+              No hay estampas disponibles en storage
             </p>
           )}
         </div>
       </div>
 
-      {/* Contenedor inferior → Diseños seleccionados */}
+      {/* Contenedor inferior → estampas seleccionados */}
       <div className="bg-white shadow-md rounded-lg p-6">
         <h3 className="text-xl font-semibold mb-4 text-gray-700">
-          Diseños Seleccionados
+          Estampas Seleccionados
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {designsTable.filter((d) => d.selected).length > 0 ? (
-            designsTable
-              .filter((d) => d.selected)
+          {estampasTable.filter((d) => d.disponible).length > 0 ? (
+            estampasTable
+              .filter((d) => d.disponible)
               .map((design) => (
                 <div
                   key={design.id}
@@ -280,7 +284,7 @@ const Designs: React.FC = () => {
                         /\.[^/.]+$/,
                         ""
                       );
-                      setDesignsTable((prev) =>
+                      setEstampasTable((prev) =>
                         prev.map((d) =>
                           d.id === design.id
                             ? { ...d, nombre: nameWithoutExt }
@@ -298,28 +302,24 @@ const Designs: React.FC = () => {
                     <input
                       type="number"
                       value={design.stock}
-                      onFocus={(e) =>
-                        e.target.value === "0" && e.target.select()
-                      }
-                      onKeyDown={(e) => {
-                        if (
-                          !/[0-9]/.test(e.key) &&
-                          e.key !== "Backspace" &&
-                          e.key !== "Delete" &&
-                          e.key !== "ArrowLeft" &&
-                          e.key !== "ArrowRight" &&
-                          e.key !== "Tab"
-                        ) {
-                          e.preventDefault();
-                        }
-                      }}
                       onChange={(e) => {
                         const newValue = Math.max(
                           0,
                           parseInt(e.target.value) || 0
                         );
-                        handleUpdate(design.id, "stock", newValue);
+                        setEstampasTable((prev) =>
+                          prev.map((d) =>
+                            d.id === design.id ? { ...d, stock: newValue } : d
+                          )
+                        );
                       }}
+                      onBlur={(e) =>
+                        handleUpdate(
+                          design.id,
+                          "stock",
+                          parseInt(e.target.value) || 0
+                        )
+                      }
                       min="0"
                       className="border rounded-lg w-24 slot"
                     />
@@ -334,7 +334,7 @@ const Designs: React.FC = () => {
               ))
           ) : (
             <p className="text-gray-600 col-span-full text-center">
-              No hay diseños seleccionados
+              No hay estampas seleccionados
             </p>
           )}
         </div>
@@ -343,4 +343,4 @@ const Designs: React.FC = () => {
   );
 };
 
-export default Designs;
+export default Estampas;

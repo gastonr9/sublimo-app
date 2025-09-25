@@ -33,13 +33,13 @@ export interface Producto {
 }
 
 // =======================
-// Diseños predefinidos
+// estampas predefinidos
 // =======================
 export interface Diseno {
   id: string; // UUID
   nombre: string; // Ej: "Logo Burgon"
   imagen_url: string; // URL de la imagen
-  stock: number; // Stock disponible del diseño
+  stock: number; // Stock disponible del estampa
 }
 
 // =======================
@@ -52,7 +52,7 @@ export interface Pedido {
   producto_id: string; // FK -> productos.id
   talla: string;
   color: string; // nombre del color (ej: "Negro")
-  diseno_id: string; // FK -> disenos.id
+  diseno_id: string; // FK -> estampas.id
   precio: number;
   fecha: string; // ISO date string
 }
@@ -62,5 +62,5 @@ export type UserProfile = {
   nombre_completo?: string | null;
   email: string | null;
   avatar_url?: string | null;
-  role: "master" | "employee";
+  role: "admin" | "empleado";
 };

@@ -1,8 +1,8 @@
 // storage.ts
 import { supabase } from "../../supabase/client";
 
-// Listar imágenes desde el bucket "designs"
-export const listDesignsFromStorage = async () => {
+// Listar imágenes desde el bucket "estampas"
+export const listEstampasFromStorage = async () => {
   const { data, error } = await supabase.storage
     .from("designs")
     .list("", { limit: 100, sortBy: { column: "created_at", order: "desc" } });
@@ -20,8 +20,8 @@ export const listDesignsFromStorage = async () => {
   }));
 };
 
-// Subir imagen y crear registro en la tabla disenos
-export const uploadDesign = async (file: File) => {
+// Subir imagen y crear registro en la tabla estampas
+export const uploadEstampas = async (file: File) => {
   // Extraer el nombre base sin extensión
   const nameWithoutExt = file.name.replace(/\.[^/.]+$/, ""); // Elimina la extensión (e.g., .png, .jpg)
   const fileName = `${Date.now()}-${nameWithoutExt}`; // Nombre único sin extensión
@@ -35,11 +35,11 @@ export const uploadDesign = async (file: File) => {
 
   if (uploadError) throw uploadError;
 
-  // Crear registro en la tabla disenos
+  // Crear registro en la tabla estampas
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const imagenUrl = `${supabaseUrl}/storage/v1/object/public/designs/${fileName}`;
   const { data, error: insertError } = await supabase
-    .from("disenos")
+    .from("estampas")
     .insert([{ nombre: nameWithoutExt, imagen_url: imagenUrl, stock: 0 }])
     .select()
     .single();
@@ -49,7 +49,7 @@ export const uploadDesign = async (file: File) => {
   return data;
 };
 
-export const removeDesignFromStorage = async (fileName: string) => {
+export const removeEstampasFromStorage = async (fileName: string) => {
   const { error } = await supabase.storage.from("designs").remove([fileName]);
   if (error) throw error;
 };

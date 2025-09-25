@@ -19,7 +19,7 @@ export default function PanelLayout({
     if (isAuthReady) {
       if (!user) {
         router.push("/login");
-      } else if (role !== "master" && role !== "employee") {
+      } else if (role !== "admin" && role !== "empleado") {
         router.push("/");
       }
       setLoading(false);
@@ -51,14 +51,14 @@ export default function PanelLayout({
             Inventario
           </Link>
           <Link
-            href="/panel/designs"
+            href="/panel/estampas"
             className={`block w-full text-left px-4 py-2 rounded-lg ${
-              pathname === "/panel/designs"
+              pathname === "/panel/estampas"
                 ? "bg-blue-100 text-blue-600"
                 : "hover:bg-gray-100"
             }`}
           >
-            Diseños
+            Estampas
           </Link>
           <Link
             href="/panel/pedidos"
@@ -70,7 +70,7 @@ export default function PanelLayout({
           >
             Pedidos
           </Link>
-          {role === "master" && (
+          {role === "admin" && (
             <Link
               href="/panel/usuarios"
               className={`block w-full text-left px-4 py-2 rounded-lg ${

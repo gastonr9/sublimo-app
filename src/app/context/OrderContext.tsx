@@ -7,8 +7,8 @@ interface Order {
   talle?: string;
   color?: string;
   productoId?: string; // ID del producto seleccionado
-  disenoId?: string; // Add this line
-  disenoUrl?: string; // Add this line
+  estampaId?: string; // Add this line
+  estampaUrl?: string; // Add this line
 }
 
 interface OrderContextType {

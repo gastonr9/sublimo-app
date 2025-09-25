@@ -14,14 +14,14 @@ export default async function PanelPage() {
 
   // Verificar el rol del usuario
   const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("role")
+    .from("usuarios")
+    .select("rol")
     .eq("id", user.id)
     .single();
 
-  // Redirigir a / si el rol no es master ni employee o hay error
-  if (error || (profile?.role !== "master" && profile?.role !== "employee")) {
-    // Cambiado a "employee"
+  // Redirigir a / si el rol no es admin ni empleado o hay error
+  if (error || (profile?.rol !== "admin" && profile?.rol !== "empleado")) {
+    // Cambiado a "empleado"
     redirect("/");
   }
 

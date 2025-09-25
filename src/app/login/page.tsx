@@ -57,7 +57,7 @@ export default function Login() {
         return;
       }
 
-      if (profileData.role === "master") {
+      if (profileData.role === "admin") {
         router.push("/panel/inventario");
       } else {
         router.push("/panel/inventario");

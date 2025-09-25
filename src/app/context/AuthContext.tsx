@@ -1,11 +1,10 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../../supabase/client";
-import { User } from "@supabase/supabase-js"; // Importa el tipo User
+import type { User } from "@supabase/supabase-js";
 
-// 1. Crea el contexto
 const AuthContext = createContext<{
-  user: User | null; // Usa User en lugar de any
+  user: User | null;
   role: string | null;
   isAuthReady: boolean;
 }>({
@@ -14,65 +13,46 @@ const AuthContext = createContext<{
   isAuthReady: false,
 });
 
-// 2. Crea el proveedor que gestionará el estado
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null); // Usa User en lugar de any
+  const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
+  const fetchUserRole = async (currentUser: User) => {
+    const { data, error } = await supabase
+      .from("usuarios")
+      .select("rol")
+      .eq("id", currentUser.id) // 👈 revisa si tu columna realmente es "id"
+      .single();
+
+    if (error) {
+      console.error("Error al obtener el rol:", error);
+      setRole(null);
+    } else {
+      setRole(data?.rol ?? null);
+    }
+  };
+
   useEffect(() => {
-    // Función asíncrona para obtener el usuario y el rol
-    const fetchUserAndRole = async () => {
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+    const init = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-        if (userError) {
-          console.error("Error al obtener el usuario:", userError);
-          setUser(null);
-          setRole(null);
-          setIsAuthReady(true);
-          return;
-        }
-
-        setUser(user);
-
-        if (user) {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
-          if (error) {
-            console.error("Error al obtener el perfil:", error);
-            setRole(null);
-          } else if (data) {
-            setRole(data.role);
-          } else {
-            setRole(null);
-          }
-        } else {
-          setRole(null);
-        }
-      } catch (error) {
-        console.error("Error inesperado:", error);
-        setRole(null);
-      } finally {
-        setIsAuthReady(true);
+      setUser(user);
+      if (user) {
+        await fetchUserRole(user);
       }
+      setIsAuthReady(true);
     };
 
-    fetchUserAndRole();
+    init();
 
-    // Escucha los cambios de autenticación
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) {
-          fetchUserAndRole(); // Vuelve a obtener el rol si el usuario cambia
+          fetchUserRole(session.user);
         } else {
           setRole(null);
         }
@@ -85,12 +65,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    // 3. Provee el estado a toda la aplicación
     <AuthContext.Provider value={{ user, role, isAuthReady }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// 4. Crea un hook para consumir el contexto fácilmente
 export const useAuth = () => useContext(AuthContext);

@@ -80,14 +80,14 @@ export default function Navbar() {
                 Generador Mockup 3D
               </Link>
             </li>
-            {(role === "employee" || role === "master") && (
+            {(role === "empleado" || role === "admin") && (
               <li>
                 <Link href="/burgon" className=" hover:text-blue-600">
                   Burgon
                 </Link>
               </li>
             )}
-            {(role === "employee" || role === "master") && (
+            {(role === "empleado" || role === "admin") && (
               <li>
                 <Link href="/panel/inventario" className=" hover:text-blue-600">
                   Panel
@@ -98,7 +98,7 @@ export default function Navbar() {
             {user ? (
               <>
                 {/* Mostrar email y rol si está logueado */}
-                <li className="">
+                <li>
                   {user.email} ({role || "Sin rol"})
                 </li>
                 <li>

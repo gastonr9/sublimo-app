@@ -77,7 +77,7 @@ const Sidebar = ({
       label="Color del fondo"
     />
     <button onClick={onOpenCanvas2D} className="slot w-full btn-secondary">
-      Importar Diseño
+      Importar Estampa
     </button>
     <button onClick={canvasDownloader} className="slot w-full btn-secondary">
       Exportar

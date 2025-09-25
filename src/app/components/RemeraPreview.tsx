@@ -7,10 +7,10 @@ import Image from "next/image";
 
 interface Props {
   color: string; // hex del color
-  disenoUrl?: string;
+  estampaUrl?: string;
 }
 
-const RemeraPreview: React.FC<Props> = ({ color, disenoUrl }) => {
+const RemeraPreview: React.FC<Props> = ({ color, estampaUrl }) => {
   return (
     <div id="remera" className="relative w-40 h-40 mx-auto">
       <div
@@ -49,11 +49,11 @@ const RemeraPreview: React.FC<Props> = ({ color, disenoUrl }) => {
         className="opacity-100 mix-blend-screen absolute inset-0 z-20 w-full h-full object-contain pointer-events-none"
       />
 
-      {disenoUrl && (
+      {estampaUrl && (
         <Image
           fill
-          src={disenoUrl}
-          alt="Diseño aplicado"
+          src={estampaUrl}
+          alt="Estampa aplicado"
           className="absolute z-30 w-full object-contain pointer-events-none"
           style={{
             maxWidth: "70%",

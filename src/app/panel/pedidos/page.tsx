@@ -10,12 +10,12 @@ interface Pedido {
   estado: string;
   fecha: string;
   inventario_id: string;
-  diseno_id: string;
+  estampa_id: string;
   producto_nombre?: string;
   talla?: string;
   color?: string;
-  diseno_nombre?: string;
-  diseno_url?: string;
+  estampa_nombre?: string;
+  estampa_url?: string;
 }
 
 // Tipo intermedio para mapear la respuesta cruda de Supabase
@@ -26,7 +26,7 @@ type PedidoRaw = {
   estado: string;
   fecha: string;
   inventario_id: string;
-  diseno_id: string;
+  estampa_id: string;
   inventario?: {
     talla?: string;
     color?: string;
@@ -34,7 +34,7 @@ type PedidoRaw = {
       nombre?: string;
     };
   };
-  diseno?: {
+  estampa?: {
     nombre?: string;
     imagen_url?: string;
   };
@@ -80,13 +80,13 @@ const Pedidos: React.FC = () => {
           estado,
           fecha,
           inventario_id,
-          diseno_id,
+          estampa_id,
           inventario:inventario_id (
             talla,
             color,
             producto:producto_id ( nombre )
           ),
-          diseno:diseno_id (
+          estampa:estampa_id (
             nombre,
             imagen_url
           )
@@ -104,12 +104,12 @@ const Pedidos: React.FC = () => {
         estado: p.estado,
         fecha: p.fecha,
         inventario_id: p.inventario_id,
-        diseno_id: p.diseno_id,
+        estampa_id: p.estampa_id,
         producto_nombre: p.inventario?.producto?.nombre || "",
         talla: p.inventario?.talla || "",
         color: p.inventario?.color || "",
-        diseno_nombre: p.diseno?.nombre || "",
-        diseno_url: p.diseno?.imagen_url || "",
+        estampa_nombre: p.estampa?.nombre || "",
+        estampa_url: p.estampa?.imagen_url || "",
       }));
 
       setPedidos(mapped);
@@ -129,7 +129,7 @@ const Pedidos: React.FC = () => {
         id,
         estado,
         inventario:inventario_id ( id, stock ),
-        diseno:diseno_id ( id, stock )
+        estampa:estampa_id ( id, stock )
       `
         )
         .eq("id", pedidoId)
@@ -162,14 +162,14 @@ const Pedidos: React.FC = () => {
             .eq("id", pedido.inventario[0].id);
         }
         if (
-          pedido.diseno &&
-          Array.isArray(pedido.diseno) &&
-          pedido.diseno.length > 0
+          pedido.estampa &&
+          Array.isArray(pedido.estampa) &&
+          pedido.estampa.length > 0
         ) {
           await supabase
-            .from("disenos")
-            .update({ stock: pedido.diseno[0].stock + 1 })
-            .eq("id", pedido.diseno[0].id);
+            .from("estampas")
+            .update({ stock: pedido.estampa[0].stock + 1 })
+            .eq("id", pedido.estampa[0].id);
         }
       }
 
@@ -190,7 +190,7 @@ const Pedidos: React.FC = () => {
         id,
         estado,
         inventario:inventario_id ( id, stock ),
-        diseno:diseno_id ( id, stock )
+        estampa:estampa_id ( id, stock )
       `
         )
         .eq("id", pedidoId)
@@ -210,14 +210,14 @@ const Pedidos: React.FC = () => {
             .eq("id", pedido.inventario[0].id);
         }
         if (
-          pedido.diseno &&
-          Array.isArray(pedido.diseno) &&
-          pedido.diseno.length > 0
+          pedido.estampa &&
+          Array.isArray(pedido.estampa) &&
+          pedido.estampa.length > 0
         ) {
           await supabase
-            .from("disenos")
-            .update({ stock: pedido.diseno[0].stock + 1 })
-            .eq("id", pedido.diseno[0].id);
+            .from("estampas")
+            .update({ stock: pedido.estampa[0].stock + 1 })
+            .eq("id", pedido.estampa[0].id);
         }
       }
 
@@ -253,7 +253,7 @@ const Pedidos: React.FC = () => {
             >
               <RemeraPreview
                 color={getDefaultHex(pedido.color || "")}
-                disenoUrl={pedido.diseno_url || ""}
+                estampaUrl={pedido.estampa_url || ""}
               />
               <p>
                 <strong>Producto:</strong> {pedido.producto_nombre}
@@ -265,7 +265,7 @@ const Pedidos: React.FC = () => {
                 <strong>Color:</strong> {pedido.color}
               </p>
               <p>
-                <strong>Diseño:</strong> {pedido.diseno_nombre}
+                <strong>Estampa:</strong> {pedido.estampa_nombre}
               </p>
               <p>
                 <strong>Cliente:</strong> {pedido.nombre} {pedido.apellido}

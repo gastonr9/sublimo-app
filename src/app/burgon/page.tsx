@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useOrder } from "../context/OrderContext";
 import { getProductos, getProductoPorId } from "../services/inventario";
 import { Producto, Color } from "../types";
-import { getDesigns } from "../services/designs";
+import { getEstampas } from "../services/estampas";
 import { supabase } from "../../supabase/client";
 import RemeraPreview from "../components/RemeraPreview";
 import Image from "next/image";
@@ -26,8 +26,8 @@ const getDefaultHex = (nombre: string): string => {
   return coloresConocidos[nombre as keyof typeof coloresConocidos] || "#000000";
 };
 
-// Define the Design interface
-interface Design {
+// Define the estampas interface
+interface estampas {
   id: string;
   stock: number;
   selected: boolean;
@@ -43,7 +43,7 @@ const Burgon: React.FC = () => {
   );
   const [talles, setTalles] = useState<string[]>([]);
   const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
-  const [designs, setDesigns] = useState<Design[]>([]);
+  const [estampas, setEstampas] = useState<estampas[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
@@ -200,23 +200,22 @@ const Burgon: React.FC = () => {
     }
   }, [order.talle, selectedProduct, order.color, setOrder]);
 
-  // cargar diseños
+  // cargar estampas
   useEffect(() => {
-    const cargarDesigns = async () => {
+    const cargarEstampas = async () => {
       try {
-        const data = await getDesigns();
-        const filteredDesigns = data.filter(
-          (design) => design.stock > 0 && design.selected
-        );
-        setDesigns(filteredDesigns);
+        const data = await getEstampas();
+        // REMOVED `design.selected` filter
+        const filteredEstampas = data.filter((design) => design.stock > 0);
+        setEstampas(filteredEstampas);
       } catch (err) {
-        console.error("Error trayendo diseños:", err);
+        console.error("Error trayendo estampas:", err);
       }
     };
-    cargarDesigns();
+    cargarEstampas();
   }, []);
 
-  // ajustar preview del diseño
+  // ajustar preview del estampa
   // This useEffect is no longer needed as designStyle state has been removed.
   // If styling for RemeraPreview is required, it should be handled differently.
 
@@ -236,17 +235,17 @@ const Burgon: React.FC = () => {
     if (colorNombre) setOrder({ ...order, color: colorHex });
   };
 
-  const handleDesignSelect = (disenoId: string, disenoUrl: string) => {
+  const handleEstampasSelect = (estampaId: string, estampaUrl: string) => {
     if (order.talle && order.color) {
-      setOrder({ ...order, disenoId, disenoUrl });
+      setOrder({ ...order, estampaId, estampaUrl });
     }
   };
 
   const handleNext = () => {
-    if (order.talle && order.color && order.disenoId) {
+    if (order.talle && order.color && order.estampaId) {
       setShowModal(true);
     } else {
-      alert("Por favor, selecciona talle, color y diseño.");
+      alert("Por favor, selecciona talle, color y estampa.");
     }
   };
 
@@ -258,7 +257,7 @@ const Burgon: React.FC = () => {
 
   const handleCreatePedido = async () => {
     // Add an early return check to ensure all necessary data is present
-    if (!selectedProduct || !order.talle || !order.color || !order.disenoId) {
+    if (!selectedProduct || !order.talle || !order.color || !order.estampaId) {
       alert(
         "Por favor, completa todas las selecciones antes de crear el pedido."
       );
@@ -291,27 +290,27 @@ const Burgon: React.FC = () => {
         return;
       }
 
-      // 2. Buscar diseño
-      const { data: diseno, error: disenoError } = await supabase
-        .from("disenos")
+      // 2. Buscar estampa
+      const { data: estampa, error: estampaError } = await supabase
+        .from("estampas")
         .select("id, stock")
-        .eq("id", order.disenoId)
+        .eq("id", order.estampaId)
         .single();
 
-      if (disenoError || !diseno || diseno.stock <= 0) {
-        alert("No hay stock disponible para este diseño.");
-        console.error("Error fetching design:", disenoError);
+      if (estampaError || !estampa || estampa.stock <= 0) {
+        alert("No hay stock disponible para este estampa.");
+        console.error("Error fetching design:", estampaError);
         return;
       }
 
       // 3. Crear pedido y actualizar stock en una sola llamada RPC (recomendado)
       const { error: rpcError } = await supabase.rpc(
-        "create_order_and_update_stock",
+        "crear_pedido_y_actualizar_stock",
         {
           p_nombre: nombre,
           p_apellido: apellido,
           p_inventario_id: inv.id,
-          p_diseno_id: diseno.id,
+          p_estampa_id: estampa.id,
         }
       );
 
@@ -330,8 +329,8 @@ const Burgon: React.FC = () => {
         ...order,
         talle: "",
         color: "",
-        disenoId: "",
-        disenoUrl: "",
+        estampaId: "",
+        estampaUrl: "",
       });
 
       alert("✅ Pedido creado con éxito.");
@@ -429,21 +428,21 @@ const Burgon: React.FC = () => {
         <div className="relative w-full flex justify-center">
           <RemeraPreview
             color={order.color || "#ffffff"}
-            disenoUrl={order.disenoUrl}
+            estampaUrl={order.estampaUrl}
           />
         </div>
 
         <div className="mt-8">
           <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">
-            Elegí un diseño
+            Elegí un estampa
           </h3>
           <div className="flex flex-wrap gap-4 justify-center">
-            {designs.length > 0 ? (
-              designs.map((design) => (
+            {estampas.length > 0 ? (
+              estampas.map((design) => (
                 <div key={design.id} className="flex flex-col items-center">
                   <button
                     className={`logo relative w-24 h-24 border rounded-lg overflow-hidden ${
-                      order.disenoId === design.id
+                      order.estampaId === design.id
                         ? "ring-2 ring-indigo-500 bg-indigo-100 border-indigo-600"
                         : ""
                     } ${
@@ -452,7 +451,7 @@ const Burgon: React.FC = () => {
                         : ""
                     }`}
                     onClick={() =>
-                      handleDesignSelect(design.id, design.imagen_url)
+                      handleEstampasSelect(design.id, design.imagen_url)
                     }
                     disabled={!order.talle || !order.color}
                   >
@@ -469,7 +468,7 @@ const Burgon: React.FC = () => {
                 </div>
               ))
             ) : (
-              <p className="text-gray-600">No hay diseños disponibles</p>
+              <p className="text-gray-600">No hay estampas disponibles</p>
             )}
           </div>
         </div>
@@ -493,7 +492,7 @@ const Burgon: React.FC = () => {
               !selectedProduct ||
               !order.talle ||
               !order.color ||
-              !order.disenoId
+              !order.estampaId
             }
           >
             Siguiente
@@ -551,9 +550,9 @@ const Burgon: React.FC = () => {
                   ?.nombre || order.color}
               </p>
               <p>
-                Diseño:{" "}
-                {designs.find((d) => d.id === order.disenoId)?.nombre ||
-                  "Sin diseño"}
+                Estampa:{" "}
+                {estampas.find((d) => d.id === order.estampaId)?.nombre ||
+                  "Sin estampa"}
               </p>
               <p>Nombre: {nombre}</p>
               <p>Apellido: {apellido}</p>
