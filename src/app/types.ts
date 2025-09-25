@@ -56,3 +56,11 @@ export interface Pedido {
   precio: number;
   fecha: string; // ISO date string
 }
+
+export type UserProfile = {
+  id: string;
+  nombre_completo?: string | null;
+  email: string | null;
+  avatar_url?: string | null;
+  role: "master" | "employee";
+};

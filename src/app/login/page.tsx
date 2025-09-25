@@ -53,7 +53,7 @@ export default function Login() {
 
       if (profileError || !profileData) {
         console.error("Error al obtener el perfil:", profileError?.message);
-        router.push("/panel/inventario");
+        router.push("/");
         return;
       }
 
