@@ -1,79 +1,68 @@
-import { supabase } from "../../supabase/client";
-import { UserProfile } from "../types";
+// src/app/services/usuarios.ts
+"use server";
 
-// =========================
-// Perfiles de Usuario (tabla 'profiles')
-// =========================
+import { createClient } from "@/supabase/server";
 
-// Obtener todos los perfiles
-export const getPerfiles = async (): Promise<UserProfile[]> => {
-  const { data, error } = await supabase.from("profiles").select("id, role"); // Se elimina la columna 'email' de la consulta para resolver el error.
+interface Usuario {
+  id: string;
+  email: string;
+  rol: string;
+  creado_en: string;
+}
 
-  if (error) {
-    console.error("Error al obtener perfiles:", error.message);
-    throw error;
-  }
-  return data as UserProfile[];
-};
+// 🔹 Listar todos los usuarios
+export async function getUsuarios(): Promise<Usuario[]> {
+  const supabase = createClient();
 
-// Obtener un perfil por su ID
-export const getPerfilPorId = async (
-  id: string
-): Promise<UserProfile | null> => {
   const { data, error } = await supabase
-    .from("profiles")
-    .select("id, role") // Se elimina la columna 'email' de la consulta.
+    .from("usuarios")
+    .select("*")
+    .order("creado_en", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data as Usuario[];
+}
+
+// 🔹 Crear usuario (auth + tabla usuarios)
+export async function crearUsuario(
+  email: string,
+  password: string,
+  rol: string
+) {
+  const supabase = createClient();
+
+  // Crear en auth con rol en metadata
+  const { data, error } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { rol },
+  });
+
+  if (error) throw new Error(error.message);
+  return data.user;
+}
+
+// 🔹 Actualizar rol en tabla usuarios
+export async function actualizarRol(id: string, nuevoRol: string) {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("usuarios")
+    .update({ rol: nuevoRol })
     .eq("id", id)
+    .select()
     .single();
 
-  if (error) {
-    if (error.code === "PGRST116") {
-      console.warn(`Perfil con ID ${id} no encontrado.`);
-      return null;
-    }
-    console.error(`Error al obtener perfil ${id}:`, error.message);
-    throw error;
-  }
-  return data as UserProfile;
-};
+  if (error) throw new Error(error.message);
+  return data;
+}
 
-// Actualizar el perfil de un usuario existente
-export const updatePerfil = async (
-  id: string,
-  updates: Partial<UserProfile>
-): Promise<void> => {
-  const { error } = await supabase
-    .from("profiles")
-    .update(updates)
-    .eq("id", id);
+// 🔹 Eliminar usuario (borra en auth y cascada en tabla)
+export async function eliminarUsuario(id: string) {
+  const supabase = createClient();
 
-  if (error) {
-    console.error("Error al actualizar perfil:", error.message);
-    throw error;
-  }
-};
-
-// Eliminar el perfil de un usuario
-export const deletePerfil = async (id: string): Promise<void> => {
-  const { error } = await supabase.from("profiles").delete().eq("id", id);
-  if (error) {
-    console.error("Error al eliminar perfil:", error.message);
-    throw error;
-  }
-};
-
-// Función para obtener el rol de un usuario
-export const getRolUsuario = async (userId: string): Promise<string | null> => {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
-
-  if (error) {
-    console.error("Error al obtener el rol del usuario:", error.message);
-    return null;
-  }
-
-  return data?.role || null;
-};
+  const { error } = await supabase.auth.admin.deleteUser(id);
+  if (error) throw new Error(error.message);
+  return { success: true };
+}
