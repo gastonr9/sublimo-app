@@ -134,11 +134,7 @@ export default function UserList() {
           </select>
         </div>
 
-        <button
-          type="submit"
-          disabled={formLoading}
-          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:opacity-50"
-        >
+        <button type="submit" disabled={formLoading} className="btn-green">
           {formLoading ? "Creando..." : "Crear Usuario"}
         </button>
       </form>
@@ -167,13 +163,13 @@ export default function UserList() {
                       setEditEmail(u.email);
                       setEditRol(u.rol);
                     }}
-                    className="px-3 py-1 bg-yellow-400 rounded hover:bg-yellow-500"
+                    className="btn-yellow"
                   >
                     Editar
                   </button>
                   <button
                     onClick={() => setConfirmDelete(u)}
-                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                    className="btn-red"
                   >
                     Eliminar
                   </button>
