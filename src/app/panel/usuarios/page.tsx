@@ -28,7 +28,6 @@ export default function UsersPanel() {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Gestión de Usuarios</h1>
       <div className="space-y-6">
         <UserList />
       </div>
