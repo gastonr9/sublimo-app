@@ -1,3 +1,4 @@
+// AuthContext.tsx
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../../supabase/client";
@@ -22,7 +23,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data, error } = await supabase
       .from("usuarios")
       .select("rol")
-      .eq("id", currentUser.id) // 👈 revisa si tu columna realmente es "id"
+      .eq("id", (await supabase.auth.getUser()).data.user?.id)
       .single();
 
     if (error) {
