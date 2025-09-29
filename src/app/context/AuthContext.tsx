@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data, error } = await supabase
       .from("usuarios")
       .select("rol")
-      .eq("id", (await supabase.auth.getUser()).data.user?.id)
+      .eq("id", currentUser.id) // usamos directamente el id del user recibido
       .single();
 
     if (error) {
