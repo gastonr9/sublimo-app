@@ -1,0 +1,69 @@
+3. Componentes y páginas
+
+Ver cómo están organizados los componentes, vistas o rutas:
+
+Qué pantallas hay (/pages o /routes).
+
+Qué componentes se repiten (por ejemplo Navbar, Dashboard, MockupGenerator, etc.).
+
+Cómo navega el usuario entre secciones (Router o Layouts).
+
+Esto permite derivar los requerimientos funcionales de interfaz (lo que el usuario puede hacer y ver).
+
+🔒 4. Contextos, hooks y estados
+
+Revisar:
+
+Archivos de contexto global (AuthContext, ThemeContext, UserContext, etc.).
+
+Hooks personalizados.
+
+Cómo se maneja el estado global (Context, Redux, Zustand, etc.).
+
+Esto revela qué roles hay, qué permisos existen, qué flujo de datos hay y qué funciones internas maneja el sistema.
+
+🧠 5. Servicios y lógica de negocio
+
+Carpeta /services o /api → saber si consume un backend y cómo.
+
+Carpeta /utils → funciones auxiliares o cálculos que definen procesos.
+
+Carpeta /controllers o /routes (si hay backend) → para entender las acciones disponibles (guardar, eliminar, autenticar, etc.).
+
+De ahí salen los requerimientos funcionales de backend o procesos.
+
+🗂️ 6. Modelos o base de datos (si hay)
+
+Archivos como models/, schema/ o db.js.
+
+Ver qué entidades maneja (por ejemplo: users, products, designs, tickets, etc.).
+
+Ver relaciones entre esas entidades.
+
+Esto define los requerimientos de datos (qué información guarda, cómo se relaciona, qué se puede modificar).
+
+🧾 7. Archivos estáticos o de recursos
+
+Carpeta /assets, /images, /mockups, /uploads.
+
+Me diría qué tipo de archivos maneja el sistema (por ejemplo imágenes, modelos 3D, texturas, etc.) y su flujo (subida, descarga, visualización).
+
+🔄 8. Funcionalidades específicas o lógicas personalizadas
+
+Buscar componentes clave (como Canvas3D, FabricCanvas, TicketResumen, etc.).
+
+Ver interacciones: subida de archivos, impresión de tickets, login, etc.
+
+Ahí se extraen los casos de uso concretos, lo que ayuda a escribir los requerimientos detallados (por actor y por acción).
+
+📑 9. Código comentado o TODOs
+
+Muchos proyectos tienen comentarios tipo // TODO: agregar validación de stock, // pendiente conectar con API.
+Eso permite reconocer requerimientos pendientes o planeados.
+
+🧩 10. Dependencias y librerías usadas
+
+Revisar librerías en package.json (por ejemplo):
+
+@react-three/fiber, three, fabric, axios, react-router-dom, etc.
+Cada una me indica una funcionalidad implícita (3D, canvas, API, routing…).
