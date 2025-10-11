@@ -35,7 +35,7 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 w-full z-50 bg-white shadow-md">
-      <div className="relative mx-auto flex max-w-screen-lg flex-col py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="relative mx-10 flex max-w-screen-lg flex-col py-4 sm:flex-row sm:items-center sm:mx-[40px] sm:justify-between   ">
         <Link href="/" className="contents">
           <Image
             src={logo}

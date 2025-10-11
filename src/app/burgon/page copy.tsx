@@ -55,20 +55,53 @@ const Burgon: React.FC = () => {
   const [activeInput, setActiveInput] = useState<"nombre" | "apellido">(
     "nombre"
   );
-  const [isPortrait, setIsPortrait] = useState(false);
+  interface VirtualKeyboardProps {
+    onKeyPress: (key: string) => void;
+  }
 
-  // Detectar orientación inicial y cambios
-  useEffect(() => {
-    const handleResize = () => {
-      setIsPortrait(window.innerHeight > window.innerWidth);
-    };
+  const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({ onKeyPress }) => {
+    const [isUppercase, setIsUppercase] = useState(false);
+    const letters = "abcdefghijklmnopqrstuvwxyz".split("");
 
-    // Establecer orientación inicial
-    handleResize();
+    return (
+      <div className="flex flex-col items-center gap-2 select-none">
+        <div className="grid grid-cols-9 gap-1">
+          {letters.map((char) => (
+            <button
+              key={char}
+              onClick={() =>
+                onKeyPress(isUppercase ? char.toUpperCase() : char)
+              }
+              className="border rounded-md px-2 py-1 text-sm hover:bg-gray-100"
+            >
+              {isUppercase ? char.toUpperCase() : char}
+            </button>
+          ))}
+        </div>
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+        <div className="flex gap-1 mt-2">
+          <button
+            onClick={() => setIsUppercase((p) => !p)}
+            className="border rounded-md px-3 py-1 text-sm hover:bg-gray-100"
+          >
+            ⇧
+          </button>
+          <button
+            onClick={() => onKeyPress("ESP")}
+            className="border rounded-md px-8 py-1 text-sm hover:bg-gray-100"
+          >
+            espacio
+          </button>
+          <button
+            onClick={() => onKeyPress("←")}
+            className="border rounded-md px-3 py-1 text-sm hover:bg-gray-100"
+          >
+            ←
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   // Verificar autenticación
   useEffect(() => {
@@ -538,16 +571,20 @@ const Burgon: React.FC = () => {
                 className="border rounded-lg p-2 mb-4 w-full text-center"
               />
 
-              {/* Teclado solo visible en orientación vertical */}
-              {isPortrait && (
-                <VirtualKeyboard
-                  target={activeInput}
-                  nombre={nombre}
-                  apellido={apellido}
-                  setNombre={setNombre}
-                  setApellido={setApellido}
-                />
-              )}
+              {/* ======== Teclado Virtual ======== */}
+              <VirtualKeyboard
+                onKeyPress={(key) => {
+                  if (activeInput === "nombre") {
+                    if (key === "←") setNombre((prev) => prev.slice(0, -1));
+                    else if (key === "ESP") setNombre((prev) => prev + " ");
+                    else setNombre((prev) => prev + key);
+                  } else if (activeInput === "apellido") {
+                    if (key === "←") setApellido((prev) => prev.slice(0, -1));
+                    else if (key === "ESP") setApellido((prev) => prev + " ");
+                    else setApellido((prev) => prev + key);
+                  }
+                }}
+              />
 
               <div className="gap-4 flex mt-4">
                 <button
