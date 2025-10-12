@@ -5,10 +5,10 @@ import logo from "../../assets/sublimo.svg";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../../supabase/client";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 type AuthUser = {
   email?: string;
-  // agrega otras propiedades si es necesario
 };
 
 export default function Navbar() {
@@ -16,106 +16,129 @@ export default function Navbar() {
     user: AuthUser | null;
     role: string | null;
     isAuthReady: boolean;
-  }; // Usar el hook del contexto
+  };
   const router = useRouter();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Función para cerrar sesión
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      router.push("/login"); // Redirigir a la página de login
+      router.push("/login");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }
   };
 
   if (!isAuthReady) {
-    return null; // O muestra un spinner de carga
+    return (
+      <div className="fixed top-0 left-0 right-0 w-full z-50 bg-white shadow-md flex justify-center items-center h-16">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 w-full z-50 bg-white shadow-md">
-      <div className="relative mx-10 flex max-w-screen-lg flex-col py-4 sm:flex-row sm:items-center sm:mx-[40px] sm:justify-between   ">
-        <Link href="/" className="contents">
-          <Image
-            src={logo}
-            className="flex items-center"
-            alt="sublimo-logo"
-            width={55}
-          />
-        </Link>
+    <header className="fixed top-0 left-0 right-0 w-full z-50 bg-white shadow-lg">
+      <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        {/* Logo Section */}
+        <div className="flex items-center">
+          <Link href="/" className="flex items-center">
+            <Image
+              src={logo}
+              alt="Sublimo Logo"
+              width={55}
+              height={55}
+              className="object-contain"
+            />
+          </Link>
+        </div>
 
-        {/* Botón hamburguesa móvil */}
-        <input className="peer hidden" type="checkbox" id="navbar-open" />
-        <label
-          className="self-end top-7 absolute cursor-pointer text-xl sm:hidden"
-          htmlFor="navbar-open"
-        >
-          <span className="sr-only">Alternar navegación</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="32"
-            height="32"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#000000"
-            strokeWidth="1"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {/* Hamburger Menu for Mobile */}
+        <div className="sm:hidden">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="text-gray-600 hover:text-blue-600 focus:outline-none"
+            aria-label="Toggle navigation"
           >
-            <path d="M4 6l16 0" />
-            <path d="M4 12l16 0" />
-            <path d="M4 18l16 0" />
-          </svg>
-        </label>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
 
-        {/* Navegación */}
-        <nav
-          aria-label="Header Navigation"
-          className="peer-checked:block hidden pl-2 py-6 sm:block sm:py-0"
+        {/* Navigation and User State */}
+        <div
+          className={`${
+            isMenuOpen ? "block" : "hidden"
+          } sm:flex sm:items-center sm:space-x-8 absolute sm:static top-16 left-0 right-0 bg-white sm:bg-transparent shadow-md sm:shadow-none p-4 sm:p-0`}
         >
-          <ul className="flex flex-col gap-y-4 sm:flex-row sm:gap-x-8 items-center">
-            <li>
-              <Link href="/generador" className=" hover:text-blue-600">
-                Generador Mockup 3D
-              </Link>
-            </li>
-            {(role === "empleado" || role === "admin") && (
+          {/* Navigation Links */}
+          <nav aria-label="Main Navigation">
+            <ul className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 text-lg sm:text-base font-medium">
               <li>
-                <Link href="/burgon" className=" hover:text-blue-600">
-                  Burgon
+                <Link
+                  href="/generador"
+                  className="text-gray-700 hover:text-blue-600 transition-colors"
+                >
+                  Generador Mockup 3D
                 </Link>
               </li>
-            )}
-            {(role === "empleado" || role === "admin") && (
-              <li>
-                <Link href="/panel/inventario" className=" hover:text-blue-600">
-                  Panel
-                </Link>
-              </li>
-            )}
+              {(role === "empleado" || role === "admin") && (
+                <li>
+                  <Link
+                    href="/burgon"
+                    className="text-gray-700 hover:text-blue-600 transition-colors"
+                  >
+                    Burgon
+                  </Link>
+                </li>
+              )}
+              {(role === "empleado" || role === "admin") && (
+                <li>
+                  <Link
+                    href="/panel/inventario"
+                    className="text-gray-700 hover:text-blue-600 transition-colors"
+                  >
+                    Panel
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </nav>
 
+          {/* User State and Login/Logout Button */}
+          <div className="flex items-center space-x-4 mt-4 sm:mt-0">
             {user ? (
               <>
-                {/* Mostrar email y rol si está logueado */}
-                <li>
+                <span className="text-gray-600 text-sm">
                   {user.email} ({role || "Sin rol"})
-                </li>
-                <li>
-                  <button onClick={handleLogout} className="btn-secondary slot">
-                    Salir
-                  </button>
-                </li>
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="text-sm font-medium slot btn-secondary"
+                >
+                  Salir
+                </button>
               </>
             ) : (
-              <li>
-                <button className="btn-secondary slot">
-                  <Link href="/login">Acceder</Link>
+              <Link href="/login">
+                <button className=" text-sm font-medium slot btn-secondary">
+                  Acceder
                 </button>
-              </li>
+              </Link>
             )}
-          </ul>
-        </nav>
+          </div>
+        </div>
       </div>
     </header>
   );

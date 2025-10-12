@@ -341,18 +341,20 @@ const Inventario: React.FC = () => {
                     }
                     className="border rounded-lg p-2 slot"
                   />
-                  <button
-                    onClick={handleGuardarEdicion}
-                    className="btn-green slot"
-                  >
-                    Guardar
-                  </button>
-                  <button
-                    onClick={() => handleCancelarEdicion(producto.id)}
-                    className="btn-red slot"
-                  >
-                    Cancelar
-                  </button>
+                  <div className="contenedor">
+                    <button
+                      onClick={handleGuardarEdicion}
+                      className="btn-green slot"
+                    >
+                      Guardar
+                    </button>
+                    <button
+                      onClick={() => handleCancelarEdicion(producto.id)}
+                      className="btn-red slot"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -365,18 +367,20 @@ const Inventario: React.FC = () => {
                     <p>Precio: ${producto.precio.toFixed(2)}</p>
                     <p>{producto.descripcion}</p>
                   </div>
-                  <button
-                    onClick={() => handleEditarProducto(producto)}
-                    className="btn-yellow slot"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleEliminarProducto(producto.id)}
-                    className="btn-red slot"
-                  >
-                    Eliminar
-                  </button>
+                  <div className="contenedor">
+                    <button
+                      onClick={() => handleEditarProducto(producto)}
+                      className="btn-yellow slot"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleEliminarProducto(producto.id)}
+                      className="btn-red slot"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -517,16 +521,17 @@ const Inventario: React.FC = () => {
                     className="border rounded-lg  ml-2 w-20 slot"
                   />
                 </div>
-
-                <button
-                  onClick={handleAgregarCombinacion}
-                  className={`btn-green slot  ${
-                    isAgregarCombinacionDisabled ? " cursor-not-allowed" : ""
-                  }`}
-                  disabled={isAgregarCombinacionDisabled}
-                >
-                  Añadir
-                </button>
+                <div className="contenedor">
+                  <button
+                    onClick={handleAgregarCombinacion}
+                    className={`btn-green slot  ${
+                      isAgregarCombinacionDisabled ? " cursor-not-allowed" : ""
+                    }`}
+                    disabled={isAgregarCombinacionDisabled}
+                  >
+                    Añadir
+                  </button>
+                </div>
               </div>
             </div>
           </div>

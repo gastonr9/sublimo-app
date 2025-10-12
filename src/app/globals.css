@@ -7,7 +7,6 @@
   body {
     @apply m-0 p-0 h-full;
   }
-
   * {
     @apply text-negro font-poppins;
   }
@@ -18,10 +17,10 @@
     @apply font-bold;
   }
   button {
-    @apply self-center max-h-[40px]  rounded-lg px-2 py-1 font-medium;
+    @apply bg-gris  hover:bg-indigo-500 cursor-pointer rounded-lg px-3 py-2 font-semibold;
   }
   label {
-    @apply self-center max-h-[40px]  rounded-lg px-2 py-1 font-medium;
+    @apply self-center max-h-[40px]  rounded-lg px-6 py-3 font-medium;
   }
   select {
     @apply bg-white;
@@ -38,20 +37,17 @@
   .logo {
     @apply max-h-full w-[150px] h-[150px];
   }
-
   .contenedor {
     @apply flex gap-5 self-center;
   }
-
   #remera {
     @apply h-[300px] w-[300px];
   }
-
   .status {
     @apply px-2 py-1 font-medium;
   }
   .btn {
-    @apply bg-gris  hover:bg-indigo-500 cursor-pointer;
+    @apply bg-gris  hover:bg-indigo-500 cursor-pointer rounded-lg px-3 py-2 font-semibold;
   }
   .btn-secondary {
     @apply bg-indigo-600 text-white hover:bg-indigo-500 cursor-pointer;
