@@ -6,18 +6,18 @@ export default function HeroSection() {
     <div className=" px-4 grid grid-cols-1 md:grid-cols-2 relative items-center justify-self-center py-10 gap-4  ">
       {/* info */}
       <div className="flex flex-col justify-center items-center justify-self-center w-80 ">
-        <div className="text-center  md:text-left space-y-6">
+        <div className="text-center  md:text-left gap-5">
           <h1 className="text-nowrap text-5xl lg:text-6xl">
-            Mockups 3D <br />
-            animados en <br />
-            segundos.
+            Personalizá. <br />
+            Visualizá <br />
+            Imprimí.
           </h1>
-          <h2>
-            Transforma tus estampas 2D en impresionantes 3D, con efectos de
-            viento, animaciones de desplazamiento y exportaciones de vídeo
-            fluidas.
+          <h2 className="my-5">
+            Crea tus diseños y miralos en tiempo real sobre prendas 3D antes de
+            producirlos. Ahorra tiempo y mostrale a tus clientes exactamente
+            cómo quedará el resultado final.
           </h2>
-          <Link href="generador">
+          <Link href="generador" className="">
             <button className=" btn-secondary slot w-[150px]">Crear</button>
           </Link>
         </div>
