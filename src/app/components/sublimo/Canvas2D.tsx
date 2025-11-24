@@ -173,7 +173,7 @@ function Canvas2D({ onImageChange, visible, onClose }: Canvas2DProps) {
           onChange={handlePic}
           type="file"
           className="hidden"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"
         />
         <div
           className="justify-items-center rounded-xl border-4 border-yellow-500"
