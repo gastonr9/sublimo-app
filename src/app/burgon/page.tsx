@@ -1,5 +1,6 @@
 // src/app/burgon/page.tsx
 "use client";
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useOrder } from "../context/OrderContext";
 import { getProductos, getProductoPorId } from "../services/inventario";
@@ -28,13 +29,13 @@ const getDefaultHex = (nombre: string): string => {
   return coloresConocidos[nombre as keyof typeof coloresConocidos] || "#000000";
 };
 
-// Define the estampas interface
-interface estampas {
+// Interfaz correcta del nuevo sistema de estampas
+interface Estampa {
   id: string;
-  stock: number;
-  selected: boolean;
-  imagen_url: string;
   nombre: string;
+  imagen_url: string;
+  stock: number;
+  disponible: boolean;
 }
 
 const Burgon: React.FC = () => {
@@ -45,65 +46,41 @@ const Burgon: React.FC = () => {
   );
   const [talles, setTalles] = useState<string[]>([]);
   const [coloresDisponibles, setColoresDisponibles] = useState<Color[]>([]);
-  const [estampas, setEstampas] = useState<estampas[]>([]);
+  const [estampas, setEstampas] = useState<Estampa[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
-  const [showSummary, setShowSummary] = useState(false);
-
-  const { user, isAuthReady } = useAuth();
-  const router = useRouter();
   const [activeInput, setActiveInput] = useState<"nombre" | "apellido">(
     "nombre"
   );
   const [isPortrait, setIsPortrait] = useState(false);
 
-  // Detectar orientación inicial y cambios
+  const { user, isAuthReady } = useAuth();
+  const router = useRouter();
+
+  // Detectar orientación
   useEffect(() => {
-    const handleResize = () => {
+    const handleResize = () =>
       setIsPortrait(window.innerHeight > window.innerWidth);
-    };
-
-    // Establecer orientación inicial
     handleResize();
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Verificar autenticación
+  // Auth
   useEffect(() => {
-    if (isAuthReady && !user) {
-      router.push("/login");
-    }
+    if (isAuthReady && !user) router.push("/login");
   }, [isAuthReady, user, router]);
 
-  // ============================
-  // Cargar productos al inicio
-  // ============================
-  useEffect(() => {
-    const cargarProductos = async () => {
-      const productosData = await getProductos();
-      setProductos(productosData);
-
-      if (productosData.length > 0 && !selectedProductoId) {
-      }
-    };
-    cargarProductos();
-  }, [selectedProductoId]); // Added selectedProductoId
-
-  // ============================
-  // Función para cargar producto seleccionado
-  // ============================
+  // Cargar producto seleccionado
   const cargarProductoSeleccionado = useCallback(
     async (id: string) => {
       const producto = await getProductoPorId(id);
-
       if (producto) {
         setSelectedProduct(producto);
         setOrder((prev) => ({ ...prev, productoId: id }));
 
-        // Talles con stock (ordenados)
         const tallesConStock = Array.from(
           new Set(
             producto.inventario
@@ -111,16 +88,15 @@ const Burgon: React.FC = () => {
               .map((i) => i.talla) || []
           )
         ).sort((a, b) => {
-          const ordenTalles = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
+          const orden = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
           return (
-            ordenTalles[a as keyof typeof ordenTalles] -
-            ordenTalles[b as keyof typeof ordenTalles]
+            (orden[a as keyof typeof orden] ?? 5) -
+            (orden[b as keyof typeof orden] ?? 5)
           );
         });
         setTalles(tallesConStock);
 
-        // Colores con stock
-        const todosLosColores = Array.from(
+        const colores = Array.from(
           new Set(
             producto.inventario
               ?.filter((i) => i.stock > 0)
@@ -129,130 +105,136 @@ const Burgon: React.FC = () => {
         )
           .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
           .sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-        setColoresDisponibles(todosLosColores);
+        setColoresDisponibles(colores);
       } else {
         setSelectedProduct(null);
         setTalles([]);
         setColoresDisponibles([]);
       }
     },
-    [setSelectedProduct, setOrder, setTalles, setColoresDisponibles]
+    [setSelectedProduct, setOrder]
   );
 
-  // ============================
-  // Cargar productos al inicio
-  // ============================
+  // CARGA INICIAL + REALTIME
   useEffect(() => {
-    const cargarProductos = async () => {
-      const productosData = await getProductos();
-      setProductos(productosData);
+    let mounted = true;
 
-      if (productosData.length > 0 && !selectedProductoId) {
-        const firstProductId = productosData[0].id;
-        setSelectedProductoId(firstProductId);
-        cargarProductoSeleccionado(firstProductId);
+    const init = async () => {
+      const prods = await getProductos();
+      if (!mounted) return;
+      setProductos(prods);
+
+      let id = selectedProductoId;
+      if (!id && prods.length > 0) {
+        id = prods[0].id;
+        setSelectedProductoId(id);
+      }
+      if (id) await cargarProductoSeleccionado(id);
+
+      // Cargar estampas: solo con stock y disponibles
+      const data = await getEstampas();
+      if (mounted) {
+        setEstampas(data.filter((e) => e.stock > 0 && e.disponible === true));
       }
     };
-    cargarProductos();
-  }, [selectedProductoId, setSelectedProductoId, cargarProductoSeleccionado]);
 
-  // ============================
-  // Cargar producto seleccionado al cambiar ID
-  // ============================
+    init();
+
+    // Realtime para todo
+    const channel = supabase
+      .channel("burgon-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "productos" },
+        () => {
+          getProductos().then(setProductos);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "inventario" },
+        () => {
+          if (selectedProductoId)
+            cargarProductoSeleccionado(selectedProductoId);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "estampas" },
+        () => {
+          getEstampas().then((data) => {
+            setEstampas(
+              data.filter((e) => e.stock > 0 && e.disponible === true)
+            );
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [selectedProductoId, cargarProductoSeleccionado]);
+
+  // Actualizar colores según talle
   useEffect(() => {
-    if (selectedProductoId) {
-      cargarProductoSeleccionado(selectedProductoId);
-    } else {
-      setSelectedProduct(null);
-      setTalles([]);
+    if (!selectedProduct?.inventario) {
       setColoresDisponibles([]);
+      return;
     }
-  }, [
-    selectedProductoId,
-    cargarProductoSeleccionado,
-    setSelectedProduct,
-    setTalles,
-    setColoresDisponibles,
-  ]);
 
-  // actualizar colores según talle y autoseleccionar el primero
-  useEffect(() => {
-    if (selectedProduct && order.talle && selectedProduct.inventario) {
-      const coloresPorTalle = selectedProduct.inventario
+    if (order.talle) {
+      const cols = selectedProduct.inventario
         .filter((i) => i.talla === order.talle && i.stock > 0)
         .map((i) => ({ nombre: i.color, hex: getDefaultHex(i.color) }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
+      setColoresDisponibles(cols);
 
-      setColoresDisponibles(coloresPorTalle);
-
-      if (!order.color || !coloresPorTalle.some((c) => c.hex === order.color)) {
-        if (coloresPorTalle.length > 0) {
-          setOrder((prevOrder) => ({
-            ...prevOrder,
-            color: coloresPorTalle[0].hex,
-          }));
-        } else {
-          setOrder((prevOrder) => ({ ...prevOrder, color: "" }));
-        }
+      if (
+        cols.length > 0 &&
+        (!order.color || !cols.some((c) => c.hex === order.color))
+      ) {
+        setOrder((p) => ({ ...p, color: cols[0].hex }));
       }
-    } else if (selectedProduct && selectedProduct.inventario) {
-      // --- START OF FIX ---
-      const uniqueColorNames = [
-        ...new Set(
+    } else {
+      const todos = Array.from(
+        new Set(
           selectedProduct.inventario
             .filter((i) => i.stock > 0)
             .map((i) => i.color)
-        ),
-      ];
-      const todosLosColores = uniqueColorNames
-        .map((nombre) => ({ nombre, hex: getDefaultHex(nombre) }))
+        )
+      )
+        .map((n) => ({ nombre: n, hex: getDefaultHex(n) }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
-      // --- END OF FIX ---
-
-      setColoresDisponibles(todosLosColores);
-
-      setOrder((prevOrder) => ({ ...prevOrder, color: "" }));
-    } else {
-      setColoresDisponibles([]);
-      setOrder((prevOrder) => ({ ...prevOrder, color: "" }));
+      setColoresDisponibles(todos);
+      setOrder((p) => ({ ...p, color: "" }));
     }
   }, [order.talle, selectedProduct, order.color, setOrder]);
 
-  // cargar estampas
-  useEffect(() => {
-    const cargarEstampas = async () => {
-      try {
-        const data = await getEstampas();
-        // REMOVED `design.selected` filter
-        const filteredEstampas = data.filter((design) => design.stock > 0);
-        setEstampas(filteredEstampas);
-      } catch (err) {
-        console.error("Error trayendo estampas:", err);
-      }
-    };
-    cargarEstampas();
-  }, []);
-
   const handleProductoSelect = (id: string) => {
     setSelectedProductoId(id);
-    setOrder({ ...order, talle: "", color: "", productoId: id });
+    setOrder({
+      ...order,
+      productoId: id,
+      talle: "",
+      color: "",
+      estampaId: "",
+      estampaUrl: "",
+    });
   };
 
   const handleTalleSelect = (talle: string) => {
-    setOrder({ ...order, talle });
+    setOrder({ ...order, talle, color: "" });
   };
 
-  const handleColorSelect = (colorHex: string) => {
-    const colorNombre = coloresDisponibles.find(
-      (c) => c.hex === colorHex
-    )?.nombre;
-    if (colorNombre) setOrder({ ...order, color: colorHex });
+  const handleColorSelect = (hex: string) => {
+    setOrder({ ...order, color: hex });
   };
 
-  const handleEstampasSelect = (estampaId: string, estampaUrl: string) => {
+  const handleEstampasSelect = (id: string, url: string) => {
     if (order.talle && order.color) {
-      setOrder({ ...order, estampaId, estampaUrl });
+      setOrder({ ...order, estampaId: id, estampaUrl: url });
     }
   };
 
@@ -264,34 +246,22 @@ const Burgon: React.FC = () => {
     }
   };
 
-  const handleSaveDetails = () => {
-    if (nombre && apellido) {
-      setShowSummary(true);
-    }
-  };
-
   const handleCreatePedido = async () => {
-    // Add an early return check to ensure all necessary data is present
     if (!selectedProduct || !order.talle || !order.color || !order.estampaId) {
-      alert(
-        "Por favor, completa todas las selecciones antes de crear el pedido."
-      );
+      alert("Faltan datos para crear el pedido");
       return;
     }
 
     const colorNombre = coloresDisponibles.find(
       (c) => c.hex === order.color
     )?.nombre;
-
-    // Check if a valid color name was found
     if (!colorNombre) {
-      alert("Color seleccionado no válido.");
+      alert("Color no válido");
       return;
     }
 
     try {
-      // 1. Buscar inventario (producto + talle + color)
-      const { data: inv, error: invError } = await supabase
+      const { data: inv } = await supabase
         .from("inventario")
         .select("id, stock")
         .eq("producto_id", selectedProduct.id)
@@ -299,43 +269,32 @@ const Burgon: React.FC = () => {
         .eq("color", colorNombre)
         .single();
 
-      if (invError || !inv || inv.stock <= 0) {
-        alert("No hay stock disponible para este producto/talle/color.");
-        console.error("Error fetching inventory:", invError);
+      if (!inv || inv.stock <= 0) {
+        alert("No hay stock de la remera seleccionada");
         return;
       }
 
-      // 2. Buscar estampa
-      const { data: estampa, error: estampaError } = await supabase
+      const { data: estampa } = await supabase
         .from("estampas")
         .select("id, stock")
         .eq("id", order.estampaId)
         .single();
 
-      if (estampaError || !estampa || estampa.stock <= 0) {
-        alert("No hay stock disponible para este estampa.");
-        console.error("Error fetching design:", estampaError);
+      if (!estampa || estampa.stock <= 0) {
+        alert("El diseño seleccionado no tiene stock");
         return;
       }
 
-      // 3. Crear pedido y actualizar stock en una sola llamada RPC (recomendado)
-      const { error: rpcError } = await supabase.rpc(
-        "crear_pedido_y_actualizar_stock",
-        {
-          p_nombre: nombre,
-          p_apellido: apellido,
-          p_inventario_id: inv.id,
-          p_estampa_id: estampa.id,
-        }
-      );
+      const { error } = await supabase.rpc("crear_pedido_y_actualizar_stock", {
+        p_nombre: nombre.trim(),
+        p_apellido: apellido.trim(),
+        p_inventario_id: inv.id,
+        p_estampa_id: estampa.id,
+      });
 
-      if (rpcError) {
-        console.error("Error al crear el pedido (RPC):", rpcError);
-        alert("❌ Error al crear pedido: " + rpcError.message);
-        return;
-      }
+      if (error) throw error;
 
-      // Close modal and reset state on success
+      alert("Pedido creado con éxito!");
       setShowModal(false);
       setShowSummary(false);
       setNombre("");
@@ -347,18 +306,11 @@ const Burgon: React.FC = () => {
         estampaId: "",
         estampaUrl: "",
       });
-
-      alert("✅ Pedido creado con éxito.");
-    } catch (error) {
-      if (error instanceof Error) {
-        console.error("Error general al crear pedido:", error.message);
-        alert("❌ Error general al crear pedido.");
-      } else {
-        console.error("Error general al crear pedido:", error);
-        alert("❌ Error general al crear pedido.");
-      }
+    } catch (err: any) {
+      alert("Error al crear el pedido: " + err.message);
     }
   };
+
   return (
     <div className="relative w-full h-full">
       <div className="bg-white py-10 px-4 w-full max-w-screen-xl mx-auto">
@@ -391,15 +343,10 @@ const Burgon: React.FC = () => {
                     : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100 "
                 }`}
                 onClick={() => handleTalleSelect(talle)}
-                disabled={!selectedProduct}
               >
                 {talle}
               </button>
             ))
-          ) : selectedProduct ? (
-            <p className="text-gray-600">
-              No hay talles disponibles para este producto
-            </p>
           ) : (
             <p className="text-gray-600">
               Selecciona un producto para ver talles
@@ -417,10 +364,8 @@ const Burgon: React.FC = () => {
                     ? "bg-indigo-100 border-indigo-600"
                     : "bg-white border-gray-300 hover:bg-gray-100"
                 } ${!order.talle ? "opacity-50 cursor-not-allowed" : ""}`}
-                onClick={() =>
-                  order.talle ? handleColorSelect(color.hex) : null
-                }
-                disabled={!order.talle || !selectedProduct}
+                onClick={() => order.talle && handleColorSelect(color.hex)}
+                disabled={!order.talle}
               >
                 <span className="text-gray-800">{color.nombre}</span>
                 <div
@@ -429,13 +374,9 @@ const Burgon: React.FC = () => {
                 />
               </button>
             ))
-          ) : selectedProduct && order.talle ? (
-            <p className="text-gray-600">
-              No hay colores disponibles para este talle
-            </p>
           ) : (
             <p className="text-gray-600">
-              Selecciona un talle para habilitar colores
+              Selecciona un talle para ver colores
             </p>
           )}
         </div>
@@ -451,39 +392,69 @@ const Burgon: React.FC = () => {
           <h3 className="text-xl font-semibold mb-4 text-gray-800 text-center">
             Elegí un estampa
           </h3>
-          <div className="flex flex-wrap gap-4 justify-center">
+          <div className="flex flex-wrap gap-6 justify-center px-4">
             {estampas.length > 0 ? (
-              estampas.map((design) => (
-                <div key={design.id} className="flex flex-col items-center">
-                  <button
-                    className={`logo relative w-24 h-24 border rounded-lg overflow-hidden ${
-                      order.estampaId === design.id
-                        ? "ring-2 ring-indigo-500 bg-indigo-100 border-indigo-600"
-                        : ""
-                    } ${
-                      !order.talle || !order.color
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    }`}
-                    onClick={() =>
-                      handleEstampasSelect(design.id, design.imagen_url)
-                    }
-                    disabled={!order.talle || !order.color}
+              estampas.map((design) => {
+                const seleccionado = order.estampaId === design.id;
+                const deshabilitado = !order.talle || !order.color;
+
+                return (
+                  <div
+                    key={design.id}
+                    className="flex flex-col items-center max-w-32 group"
                   >
-                    <Image
-                      src={design.imagen_url}
-                      alt={design.nombre}
-                      fill
-                      className="object-contain p-1"
-                    ></Image>
-                  </button>
-                  <p className="text-center text-xs font-medium text-gray-700 mt-1 uppercase">
-                    {design.nombre}
-                  </p>
-                </div>
-              ))
+                    {/* Botón de la imagen */}
+                    <button
+                      onClick={() =>
+                        handleEstampasSelect(design.id, design.imagen_url)
+                      }
+                      disabled={deshabilitado}
+                      className={`relative w-28 h-28 rounded-2xl border-4 overflow-hidden shadow-lg transition-all duration-300 ${
+                        seleccionado
+                          ? "border-indigo-600 ring-4 ring-indigo-400 ring-offset-2 bg-indigo-50 scale-105"
+                          : "border-gray-300 hover:border-indigo-400"
+                      } ${
+                        deshabilitado
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:scale-105"
+                      }`}
+                    >
+                      <Image
+                        src={design.imagen_url}
+                        alt={design.nombre}
+                        fill
+                        className="object-contain p-3"
+                        sizes="(max-width: 768px) 100px, 112px"
+                      />
+                      {/* Indicador visual de seleccionado */}
+                      {seleccionado && (
+                        <div className="absolute inset-0 bg-indigo-600/20 rounded-2xl" />
+                      )}
+                    </button>
+
+                    {/* Nombre del diseño - responsive y bonito */}
+                    <div className="mt-3 w-full px-2">
+                      <p
+                        className={`text-center text-xs font-bold text-gray-800 leading-tight tracking-tight transition-all ${
+                          seleccionado ? "text-indigo-700" : ""
+                        }`}
+                        title={design.nombre} // tooltip por si es muy largo
+                      >
+                        {/* Truncar con puntos suspensivos si es muy largo */}
+                        {design.nombre.length > 20
+                          ? design.nombre.substring(0, 18) + "..."
+                          : design.nombre.toUpperCase()}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
             ) : (
-              <p className="text-gray-600">No hay estampas disponibles</p>
+              <div className="col-span-full py-12">
+                <p className="text-center text-gray-600 text-lg">
+                  No hay estampas disponibles en este momento
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -503,54 +474,48 @@ const Burgon: React.FC = () => {
           <button
             className="slot btn-secondary"
             onClick={handleNext}
-            disabled={
-              !selectedProduct ||
-              !order.talle ||
-              !order.color ||
-              !order.estampaId
-            }
+            disabled={!order.talle || !order.color || !order.estampaId}
           >
             Siguiente
           </button>
         </div>
 
-        {/* Modal para ingresar nombre y apellido */}
+        {/* Modales (sin cambios) */}
         {showModal && !showSummary && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-96">
               <h3 className="text-lg font-semibold mb-4 text-center">
                 Ingresa tus datos
               </h3>
-
-              <input
-                type="text"
-                placeholder="Nombre"
-                value={nombre}
-                onFocus={() => setActiveInput("nombre")}
-                onChange={(e) => setNombre(e.target.value)}
-                className="border rounded-lg p-2 mb-3 w-full text-center"
-              />
-              <input
-                type="text"
-                placeholder="Apellido"
-                value={apellido}
-                onFocus={() => setActiveInput("apellido")}
-                onChange={(e) => setApellido(e.target.value)}
-                className="border rounded-lg p-2 mb-4 w-full text-center"
-              />
-
-              {/* Teclado solo visible en orientación vertical */}
-              {isPortrait && (
-                <VirtualKeyboard
-                  target={activeInput}
-                  nombre={nombre}
-                  apellido={apellido}
-                  setNombre={setNombre}
-                  setApellido={setApellido}
+              <div className="grid">
+                <input
+                  type="text"
+                  placeholder="Nombre"
+                  value={nombre}
+                  onFocus={() => setActiveInput("nombre")}
+                  onChange={(e) => setNombre(e.target.value)}
+                  className="border rounded-lg p-2 mb-3 w-full text-center"
                 />
-              )}
+                <input
+                  type="text"
+                  placeholder="Apellido"
+                  value={apellido}
+                  onFocus={() => setActiveInput("apellido")}
+                  onChange={(e) => setApellido(e.target.value)}
+                  className="border rounded-lg p-2 mb-4 w-full text-center"
+                />
+                {isPortrait && (
+                  <VirtualKeyboard
+                    target={activeInput}
+                    nombre={nombre}
+                    apellido={apellido}
+                    setNombre={setNombre}
+                    setApellido={setApellido}
+                  />
+                )}
+              </div>
 
-              <div className="gap-4 flex mt-4">
+              <div className="gap-4 flex ">
                 <button
                   className="w-full slot"
                   onClick={() => setShowModal(false)}
@@ -559,7 +524,7 @@ const Burgon: React.FC = () => {
                 </button>
                 <button
                   className="slot w-full btn-secondary"
-                  onClick={handleSaveDetails}
+                  onClick={() => nombre && apellido && setShowSummary(true)}
                   disabled={!nombre || !apellido}
                 >
                   Siguiente
@@ -569,7 +534,6 @@ const Burgon: React.FC = () => {
           </div>
         )}
 
-        {/* Modal para resumen del pedido */}
         {showModal && showSummary && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-96">
@@ -578,18 +542,18 @@ const Burgon: React.FC = () => {
               <p>Talle: {order.talle}</p>
               <p>
                 Color:{" "}
-                {coloresDisponibles.find((c) => c.hex === order.color)
-                  ?.nombre || order.color}
+                {coloresDisponibles.find((c) => c.hex === order.color)?.nombre}
               </p>
               <p>
                 Estampa:{" "}
                 {estampas.find((d) => d.id === order.estampaId)?.nombre ||
                   "Sin estampa"}
               </p>
-              <p>Nombre: {nombre}</p>
-              <p>Apellido: {apellido}</p>
-              <p>Precio: ${selectedProduct?.precio.toFixed(2) || "0.00"}</p>
-              <div className="flex justify-center mt-6">
+              <p>
+                Nombre: {nombre} {apellido}
+              </p>
+              <p>Precio: ${selectedProduct?.precio.toFixed(2)}</p>
+              <div className="flex justify-center mt-6 gap-4">
                 <button className="slot" onClick={() => setShowSummary(false)}>
                   Volver
                 </button>
@@ -597,7 +561,7 @@ const Burgon: React.FC = () => {
                   onClick={handleCreatePedido}
                   className="slot btn-secondary"
                 >
-                  Guardar Pedido
+                  Confirmar Pedido
                 </button>
               </div>
             </div>

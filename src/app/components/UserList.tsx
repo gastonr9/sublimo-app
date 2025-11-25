@@ -102,12 +102,12 @@ const UserList: React.FC = () => {
       </h1>
 
       {/* Crear Usuario */}
-      <div className="bg-white shadow-md rounded-lg p-6 mb-8">
+      <div className="bg-white shadow-md rounded-lg p-6 mb-8 items-center">
         <h2 className="text-xl font-semibold mb-4 text-gray-700">
           Crear Usuario
         </h2>
         <form onSubmit={handleCreate} className="gap-4 grid">
-          <div className="contenedor flex-wrap">
+          <div className="contenedor flex-wrap ">
             <input
               type="email"
               placeholder="Email"
@@ -127,23 +127,24 @@ const UserList: React.FC = () => {
             <select
               value={rol}
               onChange={(e) => setRol(e.target.value)}
-              className="border rounded-lg p-2 slot ml-2 contenedor"
+              className="border rounded-lg p-2 slot"
             >
               <option value="empleado">Empleado</option>
               <option value="admin">Administrador</option>
             </select>
+            <button
+              type="submit"
+              disabled={formLoading || isCrearUsuarioDisabled}
+              className={`btn-green border rounded-lg slot h-[48px] ${
+                formLoading || isCrearUsuarioDisabled
+                  ? "cursor-not-allowed opacity-70"
+                  : ""
+              }`}
+            >
+              {formLoading ? "Creando..." : "Crear Usuario"}
+            </button>
           </div>
-          <button
-            type="submit"
-            disabled={formLoading || isCrearUsuarioDisabled}
-            className={`btn-green slot ${
-              formLoading || isCrearUsuarioDisabled
-                ? "cursor-not-allowed opacity-70"
-                : ""
-            }`}
-          >
-            {formLoading ? "Creando..." : "Crear Usuario"}
-          </button>
+          <div className="contenedor flex-wrap justify-between self-end"></div>
         </form>
       </div>
 

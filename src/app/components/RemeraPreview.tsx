@@ -12,7 +12,7 @@ interface Props {
 
 const RemeraPreview: React.FC<Props> = ({ color, estampaUrl }) => {
   return (
-    <div id="remera" className="relative w-40 h-40 mx-auto">
+    <div id="remera" className="relative w-72 h-72 mx-auto">
       <div
         className="w-full h-full absolute inset-0"
         style={{
@@ -50,19 +50,23 @@ const RemeraPreview: React.FC<Props> = ({ color, estampaUrl }) => {
       />
 
       {estampaUrl && (
-        <Image
-          fill
-          src={estampaUrl}
-          alt="Estampa aplicado"
-          className="absolute z-30 w-full object-contain pointer-events-none"
+        <div
+          className="absolute z-30"
           style={{
-            maxWidth: "70%",
-            maxHeight: "50%",
-            top: "25%",
-            left: "50%",
+            minWidth: "48%", // área máxima de diseño
+            height: "41%", // proporción vertical
+            top: "27%", // posición dentro de la remera
+            left: "51%",
             transform: "translateX(-50%)",
           }}
-        />
+        >
+          <Image
+            src={estampaUrl}
+            alt="Estampa aplicada"
+            fill
+            className="object-contain pointer-events-none"
+          />
+        </div>
       )}
     </div>
   );

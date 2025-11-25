@@ -1,10 +1,11 @@
 // src/app/panel/estampas/page.tsx
 "use client";
+
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import {
   listEstampasFromStorage,
-  uploadEstampas, // 👈 corregido
+  uploadEstampas,
   removeEstampasFromStorage,
 } from "../../services/storage";
 import {
@@ -13,6 +14,7 @@ import {
   updateEstampas,
   deleteEstampas,
 } from "../../services/estampas";
+import { supabase } from "../../../supabase/client";
 
 interface StorageEstampas {
   name: string;
@@ -27,14 +29,19 @@ interface EstampasRow {
   disponible: boolean;
 }
 
+type EditingState = {
+  [id: string]: { nombre?: string; stock?: number };
+};
+
+// Implementación de la función `updateEstampas` para ser usada en el `onClick` del botón Quitar.
+// Ya no es necesaria gracias a que se ha refactorizado a `updateEstampas(d.id, { disponible: false })`
+// en el botón "Ocultar" de la sección Habilitadas, que es más limpio.
+
 const Estampas: React.FC = () => {
   const [storageEstampas, setStorageEstampas] = useState<StorageEstampas[]>([]);
   const [estampasTable, setEstampasTable] = useState<EstampasRow[]>([]);
   const [uploading, setUploading] = useState(false);
-
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  const [editing, setEditing] = useState<EditingState>({});
 
   const fetchAll = async () => {
     try {
@@ -45,63 +52,93 @@ const Estampas: React.FC = () => {
       setStorageEstampas(storage);
       setEstampasTable(table);
     } catch (err) {
-      console.error("Error al traer estampas:", err);
-      alert("❌ Error al cargar estampas.");
+      console.error("Error cargando estampas:", err);
+      // Se eliminó la alerta aquí para no ser intrusivo en el fetch inicial
     }
   };
 
-  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      setUploading(true);
-      try {
-        const file = files[0];
-        const newestampas = await uploadEstampas(file);
-        setEstampasTable((prev) => [...prev, newestampas]);
-        setStorageEstampas((prev) => [
-          ...prev,
-          { name: newestampas.nombre, url: newestampas.imagen_url },
-        ]);
-      } catch (err) {
-        console.error("Error al subir estampa:", err);
-        alert("❌ Error al subir estampa.");
-      } finally {
-        setUploading(false);
-        event.target.value = ""; // reset input
-      }
-    }
-  };
+  useEffect(() => {
+    fetchAll();
+  }, []);
 
-  const toggleSelectEstampas = async (storageEstampas: StorageEstampas) => {
-    const designRow = estampasTable.find(
-      (d) => d.imagen_url === storageEstampas.url
-    );
-    if (!designRow) {
-      try {
-        const newestampas = await addEstampasMeta(
-          storageEstampas.name,
-          storageEstampas.url
-        );
-        setEstampasTable((prev) => [...prev, newestampas]);
-      } catch (err) {
-        console.error("Error al añadir estampa:", err);
-        alert("❌ Error al seleccionar estampa.");
-      }
-      return;
-    }
+  // REALTIME
+  useEffect(() => {
+    const channel = supabase
+      .channel("estampas-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "estampas" },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setEstampasTable((prev) => [...prev, payload.new as EstampasRow]);
+          } else if (payload.eventType === "UPDATE") {
+            const updated = payload.new as EstampasRow;
+            setEstampasTable((prev) =>
+              prev.map((e) => (e.id === updated.id ? updated : e))
+            );
+            setEditing((prev) => {
+              const copy = { ...prev };
+              delete copy[updated.id];
+              return copy;
+            });
+          } else if (payload.eventType === "DELETE") {
+            const oldId = payload.old?.id;
+            if (oldId) {
+              setEstampasTable((prev) => prev.filter((e) => e.id !== oldId));
+            }
+          }
+        }
+      )
+      .subscribe();
 
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const estampasConMeta = storageEstampas
+    .map((item) => {
+      const meta = estampasTable.find((r) => r.imagen_url === item.url);
+      return {
+        ...item,
+        id: meta?.id || null,
+        stock: meta?.stock ?? 0,
+        disponible: meta?.disponible ?? false,
+        nombre: meta?.nombre || item.name.replace(/\.[^/.]+$/, ""),
+      };
+    })
+    .sort((a, b) => Number(b.disponible) - Number(a.disponible));
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
     try {
-      const newDisponible = !designRow.disponible;
-      const updatedEstampas = await updateEstampas(designRow.id, {
-        disponible: newDisponible,
-      });
-      setEstampasTable((prev) =>
-        prev.map((d) => (d.id === designRow.id ? updatedEstampas : d))
-      );
-    } catch (err) {
-      console.error("Error al actualizar selección:", err);
-      alert("❌ Error al cambiar estado de selección.");
+      const nueva = await uploadEstampas(file);
+      // La tabla se actualizará automáticamente por el Realtime, pero el storage no,
+      // así que actualizamos el storage localmente o volvemos a hacer fetch.
+      // Aquí volvemos a hacer fetch para asegurar la consistencia.
+      await addEstampasMeta(nueva.nombre, nueva.imagen_url);
+      // Forzar un re-fetch para actualizar storageEstampas y estampasConMeta
+      await fetchAll();
+    } catch {
+      alert("Error al subir imagen");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
     }
+  };
+
+  const toggleSelectEstampas = async (item: (typeof estampasConMeta)[0]) => {
+    if (!item.id) {
+      // Si no tiene meta, se añade la meta con 'disponible: true' por defecto.
+      await addEstampasMeta(item.name, item.url);
+    } else {
+      // Si tiene meta, se invierte la disponibilidad.
+      await updateEstampas(item.id, { disponible: !item.disponible });
+    }
+    // El realtime se encargará de actualizar el estado de estampasTable,
+    // que a su vez refrescará estampasConMeta.
   };
 
   const handleUpdate = async (
@@ -109,235 +146,298 @@ const Estampas: React.FC = () => {
     field: "nombre" | "stock",
     value: string | number
   ) => {
+    const payload: any = {};
+    if (field === "nombre")
+      payload.nombre = value.toString().trim() || "Sin nombre";
+    if (field === "stock")
+      payload.stock = Math.max(0, parseInt(value.toString()) || 0);
+
     try {
-      let updatedValue = value;
-      if (field === "nombre") {
-        const nameWithoutExt = value.toString().replace(/\.[^/.]+$/, "");
-        updatedValue = nameWithoutExt || "Sin nombre";
-      } else if (field === "stock") {
-        updatedValue = Math.max(0, parseInt(value.toString()) || 0);
-      }
-      await updateEstampas(id, { [field]: updatedValue });
-      setEstampasTable(await getEstampas());
+      await updateEstampas(id, payload);
+      // El realtime se encargará de actualizar estampasTable y borrar de editing
     } catch (err) {
-      console.error(`Error actualizando ${field}:`, err);
-
-      let mensaje = "Error desconocido";
-      if (err instanceof Error) {
-        mensaje = err.message;
-      }
-
-      alert(
-        `❌ Error al actualizar ${
-          field === "nombre" ? "nombre" : "stock"
-        }: ${mensaje}`
-      );
+      alert("Error al guardar");
+      console.error(err);
+      // Opcional: Revertir el estado de editing si la actualización falla.
+      setEditing((prev) => {
+        const updated = { ...prev };
+        delete updated[id];
+        return updated;
+      });
     }
   };
 
-  const handleRemove = async (id: string) => {
-    try {
-      const updatedEstampas = await updateEstampas(id, { disponible: false });
-      setEstampasTable((prev) =>
-        prev.map((d) => (d.id === id ? updatedEstampas : d))
-      );
-    } catch (err) {
-      console.error("Error al quitar estampa:", err);
-      alert("❌ Error al quitar estampa.");
-    }
-  };
-
-  const handleDeleteEstampas = async (storageEstampas: StorageEstampas) => {
-    if (
-      !window.confirm(
-        "¿Estás seguro de que deseas eliminar esta imagen y su registro? Esta acción no se puede deshacer."
-      )
-    ) {
+  const handleDeleteEstampas = async (item: (typeof estampasConMeta)[0]) => {
+    if (!confirm("¿Eliminar permanentemente esta imagen y todos sus datos?"))
       return;
-    }
 
     try {
-      const designRow = estampasTable.find(
-        (d) => d.imagen_url === storageEstampas.url
-      );
-      if (designRow) {
-        await removeEstampasFromStorage(storageEstampas.name);
-        await deleteEstampas(designRow.id);
-        setStorageEstampas((prev) =>
-          prev.filter((d) => d.name !== storageEstampas.name)
-        );
-        setEstampasTable((prev) => prev.filter((d) => d.id !== designRow.id));
+      // Eliminar de Storage
+      await removeEstampasFromStorage(item.name);
+      // Eliminar de EstampasTable si existe
+      if (item.id) {
+        await deleteEstampas(item.id);
       }
+      // Actualizar el estado de storageEstampas (para que el elemento desaparezca de la UI)
+      setStorageEstampas((prev) => prev.filter((d) => d.name !== item.name));
+      // El realtime se encargará de actualizar estampasTable si se eliminó el registro de la DB
     } catch (err) {
+      alert("Error al eliminar estampa.");
       console.error("Error al eliminar estampa:", err);
-      alert("❌ Error al eliminar estampa.");
     }
   };
+
+  const estampasHabilitadas = estampasTable.filter((d) => d.disponible);
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Estampas</h2>
+      {/* TÍTULO */}
+      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+        Gestión de Estampas
+      </h1>
 
-      {/* Contenedor superior → Imágenes de Storage */}
-      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+      {/* TODAS LAS IMÁGENES */}
+      <div className="bbg-white shadow-md rounded-lg p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-semibold text-gray-700">
-            Imágenes Disponibles en Storage
+            Imágenes en Storage ({estampasConMeta.length})
           </h3>
-          <label className="btn-yellow slot">
-            {uploading ? "Subiendo..." : "Cargar Imagen"}
+
+          <div className="relative inline-block">
+            <label
+              htmlFor="upload-estampa"
+              className={`
+      btn-secondary px-6 py-3 rounded-lg font-medium transition
+      ${
+        uploading
+          ? "bg-gray-400 cursor-not-allowed"
+          : "bg-blue-600 hover:bg-blue-700 cursor-pointer text-white"
+      }
+    `}
+            >
+              {uploading ? "Subiendo..." : "Subir Nueva Imagen"}
+            </label>
+
             <input
+              id="upload-estampa"
               type="file"
               accept="image/*"
               onChange={handleUpload}
-              className="hidden"
               disabled={uploading}
+              className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
             />
-          </label>
+          </div>
         </div>
+
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {storageEstampas.length > 0 ? (
-            storageEstampas
-              .map((design) => {
-                const designRow = estampasTable.find(
-                  (d) => d.imagen_url === design.url
-                );
-                return { ...design, ...(designRow || {}) }; // 👈 seguro
-              })
-              .sort((a, b) => {
-                if (a.disponible !== b.disponible) return a.disponible ? -1 : 1;
-                return (b.stock || 0) - (a.stock || 0);
-              })
-              .map((design) => {
-                const isDisponible = design.disponible || false;
-                return (
-                  <div
-                    key={design.name}
-                    className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
-                      isDisponible
-                        ? "border-4 border-blue-500"
-                        : "border-gray-300 hover:border-gray-400"
-                    }`}
-                    onClick={() => toggleSelectEstampas(design)}
-                  >
-                    <Image
-                      src={design.url}
-                      alt={design.name}
-                      width={128}
-                      height={128}
-                      className="w-full h-full object-contain p-1"
-                    />
-                    {isDisponible && (
-                      <button
-                        onClick={(e) => e.stopPropagation()} // 👈 evita doble toggle
-                        className="absolute top-1 right-1 text-xs px-2 py-1 slot btn-blue"
+          {estampasConMeta.length > 0 ? (
+            estampasConMeta.map((item) => (
+              <div
+                key={item.name}
+                onClick={() => toggleSelectEstampas(item)}
+                className="group relative cursor-pointer"
+              >
+                <div
+                  className={`relative w-full h-32 border rounded-lg overflow-hidden cursor-pointer transition ${
+                    item.disponible
+                      ? "border-4 border-blue-500"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  <Image
+                    src={item.url}
+                    alt={item.name}
+                    fill
+                    className="w-full h-full object-contain p-1"
+                    sizes=""
+                  />
+
+                  {/* Estado */}
+                  <div className="absolute top-3 left-3 right-3">
+                    <span
+                      className={`text-xs px-2 py-1 slot btn-blue  ${
+                        item.disponible ? "bg-indigo-600" : "bg-orange-600"
+                      }`}
+                    >
+                      {item.disponible ? "ACTIVA" : "OCULTA"}
+                    </span>
+                  </div>
+
+                  {/* Stock (Solo si tiene registro en la base de datos) */}
+                  {item.id && (
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <span
+                        className={` text-xs px-2 py-1 slot btn-blue ${
+                          item.stock > 0
+                            ? "bg-white text-indigo-700"
+                            : "bg-red-600 text-white"
+                        }`}
                       >
-                        Seleccionado
-                      </button>
-                    )}
+                        Stock: {item.stock}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Botón Eliminar */}
+                  <div className="absolute bottom-2  right-3">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteEstampas(design);
+                        void handleDeleteEstampas(item); // Usar void para ignorar el Promise
                       }}
-                      className="btn-red slot absolute bottom-1 left-1 text-xs px-2 py-1"
+                      className="btn-red bg-red-600 text-xs px-2 py-1"
                     >
-                      Eliminar
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
                     </button>
                   </div>
-                );
-              })
+                </div>
+              </div>
+            ))
           ) : (
             <p className="text-gray-600 col-span-full text-center">
-              No hay estampas disponibles en storage
+              No hay imágenes disponibles en storage
             </p>
           )}
         </div>
       </div>
 
-      {/* Contenedor inferior → estampas seleccionados */}
-      <div className="bg-white shadow-md rounded-lg p-6">
+      {/* ESTAMPAS HABILITADAS */}
+      <div className=" bg-white shadow-md rounded-lg p-6">
         <h3 className="text-xl font-semibold mb-4 text-gray-700">
-          Estampas Seleccionados
+          Estampas Habilitadas ({estampasHabilitadas.length})
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {estampasTable.filter((d) => d.disponible).length > 0 ? (
-            estampasTable
-              .filter((d) => d.disponible)
-              .map((design) => (
-                <div
-                  key={design.id}
-                  className="bg-white shadow-md rounded-lg p-4 relative"
-                >
-                  <Image
-                    src={design.imagen_url}
-                    alt={design.nombre}
-                    width={160}
-                    height={160}
-                    className="w-full h-40 object-contain"
-                  />
-                  <input
-                    type="text"
-                    value={design.nombre}
-                    onChange={(e) => {
-                      const nameWithoutExt = e.target.value.replace(
-                        /\.[^/.]+$/,
-                        ""
-                      );
-                      setEstampasTable((prev) =>
-                        prev.map((d) =>
-                          d.id === design.id
-                            ? { ...d, nombre: nameWithoutExt }
-                            : d
-                        )
-                      );
-                    }}
-                    onBlur={(e) =>
-                      handleUpdate(design.id, "nombre", e.target.value)
-                    }
-                    className="my-2 border rounded-lg w-full slot"
-                    placeholder="Nombre (sin extensión)"
-                  />
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={design.stock}
-                      onChange={(e) => {
-                        const newValue = Math.max(
-                          0,
-                          parseInt(e.target.value) || 0
-                        );
-                        setEstampasTable((prev) =>
-                          prev.map((d) =>
-                            d.id === design.id ? { ...d, stock: newValue } : d
-                          )
-                        );
-                      }}
-                      onBlur={(e) =>
-                        handleUpdate(
-                          design.id,
-                          "stock",
-                          parseInt(e.target.value) || 0
-                        )
-                      }
-                      min="0"
-                      className="border rounded-lg w-24 slot"
-                    />
-                    <button
-                      onClick={() => handleRemove(design.id)}
-                      className="btn-red slot"
-                    >
-                      Quitar
-                    </button>
+
+        {estampasHabilitadas.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-2xl text-gray-500">
+              No hay estampas habilitadas
+            </p>
+          </div>
+        ) : (
+          <div className="gap-6 flex flex-wrap">
+            {estampasHabilitadas.map((d) => {
+              const currentNombre = editing[d.id]?.nombre ?? d.nombre;
+              const currentStock =
+                editing[d.id]?.stock !== undefined
+                  ? editing[d.id].stock
+                  : d.stock;
+
+              return (
+                <div className="w-fit ">
+                  <div
+                    key={d.id}
+                    className={`flex gap-5 bg-white shadow-md rounded-lg p-4 relative${
+                      d.stock > 0
+                        ? "bg-gradient-to-br from-indigo-50 to-purple-50 ring-4 ring-indigo-400"
+                        : "bg-gradient-to-br from-gray-100 to-gray-200 ring-4 ring-gray-400 opacity-75"
+                    }`}
+                  >
+                    <div>
+                      <Image
+                        src={d.imagen_url}
+                        alt={d.nombre}
+                        width={500}
+                        height={500}
+                        className="w-full h-40 object-contain"
+                      />
+                    </div>
+
+                    <div className="grid">
+                      {/* Nombre */}
+                      <div className="celda">
+                        <label className="label_name ">Nombre:</label>
+
+                        <input
+                          type="text"
+                          value={currentNombre}
+                          onChange={(e) => {
+                            const nameWithoutExt = e.target.value.replace(
+                              /\.[^/.]+$/,
+                              ""
+                            );
+                            setEditing((prev) => ({
+                              ...prev,
+                              [d.id]: { ...prev[d.id], nombre: nameWithoutExt },
+                            }));
+                          }}
+                          onBlur={() =>
+                            handleUpdate(d.id, "nombre", currentNombre)
+                          }
+                          className=" border rounded-lg  slot"
+                          placeholder="Nombre del diseño"
+                        />
+                      </div>
+
+                      <div className=" ">
+                        {/* Stock */}
+                        <div className="celda">
+                          <label className=" label_name ">Stock:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={currentStock}
+                            onChange={(e) => {
+                              const val = Math.max(
+                                0,
+                                parseInt(e.target.value) || 0
+                              );
+                              setEditing((prev) => ({
+                                ...prev,
+                                [d.id]: { ...prev[d.id], stock: val },
+                              }));
+                            }}
+                            onBlur={() =>
+                              handleUpdate(
+                                d.id,
+                                "stock",
+                                currentStock ?? d.stock
+                              )
+                            }
+                            className={` slot border rounded-lg  ${
+                              d.stock > 0
+                                ? "text-indigo-700 border-indigo-400 focus:border-indigo-600"
+                                : "text-red-700 border-red-400 focus:border-red-600 bg-red-50"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        {d.stock === 0 && (
+                          <div className="text-center">
+                            <span className="text-gray-600 col-span-full text-center">
+                              Sin stock — no visible
+                            </span>
+                          </div>
+                        )}
+                        <button
+                          onClick={
+                            () =>
+                              void updateEstampas(d.id, { disponible: false }) // Usar void para ignorar el Promise
+                          }
+                          className="btn btn-orange  justify-self-end"
+                        >
+                          Ocultar
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ))
-          ) : (
-            <p className="text-gray-600 col-span-full text-center">
-              No hay estampas seleccionados
-            </p>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

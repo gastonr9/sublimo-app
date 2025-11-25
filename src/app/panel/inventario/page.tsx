@@ -1,6 +1,7 @@
+// src/components/Inventario.tsx
 "use client";
-//src/components/Inventario.tsx
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useState, useCallback } from "react";
 import {
   getProductos,
   addProducto,
@@ -11,6 +12,7 @@ import {
   getColoresFijos,
 } from "../../services/inventario";
 import { Producto, Color } from "../../types";
+import { supabase } from "../../../supabase/client";
 
 const Inventario: React.FC = () => {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -22,7 +24,7 @@ const Inventario: React.FC = () => {
   });
   const [nuevaCombinacion, setNuevaCombinacion] = useState({
     idProducto: "",
-    talla: "S",
+    talla: "S" as const,
     color: "",
     stock: 0,
   });
@@ -34,39 +36,61 @@ const Inventario: React.FC = () => {
     descripcion: string;
   } | null>(null);
 
-  // === Cargar productos y colores ===
-  useEffect(() => {
-    const cargarDatos = async () => {
-      const productosData = await getProductos();
-      setProductos(productosData);
+  // Cargar datos iniciales
+  const cargarDatos = useCallback(async () => {
+    try {
+      const [prods, colores] = await Promise.all([
+        getProductos(),
+        getColoresFijos(),
+      ]);
+      setProductos(prods);
+      setColoresFijos(colores);
 
-      const coloresData = await getColoresFijos();
-      setColoresFijos(coloresData);
-
-      if (coloresData.length > 0) {
-        setNuevaCombinacion((prev) => ({
-          ...prev,
-          color: coloresData[0].nombre,
-        }));
+      if (colores.length > 0 && !nuevaCombinacion.color) {
+        setNuevaCombinacion((prev) => ({ ...prev, color: colores[0].nombre }));
       }
-    };
+    } catch (err) {
+      console.error("Error cargando datos:", err);
+    }
+  }, [nuevaCombinacion.color]);
+
+  // Carga inicial
+  useEffect(() => {
     cargarDatos();
-  }, []);
+  }, [cargarDatos]);
+
+  // REALTIME: escuchar cambios en productos e inventario
+  useEffect(() => {
+    const channel = supabase
+      .channel("inventario-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "productos" },
+        () => cargarDatos()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "inventario" },
+        () => cargarDatos()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [cargarDatos]);
 
   const handleAgregarProducto = async () => {
+    if (!nuevoProducto.nombre.trim() || !nuevoProducto.precio.trim()) return;
     try {
       await addProducto({
-        ...nuevoProducto,
-        precio: parseInt(nuevoProducto.precio, 10) || 0, //  siempre int
+        nombre: nuevoProducto.nombre.trim(),
+        precio: parseInt(nuevoProducto.precio) || 0,
+        descripcion: nuevoProducto.descripcion.trim(),
       });
-      setProductos(await getProductos());
-      setNuevoProducto({ nombre: "", precio: "", descripcion: "" }); //  reseteamos como string
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert("An unknown error occurred");
-      }
+      setNuevoProducto({ nombre: "", precio: "", descripcion: "" });
+    } catch (err: any) {
+      alert(err.message || "Error al crear producto");
     }
   };
 
@@ -82,93 +106,69 @@ const Inventario: React.FC = () => {
         (i) => i.talla === talla && i.color === color
       );
       if (!item) throw new Error("Combinación no encontrada");
-      const cantidad = nuevoStock - item.stock;
-      await uploadStock(idProducto, talla, color, cantidad);
-      setProductos(await getProductos());
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert("An unknown error occurred");
-      }
+
+      const diferencia = nuevoStock - item.stock;
+      if (diferencia === 0) return;
+
+      await uploadStock(idProducto, talla, color, diferencia);
+      // Realtime se encarga de actualizar
+    } catch (err: any) {
+      alert(err.message || "Error actualizando stock");
     }
   };
 
   const handleAgregarCombinacion = async () => {
+    if (
+      !nuevaCombinacion.idProducto ||
+      nuevaCombinacion.stock <= 0 ||
+      !nuevaCombinacion.color
+    )
+      return;
+
     try {
-      if (!nuevaCombinacion.idProducto)
-        throw new Error("Seleccione un producto");
-      if (!nuevaCombinacion.color) throw new Error("Seleccione un color");
       await uploadStock(
         nuevaCombinacion.idProducto,
         nuevaCombinacion.talla,
         nuevaCombinacion.color,
         nuevaCombinacion.stock
       );
-      setProductos(await getProductos());
-      setNuevaCombinacion({
-        idProducto: "",
-        talla: "S",
-        color: coloresFijos.length > 0 ? coloresFijos[0].nombre : "",
+      setNuevaCombinacion((prev) => ({
+        ...prev,
         stock: 0,
-      });
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        alert(error.message);
-      } else {
-        alert("An unknown error occurred");
-      }
+        talla: "S",
+        color: coloresFijos[0]?.nombre || "",
+      }));
+    } catch (err: any) {
+      alert(err.message || "Error agregando combinación");
     }
-  };
-
-  const handleEditarProducto = (producto: Producto) => {
-    setEditando({ ...editando, [producto.id]: true });
-    setProductoEditado({
-      id: producto.id,
-      nombre: producto.nombre,
-      precio: producto.precio,
-      descripcion: producto.descripcion || "",
-    });
   };
 
   const handleGuardarEdicion = async () => {
-    if (productoEditado) {
-      try {
-        await uploadProducto(productoEditado.id, {
-          nombre: productoEditado.nombre,
-          precio: productoEditado.precio,
-          descripcion: productoEditado.descripcion,
-        });
-        setProductos(await getProductos());
-        setEditando({ ...editando, [productoEditado.id]: false });
-        setProductoEditado(null);
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          alert(error.message);
-        } else {
-          alert("An unknown error occurred");
-        }
-      }
+    if (!productoEditado) return;
+    try {
+      await uploadProducto(productoEditado.id, {
+        nombre: productoEditado.nombre.trim(),
+        precio: productoEditado.precio,
+        descripcion: productoEditado.descripcion.trim(),
+      });
+      setEditando((prev) => ({ ...prev, [productoEditado.id]: false }));
+      setProductoEditado(null);
+    } catch (err: any) {
+      alert(err.message || "Error guardando cambios");
     }
   };
 
-  const handleCancelarEdicion = (id: string) => {
-    setEditando({ ...editando, [id]: false });
-    setProductoEditado(null);
-  };
-
   const handleEliminarProducto = async (id: string) => {
-    if (window.confirm("¿Eliminar este producto?")) {
-      try {
-        await deleteProducto(id);
-        setProductos(await getProductos());
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          alert(error.message);
-        } else {
-          alert("An unknown error occurred");
-        }
-      }
+    if (
+      !confirm(
+        "¿Seguro que querés eliminar este producto y todo su inventario?"
+      )
+    )
+      return;
+    try {
+      await deleteProducto(id);
+    } catch (err: any) {
+      alert(err.message || "Error eliminando producto");
     }
   };
 
@@ -177,167 +177,108 @@ const Inventario: React.FC = () => {
     talla: string,
     color: string
   ) => {
-    if (
-      window.confirm(`¿Eliminar combinación Talla: ${talla}, Color: ${color}?`)
-    ) {
-      try {
-        await deleteCombinacion(idProducto, talla, color);
-        setProductos(await getProductos());
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          alert(error.message);
-        } else {
-          alert("An unknown error occurred");
-        }
-      }
+    if (!confirm(`¿Eliminar combinación ${talla} - ${color}?`)) return;
+    try {
+      await deleteCombinacion(idProducto, talla, color);
+    } catch (err: any) {
+      alert(err.message || "Error eliminando combinación");
     }
   };
 
-  // Orden de tallas
   const tallaOrden = { S: 0, M: 1, L: 2, XL: 3, XXL: 4 };
 
-  // Validaciones
-  const isAgregarProductoDisabled =
-    !nuevoProducto.nombre.trim() ||
-    !nuevoProducto.precio.trim() || // ahora sí funciona porque es string
-    !nuevoProducto.descripcion.trim();
-
-  const isAgregarCombinacionDisabled =
-    nuevaCombinacion.stock <= 0 ||
-    !nuevaCombinacion.talla ||
-    !nuevaCombinacion.color ||
-    !nuevaCombinacion.idProducto;
-
   return (
-    <div className=" mx-auto p-4 ">
+    <div className="max-w-7xl mx-auto p-6 space-y-10">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-        Inventario de Productos
+        Gestión de Inventario
       </h1>
 
-      {/* Agregar producto */}
+      {/* Crear Producto */}
       <div className="bg-white shadow-md rounded-lg p-6 mb-8">
         <h2 className="text-xl font-semibold mb-4 text-gray-700">
-          Crear Producto
+          Crear Nuevo Producto
         </h2>
-        <div className="gap-4 grid  ">
-          <div className="gap-4">
-            <input
-              type="text"
-              placeholder="Nombre"
-              value={nuevoProducto.nombre}
-              onChange={(e) =>
-                setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })
-              }
-              className="border rounded-lg p-2 slot"
-            />
-            <input
-              type="number"
-              placeholder="Precio"
-              value={nuevoProducto.precio}
-              min="0"
-              onKeyDown={(e) => {
-                if (
-                  !/[0-9]/.test(e.key) &&
-                  e.key !== "Backspace" &&
-                  e.key !== "Delete" &&
-                  e.key !== "ArrowLeft" &&
-                  e.key !== "ArrowRight" &&
-                  e.key !== "Tab"
-                ) {
-                  e.preventDefault(); // ❌ ignora la tecla
-                }
-              }}
-              onChange={(e) => {
-                const value = e.target.value;
-                // Asegurar que el valor sea no negativo
-                const numericValue = Math.max(0, parseInt(value) || 0);
-                setNuevoProducto({
-                  ...nuevoProducto,
-                  precio: numericValue.toString(),
-                });
-              }}
-              className="border p-2 rounded-lg slot"
-            />
-
-            <input
-              type="text"
-              placeholder="Descripción"
-              value={nuevoProducto.descripcion}
-              onChange={(e) =>
-                setNuevoProducto({
-                  ...nuevoProducto,
-                  descripcion: e.target.value,
-                })
-              }
-              className="border rounded-lg p-2 sm:col-span-2 slot"
-            />
-          </div>
+        <div className="gap-4 grid ">
+          <input
+            type="text"
+            placeholder="Nombre del producto"
+            value={nuevoProducto.nombre}
+            onChange={(e) =>
+              setNuevoProducto((prev) => ({ ...prev, nombre: e.target.value }))
+            }
+            className="border rounded-lg  slot"
+          />
+          <input
+            type="number"
+            placeholder="Precio"
+            value={nuevoProducto.precio}
+            onChange={(e) =>
+              setNuevoProducto((prev) => ({ ...prev, precio: e.target.value }))
+            }
+            className="border rounded-lg  slot"
+          />
+          <input
+            type="text"
+            placeholder="Descripción"
+            value={nuevoProducto.descripcion}
+            onChange={(e) =>
+              setNuevoProducto((prev) => ({
+                ...prev,
+                descripcion: e.target.value,
+              }))
+            }
+            className="border rounded-lg slot"
+          />
           <button
             onClick={handleAgregarProducto}
-            className={`btn-green slot  text-nowrap${
-              isAgregarProductoDisabled ? " cursor-not-allowed" : ""
-            }`}
-            disabled={isAgregarProductoDisabled}
+            disabled={!nuevoProducto.nombre || !nuevoProducto.precio}
+            className="btn-secondary slottransition transform  disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Agregar Producto
+            Crear Producto
           </button>
         </div>
       </div>
 
-      {/* Lista de productos */}
+      {/* Lista de Productos */}
       <div className="space-y-6">
         {productos.map((producto) => (
           <div key={producto.id} className="bg-white shadow-md rounded-lg p-6">
-            {editando[producto.id] ? (
-              <div className=" ">
+            {/* Header del producto */}
+            <div className="flex justify-between">
+              {editando[producto.id] ? (
                 <div className="contenedor">
                   <input
                     type="text"
                     value={productoEditado?.nombre || ""}
                     onChange={(e) =>
-                      setProductoEditado({
-                        ...productoEditado!,
-                        nombre: e.target.value,
-                      })
+                      setProductoEditado((prev) =>
+                        prev ? { ...prev, nombre: e.target.value } : null
+                      )
                     }
                     className="border rounded-lg p-2 slot"
                   />
                   <input
                     type="number"
-                    placeholder="Precio"
-                    value={nuevoProducto.precio}
-                    onKeyDown={(e) => {
-                      if (
-                        !/[0-9]/.test(e.key) &&
-                        e.key !== "Backspace" &&
-                        e.key !== "Delete" &&
-                        e.key !== "ArrowLeft" &&
-                        e.key !== "ArrowRight" &&
-                        e.key !== "Tab"
-                      ) {
-                        e.preventDefault(); // ❌ ignora la tecla
-                      }
-                    }}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Solo permitir enteros positivos
-                      if (/^\d*$/.test(value)) {
-                        setNuevoProducto({ ...nuevoProducto, precio: value });
-                      }
-                    }}
+                    value={productoEditado?.precio || 0}
+                    onChange={(e) =>
+                      setProductoEditado((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              precio: parseInt(e.target.value) || 0,
+                            }
+                          : null
+                      )
+                    }
                     className="border rounded-lg p-2 slot"
                   />
-                </div>
-
-                <div className="contenedor my-4">
                   <input
                     type="text"
                     value={productoEditado?.descripcion || ""}
                     onChange={(e) =>
-                      setProductoEditado({
-                        ...productoEditado!,
-                        descripcion: e.target.value,
-                      })
+                      setProductoEditado((prev) =>
+                        prev ? { ...prev, descripcion: e.target.value } : null
+                      )
                     }
                     className="border rounded-lg p-2 slot"
                   />
@@ -349,28 +290,49 @@ const Inventario: React.FC = () => {
                       Guardar
                     </button>
                     <button
-                      onClick={() => handleCancelarEdicion(producto.id)}
+                      onClick={() => {
+                        setEditando((prev) => ({
+                          ...prev,
+                          [producto.id]: false,
+                        }));
+                        setProductoEditado(null);
+                      }}
                       className="btn-red slot"
                     >
                       Cancelar
                     </button>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div>
-                <h3 className="text-lg font-semibold mt-6">
-                  {producto.nombre}
-                </h3>
-                <div className="contenedor">
-                  <div>
-                    <p>Precio: ${producto.precio.toFixed(2)}</p>
-                    <p>{producto.descripcion}</p>
+              ) : (
+                <>
+                  <div className="">
+                    <h3 className="text-lg font-semibold mt-6">
+                      Articulo: {producto.nombre}
+                    </h3>{" "}
+                    {producto.descripcion && (
+                      <p className="text-lg text-gray-600 mt-2">
+                        Descripción: {producto.descripcion}
+                      </p>
+                    )}
+                    <p className="text-2xl font-bold text-gray-700 mt-2">
+                      ${producto.precio.toFixed(2)}
+                    </p>
                   </div>
-                  <div className="contenedor">
+                  <div className="contenedor flex-col gap-6">
                     <button
-                      onClick={() => handleEditarProducto(producto)}
-                      className="btn-yellow slot"
+                      onClick={() => {
+                        setEditando((prev) => ({
+                          ...prev,
+                          [producto.id]: true,
+                        }));
+                        setProductoEditado({
+                          id: producto.id,
+                          nombre: producto.nombre,
+                          descripcion: producto.descripcion || "",
+                          precio: producto.precio,
+                        });
+                      }}
+                      className="btn-yellow slot "
                     >
                       Editar
                     </button>
@@ -378,53 +340,106 @@ const Inventario: React.FC = () => {
                       onClick={() => handleEliminarProducto(producto.id)}
                       className="btn-red slot"
                     >
-                      Eliminar
+                      Eliminar Producto
                     </button>
                   </div>
+                </>
+              )}
+            </div>
+            <div className="flex justify-around m-10">
+              {/* Agregar combinación */}
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-3xl ">
+                <h4 className="tmt-6 mb-3 font-semibold">
+                  Agregar Nueva Combinación
+                </h4>
+                <div className="contenedor">
+                  <select
+                    value={nuevaCombinacion.talla}
+                    onChange={(e) =>
+                      setNuevaCombinacion((prev) => ({
+                        ...prev,
+                        talla: e.target.value as any,
+                        idProducto: producto.id,
+                      }))
+                    }
+                    className="border rounded-lg p-2 slot"
+                  >
+                    {["S", "M", "L", "XL", "XXL"].map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={nuevaCombinacion.color}
+                    onChange={(e) =>
+                      setNuevaCombinacion((prev) => ({
+                        ...prev,
+                        color: e.target.value,
+                        idProducto: producto.id,
+                      }))
+                    }
+                    className="pborder rounded-lg p-2 ml-2 slot"
+                  >
+                    {coloresFijos.map((c) => (
+                      <option key={c.nombre}>{c.nombre}</option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="number"
+                    value={nuevaCombinacion.stock}
+                    onChange={(e) =>
+                      setNuevaCombinacion((prev) => ({
+                        ...prev,
+                        stock: parseInt(e.target.value) || 0,
+                        idProducto: producto.id,
+                      }))
+                    }
+                    placeholder="Stock"
+                    className="border rounded-lg  ml-2 w-20 slot"
+                    min="1"
+                  />
+
+                  <button
+                    onClick={handleAgregarCombinacion}
+                    disabled={
+                      nuevaCombinacion.stock < 1 || !nuevaCombinacion.color
+                    }
+                    className="btn-green slot"
+                  >
+                    Agregar Stock
+                  </button>
                 </div>
               </div>
-            )}
-
-            {/* Inventario */}
-            <div>
-              <h4 className="mt-6 mb-3 font-semibold">Inventario</h4>
-              <div>
-                <ul>
+              {/* Inventario actual */}
+              <div className="mb-10">
+                <h4 className="mb-3 font-semibold">Stock Actual</h4>
+                <div className="">
                   {[...producto.inventario]
                     .sort((a, b) => {
-                      const ordenA =
-                        tallaOrden[a.talla as keyof typeof tallaOrden];
-                      const ordenB =
-                        tallaOrden[b.talla as keyof typeof tallaOrden];
-                      if (ordenA !== ordenB) return ordenA - ordenB;
-                      return a.color.localeCompare(b.color);
+                      const oa =
+                        tallaOrden[a.talla as keyof typeof tallaOrden] ?? 99;
+                      const ob =
+                        tallaOrden[b.talla as keyof typeof tallaOrden] ?? 99;
+                      return oa - ob || a.color.localeCompare(b.color);
                     })
-                    .map((item, i) => (
-                      <li
-                        key={i}
-                        className=" items-center gap-2 slot contenedor"
+                    .map((item) => (
+                      <div
+                        key={`${item.talla}-${item.color}`}
+                        className="items-center gap-2  contenedor"
                       >
-                        <span>
-                          {item.talla} - {item.color}
-                        </span>
+                        <div className="">
+                          <span className="text-xl font-bold">
+                            {item.talla}
+                          </span>
+                          <span className="text-lg font-bold"> - </span>
+                          <span className="text-lg font-bold">
+                            {item.color}
+                          </span>
+                        </div>
                         <input
                           type="number"
                           value={item.stock}
-                          onFocus={(e) =>
-                            e.target.value === "0" && e.target.select()
-                          }
-                          onKeyDown={(e) => {
-                            if (
-                              !/[0-9]/.test(e.key) &&
-                              e.key !== "Backspace" &&
-                              e.key !== "Delete" &&
-                              e.key !== "ArrowLeft" &&
-                              e.key !== "ArrowRight" &&
-                              e.key !== "Tab"
-                            ) {
-                              e.preventDefault(); // ❌ ignora la tecla
-                            }
-                          }}
                           onChange={(e) =>
                             handleActualizarStock(
                               producto.id,
@@ -433,8 +448,8 @@ const Inventario: React.FC = () => {
                               parseInt(e.target.value) || 0
                             )
                           }
+                          className="border rounded-lg  ml-2 w-20 slot"
                           min="0"
-                          className="border rounded-lg   w-20 slot"
                         />
                         <button
                           onClick={() =>
@@ -448,89 +463,8 @@ const Inventario: React.FC = () => {
                         >
                           Eliminar
                         </button>
-                      </li>
+                      </div>
                     ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Agregar combinación */}
-            <div>
-              <h4 className="mt-6 mb-3 font-semibold">Agregar Combinación</h4>
-              <div className="contenedor">
-                <div>
-                  <select
-                    value={nuevaCombinacion.talla}
-                    onChange={(e) =>
-                      setNuevaCombinacion({
-                        ...nuevaCombinacion,
-                        talla: e.target.value,
-                        idProducto: producto.id, // 🔥 aseguramos que siempre tenga producto
-                      })
-                    }
-                    className="border rounded-lg p-2 slot"
-                  >
-                    {["S", "M", "L", "XL", "XXL"].map((t) => (
-                      <option key={t}>{t}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={nuevaCombinacion.color}
-                    onChange={(e) =>
-                      setNuevaCombinacion({
-                        ...nuevaCombinacion,
-                        color: e.target.value,
-                        idProducto: producto.id, // 🔥
-                      })
-                    }
-                    className="border rounded-lg p-2 ml-2 slot"
-                  >
-                    {coloresFijos.map((c) => (
-                      <option key={c.nombre}>{c.nombre}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    value={nuevaCombinacion.stock}
-                    onFocus={(e) => e.target.value === "0" && e.target.select()}
-                    onKeyDown={(e) => {
-                      if (
-                        !/[0-9]/.test(e.key) &&
-                        e.key !== "Backspace" &&
-                        e.key !== "Delete" &&
-                        e.key !== "ArrowLeft" &&
-                        e.key !== "ArrowRight" &&
-                        e.key !== "Tab"
-                      ) {
-                        e.preventDefault(); // ❌ ignora la tecla
-                      }
-                    }}
-                    onChange={(e) => {
-                      const newStock = Math.max(
-                        0,
-                        parseInt(e.target.value) || 0
-                      );
-                      console.log("Nuevo stock:", newStock);
-                      setNuevaCombinacion({
-                        ...nuevaCombinacion,
-                        stock: newStock,
-                        idProducto: producto.id, // 🔥
-                      });
-                    }}
-                    min="0"
-                    className="border rounded-lg  ml-2 w-20 slot"
-                  />
-                </div>
-                <div className="contenedor">
-                  <button
-                    onClick={handleAgregarCombinacion}
-                    className={`btn-green slot  ${
-                      isAgregarCombinacionDisabled ? " cursor-not-allowed" : ""
-                    }`}
-                    disabled={isAgregarCombinacionDisabled}
-                  >
-                    Añadir
-                  </button>
                 </div>
               </div>
             </div>

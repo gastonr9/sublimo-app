@@ -1,4 +1,6 @@
+// src/app/panel/pedidos/page.tsx
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../../supabase/client";
 import RemeraPreview from "../../components/RemeraPreview";
@@ -9,44 +11,19 @@ interface Pedido {
   apellido: string;
   estado: string;
   fecha: string;
-  inventario_id: string;
-  estampa_id: string;
-  producto_nombre?: string;
-  talla?: string;
-  color?: string;
-  estampa_nombre?: string;
-  estampa_url?: string;
+  producto_nombre: string;
+  talla: string;
+  color: string;
+  estampa_nombre: string;
+  estampa_url: string;
 }
-
-// Tipo intermedio para mapear la respuesta cruda de Supabase
-type PedidoRaw = {
-  id: string;
-  nombre: string;
-  apellido: string;
-  estado: string;
-  fecha: string;
-  inventario_id: string;
-  estampa_id: string;
-  inventario?: {
-    talla?: string;
-    color?: string;
-    producto?: {
-      nombre?: string;
-    };
-  };
-  estampa?: {
-    nombre?: string;
-    imagen_url?: string;
-  };
-};
 
 const Pedidos: React.FC = () => {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Function to map color names to hex codes
   const getDefaultHex = (nombre: string): string => {
-    const coloresConocidos: Record<string, string> = {
+    const colores: Record<string, string> = {
       Blanco: "#ffffff",
       Negro: "#000000",
       Rojo: "#ff0000",
@@ -57,19 +34,16 @@ const Pedidos: React.FC = () => {
       Rosa: "#ff69b4",
       Naranja: "#ffa500",
       Morado: "#800080",
+      Celeste: "#87CEEB",
+      Bordó: "#800000",
+      Violeta: "#EE82EE",
     };
-
-    return coloresConocidos[nombre] || "#000000";
+    return colores[nombre] || "#94a3b8"; // gris azulado por defecto
   };
 
-  useEffect(() => {
-    fetchPedidos();
-  }, []);
-
+  // Cargar pedidos iniciales
   const fetchPedidos = async () => {
     try {
-      setLoading(true);
-
       const { data, error } = await supabase
         .from("pedidos")
         .select(
@@ -95,132 +69,113 @@ const Pedidos: React.FC = () => {
         .order("fecha", { ascending: false });
 
       if (error) throw error;
-      if (!data) return;
 
-      const mapped: Pedido[] = (data as PedidoRaw[]).map((p) => ({
+      const mapped: Pedido[] = (data || []).map((p: any) => ({
         id: p.id,
         nombre: p.nombre,
         apellido: p.apellido,
         estado: p.estado,
         fecha: p.fecha,
-        inventario_id: p.inventario_id,
-        estampa_id: p.estampa_id,
-        producto_nombre: p.inventario?.producto?.nombre || "",
-        talla: p.inventario?.talla || "",
-        color: p.inventario?.color || "",
-        estampa_nombre: p.estampa?.nombre || "",
+        producto_nombre: p.inventario?.producto?.nombre || "Sin producto",
+        talla: p.inventario?.talla || "-",
+        color: p.inventario?.color || "Sin color",
+        estampa_nombre: p.estampa?.nombre || "Sin diseño",
         estampa_url: p.estampa?.imagen_url || "",
       }));
 
       setPedidos(mapped);
     } catch (err) {
       console.error("Error cargando pedidos:", err);
+      alert("Error al cargar los pedidos");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChangeEstado = async (pedidoId: string, nuevoEstado: string) => {
-    try {
-      const { data: pedido, error: fetchError } = await supabase
-        .from("pedidos")
-        .select(
-          `
-        id,
-        estado,
-        inventario:inventario_id ( id, stock ),
-        estampa:estampa_id ( id, stock )
-      `
-        )
-        .eq("id", pedidoId)
-        .single();
+  // REALTIME: escuchar cambios en la tabla pedidos
+  useEffect(() => {
+    fetchPedidos(); // carga inicial
 
-      if (fetchError || !pedido) throw fetchError;
-
-      const estadoValido =
-        nuevoEstado === "confirmado" ? "realizado" : nuevoEstado;
-
-      const { error: estadoError } = await supabase.rpc(
-        "alterar_estado_pedido",
+    const channel = supabase
+      .channel("pedidos-realtime")
+      .on(
+        "postgres_changes",
         {
-          p_id: pedidoId,
-          p_new_estado: estadoValido,
+          event: "*",
+          schema: "public",
+          table: "pedidos",
+        },
+        (payload) => {
+          console.log("Cambio detectado en pedidos:", payload);
+
+          if (payload.eventType === "INSERT") {
+            // Nuevo pedido → recargamos todo (más simple y seguro)
+            fetchPedidos();
+          } else if (payload.eventType === "UPDATE") {
+            // Actualizamos solo ese pedido en el estado
+            setPedidos((prev) =>
+              prev.map((p) =>
+                p.id === payload.new.id
+                  ? {
+                      ...p,
+                      estado: payload.new.estado,
+                    }
+                  : p
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            // Eliminamos del estado
+            setPedidos((prev) => prev.filter((p) => p.id !== payload.old.id));
+          }
         }
+      )
+      .subscribe();
+
+    // Cleanup al desmontar
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleChangeEstado = async (
+    pedidoId: string,
+    nuevoEstado: "realizado" | "cancelado"
+  ) => {
+    try {
+      const { error } = await supabase.rpc("alterar_estado_pedido", {
+        p_id: pedidoId,
+        p_new_estado: nuevoEstado,
+      });
+
+      if (error) throw error;
+
+      alert(
+        nuevoEstado === "realizado"
+          ? "Pedido confirmado"
+          : "Pedido cancelado → stock de talle y estampa repuesto"
       );
-
-      if (estadoError) throw estadoError;
-
-      if (estadoValido === "cancelado" && pedido.estado !== "cancelado") {
-        if (
-          pedido.inventario &&
-          Array.isArray(pedido.inventario) &&
-          pedido.inventario.length > 0
-        ) {
-          await supabase
-            .from("inventario")
-            .update({ stock: pedido.inventario[0].stock + 1 })
-            .eq("id", pedido.inventario[0].id);
-        }
-        if (
-          pedido.estampa &&
-          Array.isArray(pedido.estampa) &&
-          pedido.estampa.length > 0
-        ) {
-          await supabase
-            .from("estampas")
-            .update({ stock: pedido.estampa[0].stock + 1 })
-            .eq("id", pedido.estampa[0].id);
-        }
-      }
-
-      alert(`✅ Estado cambiado a ${estadoValido}`);
-      fetchPedidos();
-    } catch (err) {
-      console.error("Error cambiando estado:", err);
-      alert("❌ No se pudo cambiar el estado del pedido");
+    } catch (err: any) {
+      console.error(err);
+      alert("Error: " + err.message);
     }
   };
-
   const handleDeletePedido = async (pedidoId: string) => {
+    if (!confirm("¿Seguro que querés eliminar este pedido permanentemente?"))
+      return;
+
     try {
-      const { data: pedido, error: fetchError } = await supabase
+      // Primero reponemos stock si estaba realizado
+      const { data: pedido } = await supabase
         .from("pedidos")
-        .select(
-          `
-        id,
-        estado,
-        inventario:inventario_id ( id, stock ),
-        estampa:estampa_id ( id, stock )
-      `
-        )
+        .select("estado, inventario_id, estampa_id")
         .eq("id", pedidoId)
         .single();
 
-      if (fetchError || !pedido) throw fetchError;
-
-      if (pedido.estado === "realizado") {
-        if (
-          pedido.inventario &&
-          Array.isArray(pedido.inventario) &&
-          pedido.inventario.length > 0
-        ) {
-          await supabase
-            .from("inventario")
-            .update({ stock: pedido.inventario[0].stock + 1 })
-            .eq("id", pedido.inventario[0].id);
-        }
-        if (
-          pedido.estampa &&
-          Array.isArray(pedido.estampa) &&
-          pedido.estampa.length > 0
-        ) {
-          await supabase
-            .from("estampas")
-            .update({ stock: pedido.estampa[0].stock + 1 })
-            .eq("id", pedido.estampa[0].id);
-        }
+      if (pedido?.estado === "realizado") {
+        await supabase.rpc("reponer_stock_pedido", { p_pedido_id: pedidoId });
       }
 
+      // Luego eliminamos
       const { error } = await supabase
         .from("pedidos")
         .delete()
@@ -228,109 +183,143 @@ const Pedidos: React.FC = () => {
 
       if (error) throw error;
 
-      alert("🗑️ Pedido eliminado correctamente");
-      fetchPedidos();
-    } catch (err) {
-      console.error("Error eliminando pedido:", err);
-      alert("❌ No se pudo eliminar el pedido");
+      // El realtime se encarga de quitarlo del listado
+      alert("Pedido eliminado");
+    } catch (err: any) {
+      alert("Error al eliminar: " + err.message);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-xl text-gray-600">Cargando pedidos...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Gestión de Pedidos</h2>
+    <div className=" max-w-7xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+        Gestión de Pedidos
+      </h1>
 
-      {loading ? (
-        <p>Cargando pedidos...</p>
-      ) : pedidos.length === 0 ? (
-        <p>No hay pedidos registrados.</p>
+      {pedidos.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-2xl text-gray-500">
+            No hay pedidos registrados aún
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {pedidos.map((pedido) => (
-            <div
-              key={pedido.id}
-              className="bg-white shadow-md rounded-lg p-4 min-w-fit"
-            >
-              <RemeraPreview
-                color={getDefaultHex(pedido.color || "")}
-                estampaUrl={pedido.estampa_url || ""}
-              />
-              <p>
-                <strong>Producto:</strong> {pedido.producto_nombre}
-              </p>
-              <p>
-                <strong>Talle:</strong> {pedido.talla}
-              </p>
-              <p>
-                <strong>Color:</strong> {pedido.color}
-              </p>
-              <p>
-                <strong>Estampa:</strong> {pedido.estampa_nombre}
-              </p>
-              <p>
-                <strong>Cliente:</strong> {pedido.nombre} {pedido.apellido}
-              </p>
-              <p>
-                <strong>Estado:</strong>{" "}
-                <span
-                  className={`status ${
-                    pedido.estado === "pendiente"
-                      ? "text-yellow-500 capitalize"
-                      : pedido.estado === "realizado"
-                      ? "text-green-500 capitalize"
-                      : "text-red-500 capitalize"
-                  }`}
-                >
-                  {pedido.estado}
-                </span>
-              </p>
+        <div>
+          <div className="gap-8 grid">
+            {pedidos.map((pedido) => (
+              <div
+                key={pedido.id}
+                className="gap-8 py-3 px-10 flex bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300  justify-between "
+              >
+                <div className="flex items-center gap-6">
+                  {/* Vista previa */}
+                  <div className="p-6 bg-gradient-to-b from-gray-50 to-white">
+                    <RemeraPreview
+                      color={getDefaultHex(pedido.color)}
+                      estampaUrl={pedido.estampa_url}
+                    />
+                  </div>
+                  {/* Info */}
+                  <div className="">
+                    <p className="font-bold text-lg text-indigo-700">
+                      {pedido.producto_nombre}
+                    </p>
+                    <p>
+                      <strong>Talle:</strong> {pedido.talla}
+                    </p>
+                    <p>
+                      <strong>Color:</strong> {pedido.color}
+                    </p>
+                    <p>
+                      <strong>Diseño:</strong> {pedido.estampa_nombre}
+                    </p>
+                    <p>
+                      <strong>Cliente:</strong> {pedido.nombre}{" "}
+                      {pedido.apellido}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(pedido.fecha).toLocaleString("es-AR")}
+                    </p>
+                  </div>
+                </div>
 
-              <div className="mt-4 flex gap-2">
-                {pedido.estado === "pendiente" && (
-                  <>
-                    <button
-                      onClick={() => handleChangeEstado(pedido.id, "realizado")}
-                      className="btn-green"
+                <div className="flex items-center gap-8  ">
+                  {/* Estado */}
+                  <div className=" flex flex-col items-start">
+                    <p
+                      className={`inline-block w-full text-center px-4 py-2 rounded-full text-white font-bold text-sm ${
+                        pedido.estado === "pendiente"
+                          ? "bg-yellow-500"
+                          : pedido.estado === "realizado"
+                          ? "bg-green-500"
+                          : "bg-red-500"
+                      }`}
                     >
-                      Confirmar
-                    </button>
-                    <button
-                      onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-                      className="btn-red"
-                    >
-                      Cancelar
-                    </button>
-                  </>
-                )}
+                      {pedido.estado.toUpperCase()}
+                    </p>
+                    {/* Botones */}
+                    <p className=" gap-2 py-2 rounded-full text-white font-bold text-sm flex">
+                      {pedido.estado === "pendiente" && (
+                        <>
+                          <button
+                            onClick={() =>
+                              handleChangeEstado(pedido.id, "realizado")
+                            }
+                            className=" bg-green-600 text-white  hover:bg-green-700 transition"
+                          >
+                            Confirmar
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleChangeEstado(pedido.id, "cancelado")
+                            }
+                            className=" bg-red-600 text-white  hover:bg-red-700 transition"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      )}
 
-                {pedido.estado === "realizado" && (
-                  <>
-                    <button
-                      onClick={() => handleChangeEstado(pedido.id, "cancelado")}
-                      className="btn-red"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={() => handleDeletePedido(pedido.id)}
-                      className="btn-grey"
-                    >
-                      Eliminar
-                    </button>
-                  </>
-                )}
+                      {pedido.estado === "realizado" && (
+                        <>
+                          <button
+                            onClick={() =>
+                              handleChangeEstado(pedido.id, "cancelado")
+                            }
+                            className=" bg-red-600 text-white  hover:bg-red-700 transition"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={() => handleDeletePedido(pedido.id)}
+                            className=" bg-gray-600 text-white  hover:bg-gray-700 transition"
+                          >
+                            Eliminar
+                          </button>
+                        </>
+                      )}
 
-                {pedido.estado === "cancelado" && (
-                  <button
-                    onClick={() => handleDeletePedido(pedido.id)}
-                    className="btn-grey"
-                  >
-                    Eliminar
-                  </button>
-                )}
+                      {pedido.estado === "cancelado" && (
+                        <button
+                          onClick={() => handleDeletePedido(pedido.id)}
+                          className=" bg-gray-600 text-white  hover:bg-gray-700 transition"
+                        >
+                          Eliminar
+                        </button>
+                      )}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

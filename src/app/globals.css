@@ -11,17 +11,15 @@
     @apply text-negro font-poppins;
   }
   input {
-    @apply m-2;
+    @apply cursor-pointer rounded-lg px-3 py-1 font-semibold w-8 float-end;
   }
   h1 {
     @apply font-bold;
   }
   button {
-    @apply bg-gris  hover:bg-indigo-500 cursor-pointer rounded-lg px-3 py-2 font-semibold;
+    @apply bg-gris  hover:bg-indigo-500 cursor-pointer rounded-lg px-3 py-1 font-semibold h-10;
   }
-  label {
-    @apply self-center max-h-[40px]  rounded-lg px-6 py-3 font-medium;
-  }
+
   select {
     @apply bg-white;
   }
@@ -31,18 +29,25 @@
   .App {
     @apply font-poppins text-center h-screen w-screen;
   }
+  .celda {
+    @apply flex items-center justify-between;
+  }
+  .label_name {
+    @apply mr-2 font-semibold;
+  }
   .slot {
-    @apply rounded-lg px-3 py-2 font-semibold;
+    @apply border rounded-lg  w-auto text-center;
   }
   .logo {
     @apply max-h-full w-[150px] h-[150px];
   }
+  .label-a {
+    @apply border-2 border-gray-300 focus:border-indigo-600 outline-none px-6 py-4 rounded-2xl;
+  }
   .contenedor {
     @apply flex gap-5 self-center;
   }
-  #remera {
-    @apply h-[300px] w-[300px];
-  }
+
   .status {
     @apply px-2 py-1 font-medium;
   }
@@ -70,5 +75,8 @@
   }
   .btn-yellow {
     @apply bg-yellow-500 text-white hover:bg-yellow-600 cursor-pointer;
+  }
+  .btn-orange {
+    @apply bg-orange-500 text-white hover:bg-orange-600 cursor-pointer;
   }
 }
