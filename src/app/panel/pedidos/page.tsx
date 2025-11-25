@@ -4,18 +4,60 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../../supabase/client";
 import RemeraPreview from "../../components/RemeraPreview";
+import type { PostgrestError } from "@supabase/supabase-js";
+
+// Tipos precisos según la estructura real de Supabase
+interface InventarioRelation {
+  talla: string;
+  color: string;
+  producto: {
+    nombre: string;
+  };
+}
+
+interface EstampaRelation {
+  nombre: string;
+  imagen_url: string;
+}
+
+interface PedidoRaw {
+  id: string;
+  nombre: string;
+  apellido: string;
+  estado: "pendiente" | "realizado" | "cancelado";
+  fecha: string;
+  inventario_id: string;
+  estampa_id: string;
+  inventario: InventarioRelation | null;
+  estampa: EstampaRelation | null;
+}
 
 interface Pedido {
   id: string;
   nombre: string;
   apellido: string;
-  estado: string;
+  estado: "pendiente" | "realizado" | "cancelado";
   fecha: string;
   producto_nombre: string;
   talla: string;
   color: string;
   estampa_nombre: string;
   estampa_url: string;
+}
+
+function extractErrorMessage(err: unknown): string {
+  if (err instanceof Error && typeof err.message === "string") {
+    return err.message;
+  }
+  if (err && typeof err === "object" && "message" in err) {
+    const maybeMessage = (err as Record<string, unknown>).message;
+    if (typeof maybeMessage === "string") return maybeMessage;
+  }
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
 }
 
 const Pedidos: React.FC = () => {
@@ -38,16 +80,14 @@ const Pedidos: React.FC = () => {
       Bordó: "#800000",
       Violeta: "#EE82EE",
     };
-    return colores[nombre] || "#94a3b8"; // gris azulado por defecto
+    return colores[nombre] || "#94a3b8";
   };
 
-  // Cargar pedidos iniciales
   const fetchPedidos = async () => {
     try {
       const { data, error } = await supabase
         .from("pedidos")
-        .select(
-          `
+        .select(`
           id,
           nombre,
           apellido,
@@ -64,13 +104,15 @@ const Pedidos: React.FC = () => {
             nombre,
             imagen_url
           )
-        `
-        )
-        .order("fecha", { ascending: false });
+        `)
+        .order("fecha", { ascending: false }) as unknown as {
+          data: PedidoRaw[] | null;
+          error: PostgrestError | null;
+        };
 
       if (error) throw error;
 
-      const mapped: Pedido[] = (data || []).map((p: any) => ({
+      const mapped: Pedido[] = (data || []).map((p: PedidoRaw) => ({
         id: p.id,
         nombre: p.nombre,
         apellido: p.apellido,
@@ -92,51 +134,55 @@ const Pedidos: React.FC = () => {
     }
   };
 
-  // REALTIME: escuchar cambios en la tabla pedidos
-  useEffect(() => {
-    fetchPedidos(); // carga inicial
+useEffect(() => {
+  fetchPedidos(); // carga inicial
 
-    const channel = supabase
-      .channel("pedidos-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "pedidos",
-        },
-        (payload) => {
-          console.log("Cambio detectado en pedidos:", payload);
+  const channel = supabase
+    .channel('pedidos-changes')
+    .on(
+      'postgres_changes', // ← sigue siendo el primer argumento
+      {
+        event: '*',           // o puedes usar 'INSERT' | 'UPDATE' | 'DELETE'
+        schema: 'public',
+        table: 'pedidos',
+      },
+      (payload) => {
+        console.log('Cambio en pedidos:', payload);
 
-          if (payload.eventType === "INSERT") {
-            // Nuevo pedido → recargamos todo (más simple y seguro)
-            fetchPedidos();
-          } else if (payload.eventType === "UPDATE") {
-            // Actualizamos solo ese pedido en el estado
-            setPedidos((prev) =>
-              prev.map((p) =>
-                p.id === payload.new.id
-                  ? {
-                      ...p,
-                      estado: payload.new.estado,
-                    }
-                  : p
-              )
-            );
-          } else if (payload.eventType === "DELETE") {
-            // Eliminamos del estado
-            setPedidos((prev) => prev.filter((p) => p.id !== payload.old.id));
-          }
+        // Tipado seguro del payload
+        const event = payload.eventType;
+        const newRecord = payload.new as PedidoRaw | undefined;
+        const oldRecord = payload.old as { id: string } | undefined;
+
+        if (event === 'INSERT' && newRecord) {
+          fetchPedidos(); // más seguro recargar todo en INSERT
+        } 
+        else if (event === 'UPDATE' && newRecord) {
+          setPedidos(prev =>
+            prev.map(p =>
+              p.id === newRecord.id
+                ? { ...p, estado: newRecord.estado }
+                : p
+            )
+          );
+        } 
+        else if (event === 'DELETE' && oldRecord) {
+          setPedidos(prev => prev.filter(p => p.id !== oldRecord.id));
         }
-      )
-      .subscribe();
+      }
+    )
+    .subscribe((status, err) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('Suscripción a pedidos activa');
+      }
+      if (err) console.error('Error en suscripción:', err);
+    });
 
-    // Cleanup al desmontar
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
+  // Cleanup
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, []);
   const handleChangeEstado = async (
     pedidoId: string,
     nuevoEstado: "realizado" | "cancelado"
@@ -154,17 +200,17 @@ const Pedidos: React.FC = () => {
           ? "Pedido confirmado"
           : "Pedido cancelado → stock de talle y estampa repuesto"
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert("Error: " + err.message);
+      alert("Error: " + extractErrorMessage(err));
     }
   };
+
   const handleDeletePedido = async (pedidoId: string) => {
     if (!confirm("¿Seguro que querés eliminar este pedido permanentemente?"))
       return;
 
     try {
-      // Primero reponemos stock si estaba realizado
       const { data: pedido } = await supabase
         .from("pedidos")
         .select("estado, inventario_id, estampa_id")
@@ -175,7 +221,6 @@ const Pedidos: React.FC = () => {
         await supabase.rpc("reponer_stock_pedido", { p_pedido_id: pedidoId });
       }
 
-      // Luego eliminamos
       const { error } = await supabase
         .from("pedidos")
         .delete()
@@ -183,10 +228,9 @@ const Pedidos: React.FC = () => {
 
       if (error) throw error;
 
-      // El realtime se encarga de quitarlo del listado
       alert("Pedido eliminado");
-    } catch (err: any) {
-      alert("Error al eliminar: " + err.message);
+    } catch (err: unknown) {
+      alert("Error al eliminar: " + extractErrorMessage(err));
     }
   };
 
@@ -199,7 +243,7 @@ const Pedidos: React.FC = () => {
   }
 
   return (
-    <div className=" max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
         Gestión de Pedidos
       </h1>
@@ -211,115 +255,94 @@ const Pedidos: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div>
-          <div className="gap-8 grid">
-            {pedidos.map((pedido) => (
-              <div
-                key={pedido.id}
-                className="gap-8 py-3 px-10 flex bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300  justify-between "
-              >
-                <div className="flex items-center gap-6">
-                  {/* Vista previa */}
-                  <div className="p-6 bg-gradient-to-b from-gray-50 to-white">
-                    <RemeraPreview
-                      color={getDefaultHex(pedido.color)}
-                      estampaUrl={pedido.estampa_url}
-                    />
-                  </div>
-                  {/* Info */}
-                  <div className="">
-                    <p className="font-bold text-lg text-indigo-700">
-                      {pedido.producto_nombre}
-                    </p>
-                    <p>
-                      <strong>Talle:</strong> {pedido.talla}
-                    </p>
-                    <p>
-                      <strong>Color:</strong> {pedido.color}
-                    </p>
-                    <p>
-                      <strong>Diseño:</strong> {pedido.estampa_nombre}
-                    </p>
-                    <p>
-                      <strong>Cliente:</strong> {pedido.nombre}{" "}
-                      {pedido.apellido}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(pedido.fecha).toLocaleString("es-AR")}
-                    </p>
-                  </div>
+        <div className="grid gap-8">
+          {pedidos.map((pedido) => (
+            <div
+              key={pedido.id}
+              className="flex justify-between items-center bg-white rounded-2xl shadow-xl p-6 hover:shadow-2xl transition-all duration-300"
+            >
+              <div className="flex items-center gap-8">
+                <div className="p-6 bg-gradient-to-b from-gray-50 to-white rounded-xl">
+                  <RemeraPreview
+                    color={getDefaultHex(pedido.color)}
+                    estampaUrl={pedido.estampa_url}
+                  />
                 </div>
 
-                <div className="flex items-center gap-8  ">
-                  {/* Estado */}
-                  <div className=" flex flex-col items-start">
-                    <p
-                      className={`inline-block w-full text-center px-4 py-2 rounded-full text-white font-bold text-sm ${
-                        pedido.estado === "pendiente"
-                          ? "bg-yellow-500"
-                          : pedido.estado === "realizado"
-                          ? "bg-green-500"
-                          : "bg-red-500"
-                      }`}
-                    >
-                      {pedido.estado.toUpperCase()}
-                    </p>
-                    {/* Botones */}
-                    <p className=" gap-2 py-2 rounded-full text-white font-bold text-sm flex">
-                      {pedido.estado === "pendiente" && (
-                        <>
-                          <button
-                            onClick={() =>
-                              handleChangeEstado(pedido.id, "realizado")
-                            }
-                            className=" bg-green-600 text-white  hover:bg-green-700 transition"
-                          >
-                            Confirmar
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleChangeEstado(pedido.id, "cancelado")
-                            }
-                            className=" bg-red-600 text-white  hover:bg-red-700 transition"
-                          >
-                            Cancelar
-                          </button>
-                        </>
-                      )}
-
-                      {pedido.estado === "realizado" && (
-                        <>
-                          <button
-                            onClick={() =>
-                              handleChangeEstado(pedido.id, "cancelado")
-                            }
-                            className=" bg-red-600 text-white  hover:bg-red-700 transition"
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            onClick={() => handleDeletePedido(pedido.id)}
-                            className=" bg-gray-600 text-white  hover:bg-gray-700 transition"
-                          >
-                            Eliminar
-                          </button>
-                        </>
-                      )}
-
-                      {pedido.estado === "cancelado" && (
-                        <button
-                          onClick={() => handleDeletePedido(pedido.id)}
-                          className=" bg-gray-600 text-white  hover:bg-gray-700 transition"
-                        >
-                          Eliminar
-                        </button>
-                      )}
-                    </p>
-                  </div>
+                <div>
+                  <p className="font-bold text-lg text-indigo-700">
+                    {pedido.producto_nombre}
+                  </p>
+                  <p><strong>Talle:</strong> {pedido.talla}</p>
+                  <p><strong>Color:</strong> {pedido.color}</p>
+                  <p><strong>Diseño:</strong> {pedido.estampa_nombre}</p>
+                  <p><strong>Cliente:</strong> {pedido.nombre} {pedido.apellido}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(pedido.fecha).toLocaleString("es-AR")}
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div className="flex flex-col items-end gap-4">
+                <span
+                  className={`px-6 py-2 rounded-full text-white font-bold text-sm ${
+                    pedido.estado === "pendiente"
+                      ? "bg-yellow-500"
+                      : pedido.estado === "realizado"
+                      ? "bg-green-500"
+                      : "bg-red-500"
+                  }`}
+                >
+                  {pedido.estado.toUpperCase()}
+                </span>
+
+                <div className="flex gap-3">
+                  {pedido.estado === "pendiente" && (
+                    <>
+                      <button
+                        onClick={() => handleChangeEstado(pedido.id, "realizado")}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                      >
+                        Confirmar
+                      </button>
+                      <button
+                        onClick={() => handleChangeEstado(pedido.id, "cancelado")}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                      >
+                        Cancelar
+                      </button>
+                    </>
+                  )}
+
+                  {pedido.estado === "realizado" && (
+                    <>
+                      <button
+                        onClick={() => handleChangeEstado(pedido.id, "cancelado")}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => handleDeletePedido(pedido.id)}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+                      >
+                        Eliminar
+                      </button>
+                    </>
+                  )}
+
+                  {pedido.estado === "cancelado" && (
+                    <button
+                      onClick={() => handleDeletePedido(pedido.id)}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
