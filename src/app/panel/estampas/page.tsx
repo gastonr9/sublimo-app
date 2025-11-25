@@ -146,7 +146,7 @@ const Estampas: React.FC = () => {
     field: "nombre" | "stock",
     value: string | number
   ) => {
-    const payload: any = {};
+    const payload: Partial<EstampasRow> = {};
     if (field === "nombre")
       payload.nombre = value.toString().trim() || "Sin nombre";
     if (field === "stock")
@@ -335,9 +335,8 @@ const Estampas: React.FC = () => {
                   : d.stock;
 
               return (
-                <div className="w-fit ">
+                <div key={d.id} className="w-fit ">
                   <div
-                    key={d.id}
                     className={`flex gap-5 bg-white shadow-md rounded-lg p-4 relative${
                       d.stock > 0
                         ? "bg-gradient-to-br from-indigo-50 to-purple-50 ring-4 ring-indigo-400"

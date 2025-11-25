@@ -22,9 +22,14 @@ const Inventario: React.FC = () => {
     precio: "",
     descripcion: "",
   });
-  const [nuevaCombinacion, setNuevaCombinacion] = useState({
+  const [nuevaCombinacion, setNuevaCombinacion] = useState<{
+    idProducto: string;
+    talla: "S" | "M" | "L" | "XL" | "XXL";
+    color: string;
+    stock: number;
+  }>({
     idProducto: "",
-    talla: "S" as const,
+    talla: "S",
     color: "",
     stock: 0,
   });
@@ -89,8 +94,10 @@ const Inventario: React.FC = () => {
         descripcion: nuevoProducto.descripcion.trim(),
       });
       setNuevoProducto({ nombre: "", precio: "", descripcion: "" });
-    } catch (err: any) {
-      alert(err.message || "Error al crear producto");
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message || "Error al crear producto");
+      }
     }
   };
 
@@ -112,8 +119,10 @@ const Inventario: React.FC = () => {
 
       await uploadStock(idProducto, talla, color, diferencia);
       // Realtime se encarga de actualizar
-    } catch (err: any) {
-      alert(err.message || "Error actualizando stock");
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message || "Error actualizando stock");
+      }
     }
   };
 
@@ -138,8 +147,10 @@ const Inventario: React.FC = () => {
         talla: "S",
         color: coloresFijos[0]?.nombre || "",
       }));
-    } catch (err: any) {
-      alert(err.message || "Error agregando combinación");
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message || "Error agregando combinación");
+      }
     }
   };
 
@@ -153,8 +164,10 @@ const Inventario: React.FC = () => {
       });
       setEditando((prev) => ({ ...prev, [productoEditado.id]: false }));
       setProductoEditado(null);
-    } catch (err: any) {
-      alert(err.message || "Error guardando cambios");
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message || "Error guardando cambios");
+      }
     }
   };
 
@@ -167,8 +180,10 @@ const Inventario: React.FC = () => {
       return;
     try {
       await deleteProducto(id);
-    } catch (err: any) {
-      alert(err.message || "Error eliminando producto");
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message || "Error eliminando producto");
+      }
     }
   };
 
@@ -180,8 +195,10 @@ const Inventario: React.FC = () => {
     if (!confirm(`¿Eliminar combinación ${talla} - ${color}?`)) return;
     try {
       await deleteCombinacion(idProducto, talla, color);
-    } catch (err: any) {
-      alert(err.message || "Error eliminando combinación");
+    } catch (err) {
+      if (err instanceof Error) {
+        alert(err.message || "Error eliminando combinación");
+      }
     }
   };
 
@@ -358,7 +375,7 @@ const Inventario: React.FC = () => {
                     onChange={(e) =>
                       setNuevaCombinacion((prev) => ({
                         ...prev,
-                        talla: e.target.value as any,
+                        talla: e.target.value as "S" | "M" | "L" | "XL" | "XXL",
                         idProducto: producto.id,
                       }))
                     }

@@ -79,7 +79,7 @@ export const ProductProvider = ({
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "inventario" },
-        (payload) => {
+        () => {
           console.log(
             "Cambio en inventario detectado. Recargando productos..."
           );
@@ -111,7 +111,7 @@ export const ProductProvider = ({
       // Si no hay seleccionado, selecciona el primero por defecto
       setSelectedProduct(productos[0]);
     }
-  }, [productos]); // Depende de la lista de productos actualizada por fetchProducts/Realtime
+  }, [productos, selectedProduct]); // Depende de la lista de productos actualizada por fetchProducts/Realtime
 
   return (
     <ProductContext.Provider

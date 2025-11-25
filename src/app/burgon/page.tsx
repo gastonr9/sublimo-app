@@ -306,8 +306,12 @@ const Burgon: React.FC = () => {
         estampaId: "",
         estampaUrl: "",
       });
-    } catch (err: any) {
-      alert("Error al crear el pedido: " + err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        alert("Error al crear el pedido: " + err.message);
+      } else {
+        alert("Ocurrió un error desconocido al crear el pedido.");
+      }
     }
   };
 
